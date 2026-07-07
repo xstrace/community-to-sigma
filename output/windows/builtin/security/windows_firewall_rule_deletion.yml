@@ -1,0 +1,31 @@
+title: Windows Firewall Rule Deletion
+id: ca5327e1-0a91-4e23-bbd4-8901806c00e1
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: This detection identifies instances where a Windows Firewall rule has been deleted, potentially exposing the system to security risks. Unauthorized removal of firewall rules can indicate an
+  attacker attempting to bypass security controls or malware disabling protections for persistence and command-and-control communication. The event logs details such as the deleted rule name, protocol,
+  port, and the user responsible for the action. Security teams should monitor for unexpected deletions, correlate with related events, and investigate anomalies to prevent unauthorized access and maintain
+  network security posture.
+references:
+- https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4948
+tags:
+- attack.t1686
+date: '2025-03-21'
+original_spl: |-
+  `wineventlog_security` EventCode=4948
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY RuleName signature subject
+         status dest ProcessID
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_firewall_rule_deletion_filter`
+splunk_rule_id: ca5327e1-0a91-4e23-bbd4-8901806c00e1
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4948
+  condition: selection_0

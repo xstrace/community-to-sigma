@@ -1,0 +1,31 @@
+title: Splunk Enterprise KV Store Incorrect Authorization
+id: 8f0e8380-a835-4f2b-b749-9ce119364df0
+status: deprecated
+level: medium
+author: Rod Soto, Eric McGinnis, Chase Franklin
+description: The following analytic detects unauthorized attempts to reload Splunk KV Store collections via the REST API. It leverages internal index logs to identify POST requests to the `/servicesNS/nobody/search/admin/collections-conf/_reload`
+  endpoint, focusing on status codes starting with '2'. This activity is significant as it may indicate improper permission handling, potentially leading to unauthorized deletion of KV Store collections.
+  If confirmed malicious, this could result in data loss or unauthorized data manipulation, impacting the integrity and availability of critical Splunk data.
+references:
+- https://advisory.splunk.com/advisories/SVD-2024-0105
+tags:
+- attack.t1548
+date: '2024-01-22'
+original_spl: '`splunkda` uri=/servicesNS/nobody/search/admin/collections-conf/_reload status=2* method="POST" user=* file=_reload | stats count min(_time) as firstTime max(_time) as lastTime values(status)
+  as status by host clientip file method | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `splunk_enterprise_kv_store_incorrect_authorization_filter`'
+splunk_rule_id: 8f0e8380-a835-4f2b-b749-9ce119364df0
+splunk_rule_type: Hunting
+logsource:
+  category: application
+detection:
+  selection_0:
+    uri: /servicesNS/nobody/search/admin/collections-conf/_reload
+  selection_1:
+    status: 2
+  selection_2:
+    method: POST
+  selection_3:
+    user|contains: ''
+  selection_4:
+    file: _reload
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

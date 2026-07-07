@@ -1,0 +1,72 @@
+title: Outbound Network Connection from Java Using Default Ports
+id: d2c14d28-5c47-11ec-9892-acde48001122
+status: stable
+level: medium
+author: Mauricio Velazco, Lou Stella, Splunk
+description: |
+  The following analytic detects outbound network connections from Java processes to default ports used by LDAP and RMI protocols, which may indicate exploitation of the CVE-2021-44228-Log4j vulnerability.
+  This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on process and network traffic logs.
+  Monitoring this activity is crucial as it can signify an attacker's attempt to perform JNDI lookups and retrieve malicious payloads.
+  If confirmed malicious, this activity could lead to remote code execution and further compromise of the affected server.
+references:
+- https://www.lunasec.io/docs/blog/log4j-zero-day/
+- https://www.govcert.admin.ch/blog/zero-day-exploit-targeting-popular-java-library-log4j/
+tags:
+- attack.t1190
+- attack.t1133
+date: '2021-12-13'
+original_spl: |-
+  | tstats `security_content_summariesonly` count
+  FROM datamodel=Endpoint.Processes WHERE
+
+  Processes.process_name IN (
+      "java.exe",
+      "javaw.exe"
+  )
+  BY Processes.action Processes.dest Processes.original_file_name
+     Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+     Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+     Processes.process Processes.process_exec Processes.process_guid
+     Processes.process_hash Processes.process_id Processes.process_integrity_level
+     Processes.process_name Processes.process_path Processes.user
+     Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | join process_id dest
+  [
+      | tstats `security_content_summariesonly` count
+      FROM datamodel=Network_Traffic.All_Traffic WHERE
+      All_Traffic.dest_port IN (
+                  389,
+                  636,
+                  1099,
+                  1389
+      )
+      BY All_Traffic.action All_Traffic.app All_Traffic.bytes
+          All_Traffic.bytes_in All_Traffic.bytes_out All_Traffic.dest
+          All_Traffic.dest_ip All_Traffic.dest_port All_Traffic.dvc
+          All_Traffic.protocol All_Traffic.protocol_version All_Traffic.src
+          All_Traffic.src_ip All_Traffic.src_port All_Traffic.transport
+          All_Traffic.user All_Traffic.vendor_product All_Traffic.direction
+          All_Traffic.process_id
+      | `drop_dm_object_name(All_Traffic)`
+      | rename dest as connection_to_CNC
+      | rename src as dest
+  ]
+  | table _time dest
+          parent_process_path parent_process_name parent_process
+          process_path process_name process process_hash
+          connection_to_CNC dest_port user
+  | `outbound_network_connection_from_java_using_default_ports_filter`
+splunk_rule_id: d2c14d28-5c47-11ec-9892-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: all_traffic
+detection:
+  selection_0:
+    Image:
+    - java.exe
+    - javaw.exe
+  condition: selection_0

@@ -1,0 +1,43 @@
+title: Windows Registry Entries Exported Via Reg
+id: 466379bc-0f47-476c-8202-16ef38112e0d
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of the reg.exe process with either the "save" or "export" parameters. This detection leverages data from Endpoint Detection and Response (EDR) agents,
+  focusing on process execution logs and command-line arguments. This activity is significant because threat actors often use the "reg save" or "reg export" command to dump credentials or test registry
+  modification capabilities on compromised hosts. If confirmed malicious, this behavior could allow attackers to escalate privileges, persist in the environment, or access sensitive information stored in
+  the registry.
+references:
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/quser
+- https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS
+- https://www.microsoft.com/en-us/security/blog/2022/10/14/new-prestige-ransomware-impacts-organizations-in-ukraine-and-poland/
+tags:
+- attack.t1012
+date: '2022-12-13'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_reg`
+      AND
+      Processes.process IN ("* save *", "* export *")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_registry_entries_exported_via_reg_filter`
+splunk_rule_id: 466379bc-0f47-476c-8202-16ef38112e0d
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - ' save '
+    - ' export '
+  condition: selection_0

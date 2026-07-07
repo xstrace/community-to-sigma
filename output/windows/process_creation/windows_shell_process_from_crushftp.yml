@@ -1,0 +1,45 @@
+title: Windows Shell Process from CrushFTP
+id: 459628e3-1b00-4e9b-9e5b-7da8961aea35
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies instances where CrushFTP's service process (crushftpservice.exe) spawns shell processes like cmd.exe or powershell.exe. This detection leverages data from
+  Endpoint Detection and Response (EDR) agents, focusing on process creation events. This activity is significant because CrushFTP should not normally spawn interactive shell processes during regular operations.
+  If confirmed malicious, this behavior could indicate successful exploitation of vulnerabilities like CVE-2025-31161, potentially allowing attackers to execute arbitrary commands with the privileges of
+  the CrushFTP service.
+references:
+- https://nvd.nist.gov/vuln/detail/CVE-2025-31161
+- https://www.crushftp.com/crush11wiki/Wiki.jsp?page=Update
+- https://www.huntress.com/blog/crushftp-cve-2025-31161-auth-bypass-and-post-exploitation
+tags:
+- attack.t1059.001
+- attack.t1059.003
+- attack.t1190
+- attack.t1505
+date: '2025-04-14'
+original_spl: |-
+  | tstats `security_content_summariesonly` count values(Processes.process_name) as process_name values(Processes.process) as process min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name=crushftpservice.exe
+      AND
+      `process_cmd`
+      OR
+      `process_powershell`
+    BY Processes.dest Processes.parent_process Processes.original_file_name
+       Processes.user Processes.action Processes.parent_process_exec
+       Processes.parent_process_guid Processes.parent_process_id Processes.parent_process_path
+       Processes.process_exec Processes.process_guid Processes.process_hash
+       Processes.process_id Processes.process_integrity_level Processes.process_path
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_shell_process_from_crushftp_filter`
+splunk_rule_id: 459628e3-1b00-4e9b-9e5b-7da8961aea35
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: crushftpservice.exe
+  condition: selection_0

@@ -1,17 +1,17 @@
 {
   "summary": {
-    "total": 2124,
-    "converted": 1919,
-    "skipped": 205,
+    "total": 2117,
+    "converted": 1934,
+    "skipped": 183,
     "errors": 0,
-    "conversion_rate": "90.3%"
+    "conversion_rate": "91.4%"
   },
   "skip_reasons": {
-    "No conditions extracted": 78,
-    "Unparseable SPL with complex patterns; No conditions extracted": 72,
+    "Unparseable SPL with complex patterns; No conditions extracted": 71,
+    "No conditions extracted": 57,
     "Risk datamodel (meta-correlation): Risk.All_Risk": 15,
-    "Always-complex command: inputlookup": 7,
     "Complex macro: remote_access_software_usage_exceptions": 7,
+    "Always-complex command: inputlookup": 7,
     "lookup command present before conditions": 6,
     "Always-complex command: transaction": 4,
     "SPL parse error: Unexpected token RPAREN": 2,
@@ -29,19 +29,414 @@
   },
   "converted": [
     {
-      "source": "application/aws_bedrock_claude_excessive_use_of_tokens.yml",
-      "output": "cloud/aws/aws_bedrock_claude_excessive_use_of_tokens.yml",
-      "title": "AWS Bedrock Claude excessive use of tokens"
+      "source": "web/access_to_vulnerable_ivanti_connect_secure_bookmark_endpoint.yml",
+      "output": "web/webserver_generic/access_to_vulnerable_ivanti_connect_secure_bookmark_endpoint.yml",
+      "title": "Access to Vulnerable Ivanti Connect Secure Bookmark Endpoint"
     },
     {
-      "source": "application/aws_bedrock_claude_high_risk_filesystem_and_exec_tool_invocation.yml",
-      "output": "cloud/aws/aws_bedrock_claude_high_risk_filesystem_and_exec_tool_invocation.yml",
-      "title": "AWS Bedrock Claude High Risk Filesystem and Exec Tool Invocation"
+      "source": "web/adobe_coldfusion_access_control_bypass.yml",
+      "output": "web/webserver_generic/adobe_coldfusion_access_control_bypass.yml",
+      "title": "Adobe ColdFusion Access Control Bypass"
+    },
+    {
+      "source": "web/adobe_coldfusion_unauthenticated_arbitrary_file_read.yml",
+      "output": "web/webserver_generic/adobe_coldfusion_unauthenticated_arbitrary_file_read.yml",
+      "title": "Adobe ColdFusion Unauthenticated Arbitrary File Read"
+    },
+    {
+      "source": "web/cisco_ios_xe_implant_access.yml",
+      "output": "network/cisco/cisco_ios_xe_implant_access.yml",
+      "title": "Cisco IOS XE Implant Access"
+    },
+    {
+      "source": "web/citrix_adc_and_gateway_citrixbleed_2_memory_disclosure.yml",
+      "output": "web/webserver_generic/citrix_adc_and_gateway_citrixbleed_2_memory_disclosure.yml",
+      "title": "Citrix ADC and Gateway CitrixBleed 2 Memory Disclosure"
+    },
+    {
+      "source": "web/citrix_adc_and_gateway_unauthorized_data_disclosure.yml",
+      "output": "web/webserver_generic/citrix_adc_and_gateway_unauthorized_data_disclosure.yml",
+      "title": "Citrix ADC and Gateway Unauthorized Data Disclosure"
+    },
+    {
+      "source": "web/citrix_adc_exploitation_cve_2023_3519.yml",
+      "output": "web/webserver_generic/citrix_adc_exploitation_cve-2023-3519.yml",
+      "title": "Citrix ADC Exploitation CVE-2023-3519"
+    },
+    {
+      "source": "web/citrix_sharefile_exploitation_cve_2023_24489.yml",
+      "output": "web/webserver_generic/citrix_sharefile_exploitation_cve-2023-24489.yml",
+      "title": "Citrix ShareFile Exploitation CVE-2023-24489"
+    },
+    {
+      "source": "web/confluence_cve_2023_22515_trigger_vulnerability.yml",
+      "output": "web/webserver_generic/confluence_cve-2023-22515_trigger_vulnerability.yml",
+      "title": "Confluence CVE-2023-22515 Trigger Vulnerability"
+    },
+    {
+      "source": "web/confluence_data_center_and_server_privilege_escalation.yml",
+      "output": "web/webserver_generic/confluence_data_center_and_server_privilege_escalation.yml",
+      "title": "Confluence Data Center and Server Privilege Escalation"
+    },
+    {
+      "source": "web/confluence_pre_auth_rce_via_ognl_injection_cve_2023_22527.yml",
+      "output": "web/webserver_generic/confluence_pre-auth_rce_via_ognl_injection_cve-2023-22527.yml",
+      "title": "Confluence Pre-Auth RCE via OGNL Injection CVE-2023-22527"
+    },
+    {
+      "source": "web/confluence_unauthenticated_remote_code_execution_cve_2022_26134.yml",
+      "output": "web/webserver_generic/confluence_unauthenticated_remote_code_execution_cve-2022-26134.yml",
+      "title": "Confluence Unauthenticated Remote Code Execution CVE-2022-26134"
+    },
+    {
+      "source": "web/connectwise_screenconnect_authentication_bypass.yml",
+      "output": "web/webserver_generic/connectwise_screenconnect_authentication_bypass.yml",
+      "title": "ConnectWise ScreenConnect Authentication Bypass"
+    },
+    {
+      "source": "web/detect_attackers_scanning_for_vulnerable_jboss_servers.yml",
+      "output": "web/webserver_generic/detect_attackers_scanning_for_vulnerable_jboss_servers.yml",
+      "title": "Detect attackers scanning for vulnerable JBoss servers"
+    },
+    {
+      "source": "web/detect_f5_tmui_rce_cve_2020_5902.yml",
+      "output": "web/webserver_generic/detect_f5_tmui_rce_cve-2020-5902.yml",
+      "title": "Detect F5 TMUI RCE CVE-2020-5902"
+    },
+    {
+      "source": "web/detect_malicious_requests_to_exploit_jboss_servers.yml",
+      "output": "web/webserver_generic/detect_malicious_requests_to_exploit_jboss_servers.yml",
+      "title": "Detect malicious requests to exploit JBoss servers"
+    },
+    {
+      "source": "web/detect_web_access_to_decommissioned_s3_bucket.yml",
+      "output": "web/webserver_generic/detect_web_access_to_decommissioned_s3_bucket.yml",
+      "title": "Detect Web Access to Decommissioned S3 Bucket"
+    },
+    {
+      "source": "web/exploit_public_facing_application_via_apache_commons_text.yml",
+      "output": "web/webserver_generic/exploit_public_facing_application_via_apache_commons_text.yml",
+      "title": "Exploit Public Facing Application via Apache Commons Text"
+    },
+    {
+      "source": "web/exploit_public_facing_fortinet_fortinac_cve_2022_39952.yml",
+      "output": "web/webserver_generic/exploit_public-facing_fortinet_fortinac_cve-2022-39952.yml",
+      "title": "Exploit Public-Facing Fortinet FortiNAC CVE-2022-39952"
+    },
+    {
+      "source": "web/f5_tmui_authentication_bypass.yml",
+      "output": "web/webserver_generic/f5_tmui_authentication_bypass.yml",
+      "title": "F5 TMUI Authentication Bypass"
+    },
+    {
+      "source": "web/fortinet_appliance_auth_bypass.yml",
+      "output": "web/webserver_generic/fortinet_appliance_auth_bypass.yml",
+      "title": "Fortinet Appliance Auth bypass"
+    },
+    {
+      "source": "web/high_volume_of_bytes_out_to_url.yml",
+      "output": "web/webserver_generic/high_volume_of_bytes_out_to_url.yml",
+      "title": "High Volume of Bytes Out to Url"
+    },
+    {
+      "source": "web/http_duplicated_header.yml",
+      "output": "network/suricata/http_duplicated_header.yml",
+      "title": "HTTP Duplicated Header"
+    },
+    {
+      "source": "web/http_possible_request_smuggling.yml",
+      "output": "network/suricata/http_possible_request_smuggling.yml",
+      "title": "HTTP Possible Request Smuggling"
+    },
+    {
+      "source": "web/http_rapid_post_with_mixed_status_codes.yml",
+      "output": "web/webserver_generic/http_rapid_post_with_mixed_status_codes.yml",
+      "title": "HTTP Rapid POST with Mixed Status Codes"
+    },
+    {
+      "source": "web/http_request_to_reserved_name_on_iis_server.yml",
+      "output": "web/webserver_generic/http_request_to_reserved_name_on_iis_server.yml",
+      "title": "HTTP Request to Reserved Name on IIS Server"
+    },
+    {
+      "source": "web/http_scripting_tool_user_agent.yml",
+      "output": "web/webserver_generic/http_scripting_tool_user_agent.yml",
+      "title": "HTTP Scripting Tool User Agent"
+    },
+    {
+      "source": "web/hunting_for_log4shell.yml",
+      "output": "web/webserver_generic/hunting_for_log4shell.yml",
+      "title": "Hunting for Log4Shell"
+    },
+    {
+      "source": "web/ivanti_connect_secure_command_injection_attempts.yml",
+      "output": "web/webserver_generic/ivanti_connect_secure_command_injection_attempts.yml",
+      "title": "Ivanti Connect Secure Command Injection Attempts"
+    },
+    {
+      "source": "web/ivanti_connect_secure_ssrf_in_saml_component.yml",
+      "output": "web/webserver_generic/ivanti_connect_secure_ssrf_in_saml_component.yml",
+      "title": "Ivanti Connect Secure SSRF in SAML Component"
+    },
+    {
+      "source": "web/ivanti_connect_secure_system_information_access_via_auth_bypass.yml",
+      "output": "web/webserver_generic/ivanti_connect_secure_system_information_access_via_auth_bypass.yml",
+      "title": "Ivanti Connect Secure System Information Access via Auth Bypass"
+    },
+    {
+      "source": "web/ivanti_epm_sql_injection_remote_code_execution.yml",
+      "output": "web/webserver_generic/ivanti_epm_sql_injection_remote_code_execution.yml",
+      "title": "Ivanti EPM SQL Injection Remote Code Execution"
+    },
+    {
+      "source": "web/ivanti_epmm_remote_unauthenticated_api_access_cve_2023_35078.yml",
+      "output": "web/webserver_generic/ivanti_epmm_remote_unauthenticated_api_access_cve-2023-35078.yml",
+      "title": "Ivanti EPMM Remote Unauthenticated API Access CVE-2023-35078"
+    },
+    {
+      "source": "web/ivanti_epmm_remote_unauthenticated_api_access_cve_2023_35082.yml",
+      "output": "web/webserver_generic/ivanti_epmm_remote_unauthenticated_api_access_cve-2023-35082.yml",
+      "title": "Ivanti EPMM Remote Unauthenticated API Access CVE-2023-35082"
+    },
+    {
+      "source": "web/java_class_file_download_by_java_user_agent.yml",
+      "output": "web/webserver_generic/java_class_file_download_by_java_user_agent.yml",
+      "title": "Java Class File download by Java User Agent"
+    },
+    {
+      "source": "web/jenkins_arbitrary_file_read_cve_2024_23897.yml",
+      "output": "web/webserver_generic/jenkins_arbitrary_file_read_cve-2024-23897.yml",
+      "title": "Jenkins Arbitrary File Read CVE-2024-23897"
+    },
+    {
+      "source": "web/jetbrains_teamcity_authentication_bypass_cve_2024_27198.yml",
+      "output": "web/webserver_generic/jetbrains_teamcity_authentication_bypass_cve-2024-27198.yml",
+      "title": "JetBrains TeamCity Authentication Bypass CVE-2024-27198"
+    },
+    {
+      "source": "web/jetbrains_teamcity_authentication_bypass_suricata_cve_2024_27198.yml",
+      "output": "network/suricata/jetbrains_teamcity_authentication_bypass_suricata_cve-2024-27198.yml",
+      "title": "JetBrains TeamCity Authentication Bypass Suricata CVE-2024-27198"
+    },
+    {
+      "source": "web/jetbrains_teamcity_limited_auth_bypass_suricata_cve_2024_27199.yml",
+      "output": "network/suricata/jetbrains_teamcity_limited_auth_bypass_suricata_cve-2024-27199.yml",
+      "title": "JetBrains TeamCity Limited Auth Bypass Suricata CVE-2024-27199"
+    },
+    {
+      "source": "web/jetbrains_teamcity_rce_attempt.yml",
+      "output": "web/webserver_generic/jetbrains_teamcity_rce_attempt.yml",
+      "title": "JetBrains TeamCity RCE Attempt"
+    },
+    {
+      "source": "web/juniper_networks_remote_code_execution_exploit_detection.yml",
+      "output": "web/webserver_generic/juniper_networks_remote_code_execution_exploit_detection.yml",
+      "title": "Juniper Networks Remote Code Execution Exploit Detection"
+    },
+    {
+      "source": "web/log4shell_jndi_payload_injection_attempt.yml",
+      "output": "web/webserver_generic/log4shell_jndi_payload_injection_attempt.yml",
+      "title": "Log4Shell JNDI Payload Injection Attempt"
+    },
+    {
+      "source": "web/log4shell_jndi_payload_injection_with_outbound_connection.yml",
+      "output": "network/log4shell_jndi_payload_injection_with_outbound_connection.yml",
+      "title": "Log4Shell JNDI Payload Injection with Outbound Connection"
+    },
+    {
+      "source": "web/microsoft_sharepoint_server_elevation_of_privilege.yml",
+      "output": "web/webserver_generic/microsoft_sharepoint_server_elevation_of_privilege.yml",
+      "title": "Microsoft SharePoint Server Elevation of Privilege"
+    },
+    {
+      "source": "web/multiple_archive_files_http_post_traffic.yml",
+      "output": "network/zeek/multiple_archive_files_http_post_traffic.yml",
+      "title": "Multiple Archive Files Http Post Traffic"
+    },
+    {
+      "source": "web/nginx_connectwise_screenconnect_authentication_bypass.yml",
+      "output": "web/webserver_generic/nginx_connectwise_screenconnect_authentication_bypass.yml",
+      "title": "Nginx ConnectWise ScreenConnect Authentication Bypass"
+    },
+    {
+      "source": "web/papercut_ng_remote_web_access_attempt.yml",
+      "output": "web/webserver_generic/papercut_ng_remote_web_access_attempt.yml",
+      "title": "PaperCut NG Remote Web Access Attempt"
+    },
+    {
+      "source": "web/plain_http_post_exfiltrated_data.yml",
+      "output": "network/zeek/plain_http_post_exfiltrated_data.yml",
+      "title": "Plain HTTP POST Exfiltrated Data"
+    },
+    {
+      "source": "web/sap_netweaver_visual_composer_exploitation_attempt.yml",
+      "output": "web/webserver_generic/sap_netweaver_visual_composer_exploitation_attempt.yml",
+      "title": "SAP NetWeaver Visual Composer Exploitation Attempt"
+    },
+    {
+      "source": "web/spring4shell_payload_url_request.yml",
+      "output": "web/webserver_generic/spring4shell_payload_url_request.yml",
+      "title": "Spring4Shell Payload URL Request"
+    },
+    {
+      "source": "web/sql_injection_with_long_urls.yml",
+      "output": "web/webserver_generic/sql_injection_with_long_urls.yml",
+      "title": "SQL Injection with Long URLs"
+    },
+    {
+      "source": "web/supernova_webshell.yml",
+      "output": "web/webserver_generic/supernova_webshell.yml",
+      "title": "Supernova Webshell"
+    },
+    {
+      "source": "web/tomcat_session_deserialization_attempt.yml",
+      "output": "web/webserver_generic/tomcat_session_deserialization_attempt.yml",
+      "title": "Tomcat Session Deserialization Attempt"
+    },
+    {
+      "source": "web/tomcat_session_file_upload_attempt.yml",
+      "output": "web/webserver_generic/tomcat_session_file_upload_attempt.yml",
+      "title": "Tomcat Session File Upload Attempt"
+    },
+    {
+      "source": "web/unusually_long_content_type_length.yml",
+      "output": "web/webserver_generic/unusually_long_content-type_length.yml",
+      "title": "Unusually Long Content-Type Length"
+    },
+    {
+      "source": "web/vmware_aria_operations_exploit_attempt.yml",
+      "output": "web/webserver_generic/vmware_aria_operations_exploit_attempt.yml",
+      "title": "VMWare Aria Operations Exploit Attempt"
+    },
+    {
+      "source": "web/vmware_server_side_template_injection_hunt.yml",
+      "output": "web/webserver_generic/vmware_server_side_template_injection_hunt.yml",
+      "title": "VMware Server Side Template Injection Hunt"
+    },
+    {
+      "source": "web/vmware_workspace_one_freemarker_server_side_template_injection.yml",
+      "output": "web/webserver_generic/vmware_workspace_one_freemarker_server-side_template_injection.yml",
+      "title": "VMware Workspace ONE Freemarker Server-side Template Injection"
+    },
+    {
+      "source": "web/web_jsp_request_via_url.yml",
+      "output": "web/webserver_generic/web_jsp_request_via_url.yml",
+      "title": "Web JSP Request via URL"
+    },
+    {
+      "source": "web/web_remote_shellservlet_access.yml",
+      "output": "web/webserver_generic/web_remote_shellservlet_access.yml",
+      "title": "Web Remote ShellServlet Access"
+    },
+    {
+      "source": "web/web_spring4shell_http_request_class_module.yml",
+      "output": "network/zeek/web_spring4shell_http_request_class_module.yml",
+      "title": "Web Spring4Shell HTTP Request Class Module"
+    },
+    {
+      "source": "web/web_spring_cloud_function_functionrouter.yml",
+      "output": "web/webserver_generic/web_spring_cloud_function_functionrouter.yml",
+      "title": "Web Spring Cloud Function FunctionRouter"
+    },
+    {
+      "source": "web/windows_exchange_autodiscover_ssrf_abuse.yml",
+      "output": "web/webserver_generic/windows_exchange_autodiscover_ssrf_abuse.yml",
+      "title": "Windows Exchange Autodiscover SSRF Abuse"
+    },
+    {
+      "source": "web/windows_iis_server_pswa_console_access.yml",
+      "output": "web/webserver_generic/windows_iis_server_pswa_console_access.yml",
+      "title": "Windows IIS Server PSWA Console Access"
+    },
+    {
+      "source": "web/windows_sharepoint_spinstall0_get_request.yml",
+      "output": "web/webserver_generic/windows_sharepoint_spinstall0_get_request.yml",
+      "title": "Windows SharePoint Spinstall0 GET Request"
+    },
+    {
+      "source": "web/windows_sharepoint_toolpane_endpoint_exploitation_attempt.yml",
+      "output": "web/webserver_generic/windows_sharepoint_toolpane_endpoint_exploitation_attempt.yml",
+      "title": "Windows SharePoint ToolPane Endpoint Exploitation Attempt"
+    },
+    {
+      "source": "web/wordpress_bricks_builder_plugin_rce.yml",
+      "output": "web/webserver_generic/wordpress_bricks_builder_plugin_rce.yml",
+      "title": "WordPress Bricks Builder plugin RCE"
+    },
+    {
+      "source": "web/ws_ftp_remote_code_execution.yml",
+      "output": "web/webserver_generic/ws_ftp_remote_code_execution.yml",
+      "title": "WS FTP Remote Code Execution"
+    },
+    {
+      "source": "web/zscaler_adware_activities_threat_blocked.yml",
+      "output": "web/proxy_generic/zscaler_adware_activities_threat_blocked.yml",
+      "title": "Zscaler Adware Activities Threat Blocked"
+    },
+    {
+      "source": "web/zscaler_behavior_analysis_threat_blocked.yml",
+      "output": "web/proxy_generic/zscaler_behavior_analysis_threat_blocked.yml",
+      "title": "Zscaler Behavior Analysis Threat Blocked"
+    },
+    {
+      "source": "web/zscaler_cryptominer_downloaded_threat_blocked.yml",
+      "output": "web/proxy_generic/zscaler_cryptominer_downloaded_threat_blocked.yml",
+      "title": "Zscaler CryptoMiner Downloaded Threat Blocked"
+    },
+    {
+      "source": "web/zscaler_employment_search_web_activity.yml",
+      "output": "web/proxy_generic/zscaler_employment_search_web_activity.yml",
+      "title": "Zscaler Employment Search Web Activity"
+    },
+    {
+      "source": "web/zscaler_exploit_threat_blocked.yml",
+      "output": "web/proxy_generic/zscaler_exploit_threat_blocked.yml",
+      "title": "Zscaler Exploit Threat Blocked"
+    },
+    {
+      "source": "web/zscaler_legal_liability_threat_blocked.yml",
+      "output": "web/proxy_generic/zscaler_legal_liability_threat_blocked.yml",
+      "title": "Zscaler Legal Liability Threat Blocked"
+    },
+    {
+      "source": "web/zscaler_malware_activity_threat_blocked.yml",
+      "output": "web/proxy_generic/zscaler_malware_activity_threat_blocked.yml",
+      "title": "Zscaler Malware Activity Threat Blocked"
+    },
+    {
+      "source": "web/zscaler_phishing_activity_threat_blocked.yml",
+      "output": "web/proxy_generic/zscaler_phishing_activity_threat_blocked.yml",
+      "title": "Zscaler Phishing Activity Threat Blocked"
+    },
+    {
+      "source": "web/zscaler_potentially_abused_file_download.yml",
+      "output": "web/proxy_generic/zscaler_potentially_abused_file_download.yml",
+      "title": "Zscaler Potentially Abused File Download"
+    },
+    {
+      "source": "web/zscaler_privacy_risk_destinations_threat_blocked.yml",
+      "output": "web/proxy_generic/zscaler_privacy_risk_destinations_threat_blocked.yml",
+      "title": "Zscaler Privacy Risk Destinations Threat Blocked"
+    },
+    {
+      "source": "web/zscaler_scam_destinations_threat_blocked.yml",
+      "output": "web/proxy_generic/zscaler_scam_destinations_threat_blocked.yml",
+      "title": "Zscaler Scam Destinations Threat Blocked"
+    },
+    {
+      "source": "web/zscaler_virus_download_threat_blocked.yml",
+      "output": "web/proxy_generic/zscaler_virus_download_threat_blocked.yml",
+      "title": "Zscaler Virus Download threat blocked"
     },
     {
       "source": "application/cisco_asa___aaa_policy_tampering.yml",
       "output": "network/cisco/cisco_asa_-_aaa_policy_tampering.yml",
       "title": "Cisco ASA - AAA Policy Tampering"
+    },
+    {
+      "source": "application/cisco_asa___core_syslog_message_volume_drop.yml",
+      "output": "network/cisco/cisco_asa_-_core_syslog_message_volume_drop.yml",
+      "title": "Cisco ASA - Core Syslog Message Volume Drop"
     },
     {
       "source": "application/cisco_asa___device_file_copy_activity.yml",
@@ -69,6 +464,11 @@
       "title": "Cisco ASA - Logging Message Suppression"
     },
     {
+      "source": "application/cisco_asa___new_local_user_account_created.yml",
+      "output": "network/cisco/cisco_asa_-_new_local_user_account_created.yml",
+      "title": "Cisco ASA - New Local User Account Created"
+    },
+    {
       "source": "application/cisco_asa___packet_capture_activity.yml",
       "output": "network/cisco/cisco_asa_-_packet_capture_activity.yml",
       "title": "Cisco ASA - Packet Capture Activity"
@@ -77,6 +477,21 @@
       "source": "application/cisco_asa___reconnaissance_command_activity.yml",
       "output": "network/cisco/cisco_asa_-_reconnaissance_command_activity.yml",
       "title": "Cisco ASA - Reconnaissance Command Activity"
+    },
+    {
+      "source": "application/cisco_asa___user_account_deleted_from_local_database.yml",
+      "output": "network/cisco/cisco_asa_-_user_account_deleted_from_local_database.yml",
+      "title": "Cisco ASA - User Account Deleted From Local Database"
+    },
+    {
+      "source": "application/cisco_asa___user_account_lockout_threshold_exceeded.yml",
+      "output": "network/cisco/cisco_asa_-_user_account_lockout_threshold_exceeded.yml",
+      "title": "Cisco ASA - User Account Lockout Threshold Exceeded"
+    },
+    {
+      "source": "application/cisco_asa___user_privilege_level_change.yml",
+      "output": "network/cisco/cisco_asa_-_user_privilege_level_change.yml",
+      "title": "Cisco ASA - User Privilege Level Change"
     },
     {
       "source": "application/cisco_duo_admin_login_unusual_browser.yml",
@@ -220,7 +635,7 @@
     },
     {
       "source": "application/esxi_download_errors.yml",
-      "output": "windows/process_creation/esxi_download_errors.yml",
+      "output": "application/esxi_download_errors.yml",
       "title": "ESXi Download Errors"
     },
     {
@@ -320,7 +735,7 @@
     },
     {
       "source": "application/ivanti_vtm_new_account_creation.yml",
-      "output": "linux/process_creation/ivanti_vtm_new_account_creation.yml",
+      "output": "application/ivanti_vtm_new_account_creation.yml",
       "title": "Ivanti VTM New Account Creation"
     },
     {
@@ -530,7 +945,7 @@
     },
     {
       "source": "application/splunk_rce_through_arbitrary_file_write_to_windows_system_root.yml",
-      "output": "windows/process_creation/splunk_rce_through_arbitrary_file_write_to_windows_system_root.yml",
+      "output": "application/splunk_rce_through_arbitrary_file_write_to_windows_system_root.yml",
       "title": "Splunk RCE Through Arbitrary File Write to Windows System Root"
     },
     {
@@ -577,6 +992,51 @@
       "source": "application/zoom_rare_video_devices.yml",
       "output": "application/zoom_rare_video_devices.yml",
       "title": "Zoom Rare Video Devices"
+    },
+    {
+      "source": "deprecated/rundll32_createremotethread_in_browser.yml",
+      "output": "windows/sysmon/rundll32_createremotethread_in_browser.yml",
+      "title": "Rundll32 CreateRemoteThread In Browser"
+    },
+    {
+      "source": "deprecated/splunk_app_for_lookup_file_editing_rce_via_user_xslt.yml",
+      "output": "application/splunk_app_for_lookup_file_editing_rce_via_user_xslt.yml",
+      "title": "Splunk App for Lookup File Editing RCE via User XSLT"
+    },
+    {
+      "source": "deprecated/splunk_code_injection_via_custom_dashboard_leading_to_rce.yml",
+      "output": "application/splunk_code_injection_via_custom_dashboard_leading_to_rce.yml",
+      "title": "Splunk Code Injection via custom dashboard leading to RCE"
+    },
+    {
+      "source": "deprecated/splunk_enterprise_kv_store_incorrect_authorization.yml",
+      "output": "application/splunk_enterprise_kv_store_incorrect_authorization.yml",
+      "title": "Splunk Enterprise KV Store Incorrect Authorization"
+    },
+    {
+      "source": "deprecated/splunk_information_disclosure_on_account_login.yml",
+      "output": "application/splunk/splunk_information_disclosure_on_account_login.yml",
+      "title": "Splunk Information Disclosure on Account Login"
+    },
+    {
+      "source": "deprecated/splunk_path_traversal_in_splunk_app_for_lookup_file_edit.yml",
+      "output": "application/splunk_path_traversal_in_splunk_app_for_lookup_file_edit.yml",
+      "title": "Splunk Path Traversal In Splunk App For Lookup File Edit"
+    },
+    {
+      "source": "deprecated/splunk_rce_pdfgen_render.yml",
+      "output": "application/splunk_rce_pdfgen_render.yml",
+      "title": "Splunk RCE PDFgen Render"
+    },
+    {
+      "source": "deprecated/windows_process_injection_of_wermgr_to_known_browser.yml",
+      "output": "windows/sysmon/windows_process_injection_of_wermgr_to_known_browser.yml",
+      "title": "Windows Process Injection Of Wermgr to Known Browser"
+    },
+    {
+      "source": "deprecated/windows_process_injection_with_public_source_path.yml",
+      "output": "windows/sysmon/windows_process_injection_with_public_source_path.yml",
+      "title": "Windows Process Injection With Public Source Path"
     },
     {
       "source": "cloud/amazon_eks_kubernetes_cluster_scan_detection.yml",
@@ -1425,47 +1885,47 @@
     },
     {
       "source": "cloud/kubernetes_abuse_of_secret_by_unusual_location.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_abuse_of_secret_by_unusual_location.yml",
+      "output": "application/kubernetes/kubernetes_abuse_of_secret_by_unusual_location.yml",
       "title": "Kubernetes Abuse of Secret by Unusual Location"
     },
     {
       "source": "cloud/kubernetes_abuse_of_secret_by_unusual_user_agent.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_abuse_of_secret_by_unusual_user_agent.yml",
+      "output": "application/kubernetes/kubernetes_abuse_of_secret_by_unusual_user_agent.yml",
       "title": "Kubernetes Abuse of Secret by Unusual User Agent"
     },
     {
       "source": "cloud/kubernetes_abuse_of_secret_by_unusual_user_group.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_abuse_of_secret_by_unusual_user_group.yml",
+      "output": "application/kubernetes/kubernetes_abuse_of_secret_by_unusual_user_group.yml",
       "title": "Kubernetes Abuse of Secret by Unusual User Group"
     },
     {
       "source": "cloud/kubernetes_abuse_of_secret_by_unusual_user_name.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_abuse_of_secret_by_unusual_user_name.yml",
+      "output": "application/kubernetes/kubernetes_abuse_of_secret_by_unusual_user_name.yml",
       "title": "Kubernetes Abuse of Secret by Unusual User Name"
     },
     {
       "source": "cloud/kubernetes_access_scanning.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_access_scanning.yml",
+      "output": "application/kubernetes/kubernetes_access_scanning.yml",
       "title": "Kubernetes Access Scanning"
     },
     {
       "source": "cloud/kubernetes_aws_detect_suspicious_kubectl_calls.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_aws_detect_suspicious_kubectl_calls.yml",
+      "output": "application/kubernetes/kubernetes_aws_detect_suspicious_kubectl_calls.yml",
       "title": "Kubernetes AWS detect suspicious kubectl calls"
     },
     {
       "source": "cloud/kubernetes_create_or_update_privileged_pod.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_create_or_update_privileged_pod.yml",
+      "output": "application/kubernetes/kubernetes_create_or_update_privileged_pod.yml",
       "title": "Kubernetes Create or Update Privileged Pod"
     },
     {
       "source": "cloud/kubernetes_cron_job_creation.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_cron_job_creation.yml",
+      "output": "application/kubernetes/kubernetes_cron_job_creation.yml",
       "title": "Kubernetes Cron Job Creation"
     },
     {
       "source": "cloud/kubernetes_daemonset_deployed.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_daemonset_deployed.yml",
+      "output": "application/kubernetes/kubernetes_daemonset_deployed.yml",
       "title": "Kubernetes DaemonSet Deployed"
     },
     {
@@ -1475,17 +1935,17 @@
     },
     {
       "source": "cloud/kubernetes_node_port_creation.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_node_port_creation.yml",
+      "output": "application/kubernetes/kubernetes_node_port_creation.yml",
       "title": "Kubernetes Node Port Creation"
     },
     {
       "source": "cloud/kubernetes_pod_created_in_default_namespace.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_pod_created_in_default_namespace.yml",
+      "output": "application/kubernetes/kubernetes_pod_created_in_default_namespace.yml",
       "title": "Kubernetes Pod Created in Default Namespace"
     },
     {
       "source": "cloud/kubernetes_pod_with_host_network_attachment.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_pod_with_host_network_attachment.yml",
+      "output": "application/kubernetes/kubernetes_pod_with_host_network_attachment.yml",
       "title": "Kubernetes Pod With Host Network Attachment"
     },
     {
@@ -1495,17 +1955,17 @@
     },
     {
       "source": "cloud/kubernetes_scanning_by_unauthenticated_ip_address.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_scanning_by_unauthenticated_ip_address.yml",
+      "output": "application/kubernetes/kubernetes_scanning_by_unauthenticated_ip_address.yml",
       "title": "Kubernetes Scanning by Unauthenticated IP Address"
     },
     {
       "source": "cloud/kubernetes_suspicious_image_pulling.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_suspicious_image_pulling.yml",
+      "output": "application/kubernetes/kubernetes_suspicious_image_pulling.yml",
       "title": "Kubernetes Suspicious Image Pulling"
     },
     {
       "source": "cloud/kubernetes_unauthorized_access.yml",
-      "output": "cloud/aws/cloudtrail/kubernetes_unauthorized_access.yml",
+      "output": "application/kubernetes/kubernetes_unauthorized_access.yml",
       "title": "Kubernetes Unauthorized Access"
     },
     {
@@ -1919,58 +2379,13 @@
       "title": "O365 ZAP Activity Detection"
     },
     {
-      "source": "deprecated/rundll32_createremotethread_in_browser.yml",
-      "output": "windows/process_creation/rundll32_createremotethread_in_browser.yml",
-      "title": "Rundll32 CreateRemoteThread In Browser"
-    },
-    {
-      "source": "deprecated/splunk_app_for_lookup_file_editing_rce_via_user_xslt.yml",
-      "output": "application/splunk_app_for_lookup_file_editing_rce_via_user_xslt.yml",
-      "title": "Splunk App for Lookup File Editing RCE via User XSLT"
-    },
-    {
-      "source": "deprecated/splunk_code_injection_via_custom_dashboard_leading_to_rce.yml",
-      "output": "application/splunk_code_injection_via_custom_dashboard_leading_to_rce.yml",
-      "title": "Splunk Code Injection via custom dashboard leading to RCE"
-    },
-    {
-      "source": "deprecated/splunk_enterprise_kv_store_incorrect_authorization.yml",
-      "output": "application/splunk_enterprise_kv_store_incorrect_authorization.yml",
-      "title": "Splunk Enterprise KV Store Incorrect Authorization"
-    },
-    {
-      "source": "deprecated/splunk_information_disclosure_on_account_login.yml",
-      "output": "application/splunk/splunk_information_disclosure_on_account_login.yml",
-      "title": "Splunk Information Disclosure on Account Login"
-    },
-    {
-      "source": "deprecated/splunk_path_traversal_in_splunk_app_for_lookup_file_edit.yml",
-      "output": "application/splunk_path_traversal_in_splunk_app_for_lookup_file_edit.yml",
-      "title": "Splunk Path Traversal In Splunk App For Lookup File Edit"
-    },
-    {
-      "source": "deprecated/splunk_rce_pdfgen_render.yml",
-      "output": "application/splunk_rce_pdfgen_render.yml",
-      "title": "Splunk RCE PDFgen Render"
-    },
-    {
-      "source": "deprecated/windows_process_injection_of_wermgr_to_known_browser.yml",
-      "output": "windows/process_creation/windows_process_injection_of_wermgr_to_known_browser.yml",
-      "title": "Windows Process Injection Of Wermgr to Known Browser"
-    },
-    {
-      "source": "deprecated/windows_process_injection_with_public_source_path.yml",
-      "output": "windows/process_creation/windows_process_injection_with_public_source_path.yml",
-      "title": "Windows Process Injection With Public Source Path"
-    },
-    {
       "source": "endpoint/7zip_commandline_to_smb_share_path.yml",
       "output": "windows/process_creation/7zip_commandline_to_smb_share_path.yml",
       "title": "7zip CommandLine To SMB Share Path"
     },
     {
       "source": "endpoint/access_lsass_memory_for_dump_creation.yml",
-      "output": "windows/process_creation/access_lsass_memory_for_dump_creation.yml",
+      "output": "windows/sysmon/access_lsass_memory_for_dump_creation.yml",
       "title": "Access LSASS Memory for Dump Creation"
     },
     {
@@ -1990,7 +2405,7 @@
     },
     {
       "source": "endpoint/adsisearcher_account_discovery.yml",
-      "output": "windows/process_creation/adsisearcher_account_discovery.yml",
+      "output": "windows/powershell/adsisearcher_account_discovery.yml",
       "title": "AdsiSearcher Account Discovery"
     },
     {
@@ -2010,7 +2425,7 @@
     },
     {
       "source": "endpoint/allow_inbound_traffic_in_firewall_rule.yml",
-      "output": "windows/process_creation/allow_inbound_traffic_in_firewall_rule.yml",
+      "output": "windows/powershell/allow_inbound_traffic_in_firewall_rule.yml",
       "title": "Allow Inbound Traffic In Firewall Rule"
     },
     {
@@ -2112,421 +2527,6 @@
       "source": "endpoint/cisco_isovalent___nsenter_usage_in_kubernetes_pod.yml",
       "output": "windows/process_creation/cisco_isovalent_-_nsenter_usage_in_kubernetes_pod.yml",
       "title": "Cisco Isovalent - Nsenter Usage in Kubernetes Pod"
-    },
-    {
-      "source": "endpoint/cisco_isovalent___potential_escape_to_host.yml",
-      "output": "windows/process_creation/cisco_isovalent_-_potential_escape_to_host.yml",
-      "title": "Cisco Isovalent - Potential Escape to Host"
-    },
-    {
-      "source": "endpoint/cisco_isovalent___shell_execution.yml",
-      "output": "windows/process_creation/cisco_isovalent_-_shell_execution.yml",
-      "title": "Cisco Isovalent - Shell Execution"
-    },
-    {
-      "source": "endpoint/cisco_nvm___curl_execution_with_insecure_flags.yml",
-      "output": "windows/process_creation/cisco_nvm_-_curl_execution_with_insecure_flags.yml",
-      "title": "Cisco NVM - Curl Execution With Insecure Flags"
-    },
-    {
-      "source": "endpoint/cisco_nvm___installation_of_typosquatted_python_package.yml",
-      "output": "windows/process_creation/cisco_nvm_-_installation_of_typosquatted_python_package.yml",
-      "title": "Cisco NVM - Installation of Typosquatted Python Package"
-    },
-    {
-      "source": "endpoint/cisco_nvm___mshtml_or_mshta_network_execution_without_url_in_cli.yml",
-      "output": "windows/process_creation/cisco_nvm_-_mshtml_or_mshta_network_execution_without_url_in_cli.yml",
-      "title": "Cisco NVM - MSHTML or MSHTA Network Execution Without URL in CLI"
-    },
-    {
-      "source": "endpoint/cisco_nvm___non_network_binary_making_network_connection.yml",
-      "output": "windows/process_creation/cisco_nvm_-_non-network_binary_making_network_connection.yml",
-      "title": "Cisco NVM - Non-Network Binary Making Network Connection"
-    },
-    {
-      "source": "endpoint/cisco_nvm___outbound_connection_to_suspicious_port.yml",
-      "output": "windows/process_creation/cisco_nvm_-_outbound_connection_to_suspicious_port.yml",
-      "title": "Cisco NVM - Outbound Connection to Suspicious Port"
-    },
-    {
-      "source": "endpoint/cisco_nvm___rclone_execution_with_network_activity.yml",
-      "output": "windows/process_creation/cisco_nvm_-_rclone_execution_with_network_activity.yml",
-      "title": "Cisco NVM - Rclone Execution With Network Activity"
-    },
-    {
-      "source": "endpoint/cisco_nvm___rundll32_abuse_of_mshtml_dll_for_payload_download.yml",
-      "output": "windows/process_creation/cisco_nvm_-_rundll32_abuse_of_mshtmldll_for_payload_download.yml",
-      "title": "Cisco NVM - Rundll32 Abuse of MSHTML.DLL for Payload Download"
-    },
-    {
-      "source": "endpoint/cisco_nvm___susp_script_from_archive_triggering_network_activity.yml",
-      "output": "windows/process_creation/cisco_nvm_-_susp_script_from_archive_triggering_network_activity.yml",
-      "title": "Cisco NVM - Susp Script From Archive Triggering Network Activity"
-    },
-    {
-      "source": "endpoint/cisco_nvm___suspicious_download_from_file_sharing_website.yml",
-      "output": "windows/process_creation/cisco_nvm_-_suspicious_download_from_file_sharing_website.yml",
-      "title": "Cisco NVM - Suspicious Download From File Sharing Website"
-    },
-    {
-      "source": "endpoint/cisco_nvm___suspicious_file_download_via_headless_browser.yml",
-      "output": "windows/process_creation/cisco_nvm_-_suspicious_file_download_via_headless_browser.yml",
-      "title": "Cisco NVM - Suspicious File Download via Headless Browser"
-    },
-    {
-      "source": "endpoint/cisco_nvm___suspicious_network_connection_from_process_with_no_args.yml",
-      "output": "windows/process_creation/cisco_nvm_-_suspicious_network_connection_from_process_with_no_args.yml",
-      "title": "Cisco NVM - Suspicious Network Connection From Process With No Args"
-    },
-    {
-      "source": "endpoint/cisco_nvm___suspicious_network_connection_initiated_via_msxsl.yml",
-      "output": "windows/process_creation/cisco_nvm_-_suspicious_network_connection_initiated_via_msxsl.yml",
-      "title": "Cisco NVM - Suspicious Network Connection Initiated via MsXsl"
-    },
-    {
-      "source": "endpoint/cisco_nvm___suspicious_network_connection_to_ip_lookup_service_api.yml",
-      "output": "windows/process_creation/cisco_nvm_-_suspicious_network_connection_to_ip_lookup_service_api.yml",
-      "title": "Cisco NVM - Suspicious Network Connection to IP Lookup Service API"
-    },
-    {
-      "source": "endpoint/cisco_nvm___webserver_download_from_file_sharing_website.yml",
-      "output": "windows/process_creation/cisco_nvm_-_webserver_download_from_file_sharing_website.yml",
-      "title": "Cisco NVM - Webserver Download From File Sharing Website"
-    },
-    {
-      "source": "endpoint/clear_unallocated_sector_using_cipher_app.yml",
-      "output": "windows/process_creation/clear_unallocated_sector_using_cipher_app.yml",
-      "title": "Clear Unallocated Sector Using Cipher App"
-    },
-    {
-      "source": "endpoint/clop_common_exec_parameter.yml",
-      "output": "windows/process_creation/clop_common_exec_parameter.yml",
-      "title": "Clop Common Exec Parameter"
-    },
-    {
-      "source": "endpoint/clop_ransomware_known_service_name.yml",
-      "output": "windows/builtin/system/clop_ransomware_known_service_name.yml",
-      "title": "Clop Ransomware Known Service Name"
-    },
-    {
-      "source": "endpoint/cmd_carry_out_string_command_parameter.yml",
-      "output": "windows/process_creation/cmd_carry_out_string_command_parameter.yml",
-      "title": "CMD Carry Out String Command Parameter"
-    },
-    {
-      "source": "endpoint/cmd_echo_pipe___escalation.yml",
-      "output": "windows/process_creation/cmd_echo_pipe_-_escalation.yml",
-      "title": "CMD Echo Pipe - Escalation"
-    },
-    {
-      "source": "endpoint/cmlua_or_cmstplua_uac_bypass.yml",
-      "output": "windows/process_creation/cmlua_or_cmstplua_uac_bypass.yml",
-      "title": "CMLUA Or CMSTPLUA UAC Bypass"
-    },
-    {
-      "source": "endpoint/common_ransomware_extensions.yml",
-      "output": "windows/file/common_ransomware_extensions.yml",
-      "title": "Common Ransomware Extensions"
-    },
-    {
-      "source": "endpoint/connectwise_screenconnect_path_traversal.yml",
-      "output": "windows/file/connectwise_screenconnect_path_traversal.yml",
-      "title": "ConnectWise ScreenConnect Path Traversal"
-    },
-    {
-      "source": "endpoint/connectwise_screenconnect_path_traversal_windows_sacl.yml",
-      "output": "windows/builtin/security/connectwise_screenconnect_path_traversal_windows_sacl.yml",
-      "title": "ConnectWise ScreenConnect Path Traversal Windows SACL"
-    },
-    {
-      "source": "endpoint/conti_common_exec_parameter.yml",
-      "output": "windows/process_creation/conti_common_exec_parameter.yml",
-      "title": "Conti Common Exec parameter"
-    },
-    {
-      "source": "endpoint/control_loading_from_world_writable_directory.yml",
-      "output": "windows/process_creation/control_loading_from_world_writable_directory.yml",
-      "title": "Control Loading from World Writable Directory"
-    },
-    {
-      "source": "endpoint/create_remote_thread_in_shell_application.yml",
-      "output": "windows/process_creation/create_remote_thread_in_shell_application.yml",
-      "title": "Create Remote Thread In Shell Application"
-    },
-    {
-      "source": "endpoint/create_remote_thread_into_lsass.yml",
-      "output": "windows/process_creation/create_remote_thread_into_lsass.yml",
-      "title": "Create Remote Thread into LSASS"
-    },
-    {
-      "source": "endpoint/creation_of_lsass_dump_with_taskmgr.yml",
-      "output": "windows/process_creation/creation_of_lsass_dump_with_taskmgr.yml",
-      "title": "Creation of lsass Dump with Taskmgr"
-    },
-    {
-      "source": "endpoint/creation_of_shadow_copy.yml",
-      "output": "windows/process_creation/creation_of_shadow_copy.yml",
-      "title": "Creation of Shadow Copy"
-    },
-    {
-      "source": "endpoint/creation_of_shadow_copy_with_wmic_and_powershell.yml",
-      "output": "windows/process_creation/creation_of_shadow_copy_with_wmic_and_powershell.yml",
-      "title": "Creation of Shadow Copy with wmic and powershell"
-    },
-    {
-      "source": "endpoint/credential_dumping_via_copy_command_from_shadow_copy.yml",
-      "output": "windows/process_creation/credential_dumping_via_copy_command_from_shadow_copy.yml",
-      "title": "Credential Dumping via Copy Command from Shadow Copy"
-    },
-    {
-      "source": "endpoint/credential_dumping_via_symlink_to_shadow_copy.yml",
-      "output": "windows/process_creation/credential_dumping_via_symlink_to_shadow_copy.yml",
-      "title": "Credential Dumping via Symlink to Shadow Copy"
-    },
-    {
-      "source": "endpoint/crowdstrike_admin_weak_password_policy.yml",
-      "output": "application/crowdstrike/crowdstrike_admin_weak_password_policy.yml",
-      "title": "Crowdstrike Admin Weak Password Policy"
-    },
-    {
-      "source": "endpoint/crowdstrike_admin_with_duplicate_password.yml",
-      "output": "application/crowdstrike/crowdstrike_admin_with_duplicate_password.yml",
-      "title": "Crowdstrike Admin With Duplicate Password"
-    },
-    {
-      "source": "endpoint/crowdstrike_high_identity_risk_severity.yml",
-      "output": "application/crowdstrike/crowdstrike_high_identity_risk_severity.yml",
-      "title": "Crowdstrike High Identity Risk Severity"
-    },
-    {
-      "source": "endpoint/crowdstrike_medium_identity_risk_severity.yml",
-      "output": "application/crowdstrike/crowdstrike_medium_identity_risk_severity.yml",
-      "title": "Crowdstrike Medium Identity Risk Severity"
-    },
-    {
-      "source": "endpoint/crowdstrike_multiple_low_severity_alerts.yml",
-      "output": "application/crowdstrike/crowdstrike_multiple_low_severity_alerts.yml",
-      "title": "Crowdstrike Multiple LOW Severity Alerts"
-    },
-    {
-      "source": "endpoint/crowdstrike_privilege_escalation_for_non_admin_user.yml",
-      "output": "application/crowdstrike/crowdstrike_privilege_escalation_for_non-admin_user.yml",
-      "title": "Crowdstrike Privilege Escalation For Non-Admin User"
-    },
-    {
-      "source": "endpoint/crowdstrike_user_weak_password_policy.yml",
-      "output": "application/crowdstrike/crowdstrike_user_weak_password_policy.yml",
-      "title": "Crowdstrike User Weak Password Policy"
-    },
-    {
-      "source": "endpoint/crowdstrike_user_with_duplicate_password.yml",
-      "output": "application/crowdstrike/crowdstrike_user_with_duplicate_password.yml",
-      "title": "Crowdstrike User with Duplicate Password"
-    },
-    {
-      "source": "endpoint/csc_net_on_the_fly_compilation.yml",
-      "output": "windows/process_creation/csc_net_on_the_fly_compilation.yml",
-      "title": "CSC Net On The Fly Compilation"
-    },
-    {
-      "source": "endpoint/curl_execution_with_percent_encoded_url.yml",
-      "output": "linux/process_creation/curl_execution_with_percent_encoded_url.yml",
-      "title": "Curl Execution with Percent Encoded URL"
-    },
-    {
-      "source": "endpoint/delete_shadowcopy_with_powershell.yml",
-      "output": "windows/process_creation/delete_shadowcopy_with_powershell.yml",
-      "title": "Delete ShadowCopy With PowerShell"
-    },
-    {
-      "source": "endpoint/deleting_shadow_copies.yml",
-      "output": "windows/process_creation/deleting_shadow_copies.yml",
-      "title": "Deleting Shadow Copies"
-    },
-    {
-      "source": "endpoint/detect_azurehound_command_line_arguments.yml",
-      "output": "windows/process_creation/detect_azurehound_command-line_arguments.yml",
-      "title": "Detect AzureHound Command-Line Arguments"
-    },
-    {
-      "source": "endpoint/detect_azurehound_file_modifications.yml",
-      "output": "windows/file/detect_azurehound_file_modifications.yml",
-      "title": "Detect AzureHound File Modifications"
-    },
-    {
-      "source": "endpoint/detect_baron_samedit_cve_2021_3156_via_osquery.yml",
-      "output": "windows/process_creation/detect_baron_samedit_cve-2021-3156_via_osquery.yml",
-      "title": "Detect Baron Samedit CVE-2021-3156 via OSQuery"
-    },
-    {
-      "source": "endpoint/detect_certify_command_line_arguments.yml",
-      "output": "windows/process_creation/detect_certify_command_line_arguments.yml",
-      "title": "Detect Certify Command Line Arguments"
-    },
-    {
-      "source": "endpoint/detect_certify_with_powershell_script_block_logging.yml",
-      "output": "windows/process_creation/detect_certify_with_powershell_script_block_logging.yml",
-      "title": "Detect Certify With PowerShell Script Block Logging"
-    },
-    {
-      "source": "endpoint/detect_certipy_file_modifications.yml",
-      "output": "windows/file/detect_certipy_file_modifications.yml",
-      "title": "Detect Certipy File Modifications"
-    },
-    {
-      "source": "endpoint/detect_computer_changed_with_anonymous_account.yml",
-      "output": "windows/builtin/security/detect_computer_changed_with_anonymous_account.yml",
-      "title": "Detect Computer Changed with Anonymous Account"
-    },
-    {
-      "source": "endpoint/detect_copy_of_shadowcopy_with_script_block_logging.yml",
-      "output": "windows/process_creation/detect_copy_of_shadowcopy_with_script_block_logging.yml",
-      "title": "Detect Copy of ShadowCopy with Script Block Logging"
-    },
-    {
-      "source": "endpoint/detect_credential_dumping_through_lsass_access.yml",
-      "output": "windows/process_creation/detect_credential_dumping_through_lsass_access.yml",
-      "title": "Detect Credential Dumping through LSASS access"
-    },
-    {
-      "source": "endpoint/detect_empire_with_powershell_script_block_logging.yml",
-      "output": "windows/process_creation/detect_empire_with_powershell_script_block_logging.yml",
-      "title": "Detect Empire with PowerShell Script Block Logging"
-    },
-    {
-      "source": "endpoint/detect_excessive_account_lockouts_from_endpoint.yml",
-      "output": "windows/process_creation/detect_excessive_account_lockouts_from_endpoint.yml",
-      "title": "Detect Excessive Account Lockouts From Endpoint"
-    },
-    {
-      "source": "endpoint/detect_excessive_user_account_lockouts.yml",
-      "output": "windows/process_creation/detect_excessive_user_account_lockouts.yml",
-      "title": "Detect Excessive User Account Lockouts"
-    },
-    {
-      "source": "endpoint/detect_exchange_web_shell.yml",
-      "output": "windows/file/detect_exchange_web_shell.yml",
-      "title": "Detect Exchange Web Shell"
-    },
-    {
-      "source": "endpoint/detect_html_help_renamed.yml",
-      "output": "windows/process_creation/detect_html_help_renamed.yml",
-      "title": "Detect HTML Help Renamed"
-    },
-    {
-      "source": "endpoint/detect_html_help_url_in_command_line.yml",
-      "output": "windows/process_creation/detect_html_help_url_in_command_line.yml",
-      "title": "Detect HTML Help URL in Command Line"
-    },
-    {
-      "source": "endpoint/detect_html_help_using_infotech_storage_handlers.yml",
-      "output": "windows/process_creation/detect_html_help_using_infotech_storage_handlers.yml",
-      "title": "Detect HTML Help Using InfoTech Storage Handlers"
-    },
-    {
-      "source": "endpoint/detect_mimikatz_with_powershell_script_block_logging.yml",
-      "output": "windows/process_creation/detect_mimikatz_with_powershell_script_block_logging.yml",
-      "title": "Detect Mimikatz With PowerShell Script Block Logging"
-    },
-    {
-      "source": "endpoint/detect_mshta_inline_hta_execution.yml",
-      "output": "windows/process_creation/detect_mshta_inline_hta_execution.yml",
-      "title": "Detect mshta inline hta execution"
-    },
-    {
-      "source": "endpoint/detect_mshta_renamed.yml",
-      "output": "windows/process_creation/detect_mshta_renamed.yml",
-      "title": "Detect mshta renamed"
-    },
-    {
-      "source": "endpoint/detect_mshta_url_in_command_line.yml",
-      "output": "windows/process_creation/detect_mshta_url_in_command_line.yml",
-      "title": "Detect MSHTA Url in Command Line"
-    },
-    {
-      "source": "endpoint/detect_outlook_exe_writing_a_zip_file.yml",
-      "output": "windows/file/detect_outlook_exe_writing_a_zip_file.yml",
-      "title": "Detect Outlook exe writing a zip file"
-    },
-    {
-      "source": "endpoint/detect_password_spray_attack_behavior_from_source.yml",
-      "output": "network/detect_password_spray_attack_behavior_from_source.yml",
-      "title": "Detect Password Spray Attack Behavior From Source"
-    },
-    {
-      "source": "endpoint/detect_password_spray_attack_behavior_on_user.yml",
-      "output": "network/detect_password_spray_attack_behavior_on_user.yml",
-      "title": "Detect Password Spray Attack Behavior On User"
-    },
-    {
-      "source": "endpoint/detect_path_interception_by_creation_of_program_exe.yml",
-      "output": "windows/process_creation/detect_path_interception_by_creation_of_program_exe.yml",
-      "title": "Detect Path Interception By Creation Of program exe"
-    },
-    {
-      "source": "endpoint/detect_psexec_with_accepteula_flag.yml",
-      "output": "windows/process_creation/detect_psexec_with_accepteula_flag.yml",
-      "title": "Detect PsExec With accepteula Flag"
-    },
-    {
-      "source": "endpoint/detect_rare_executables.yml",
-      "output": "windows/process_creation/detect_rare_executables.yml",
-      "title": "Detect Rare Executables"
-    },
-    {
-      "source": "endpoint/detect_rclone_command_line_usage.yml",
-      "output": "windows/process_creation/detect_rclone_command-line_usage.yml",
-      "title": "Detect RClone Command-Line Usage"
-    },
-    {
-      "source": "endpoint/detect_regasm_spawning_a_process.yml",
-      "output": "windows/process_creation/detect_regasm_spawning_a_process.yml",
-      "title": "Detect Regasm Spawning a Process"
-    },
-    {
-      "source": "endpoint/detect_regasm_with_network_connection.yml",
-      "output": "windows/process_creation/detect_regasm_with_network_connection.yml",
-      "title": "Detect Regasm with Network Connection"
-    },
-    {
-      "source": "endpoint/detect_regasm_with_no_command_line_arguments.yml",
-      "output": "windows/process_creation/detect_regasm_with_no_command_line_arguments.yml",
-      "title": "Detect Regasm with no Command Line Arguments"
-    },
-    {
-      "source": "endpoint/detect_regsvcs_spawning_a_process.yml",
-      "output": "windows/process_creation/detect_regsvcs_spawning_a_process.yml",
-      "title": "Detect Regsvcs Spawning a Process"
-    },
-    {
-      "source": "endpoint/detect_regsvcs_with_network_connection.yml",
-      "output": "windows/process_creation/detect_regsvcs_with_network_connection.yml",
-      "title": "Detect Regsvcs with Network Connection"
-    },
-    {
-      "source": "endpoint/detect_regsvcs_with_no_command_line_arguments.yml",
-      "output": "windows/process_creation/detect_regsvcs_with_no_command_line_arguments.yml",
-      "title": "Detect Regsvcs with No Command Line Arguments"
-    },
-    {
-      "source": "endpoint/detect_regsvr32_application_control_bypass.yml",
-      "output": "windows/process_creation/detect_regsvr32_application_control_bypass.yml",
-      "title": "Detect Regsvr32 Application Control Bypass"
-    },
-    {
-      "source": "endpoint/detect_renamed_7_zip.yml",
-      "output": "windows/process_creation/detect_renamed_7-zip.yml",
-      "title": "Detect Renamed 7-Zip"
-    },
-    {
-      "source": "endpoint/detect_renamed_psexec.yml",
-      "output": "windows/process_creation/detect_renamed_psexec.yml",
-      "title": "Detect Renamed PSExec"
-    },
-    {
-      "source": "endpoint/detect_renamed_rclone.yml",
-      "output": "windows/process_creation/detect_renamed_rclone.yml",
-      "title": "Detect Renamed RClone"
     }
   ],
   "errors": []

@@ -1,0 +1,39 @@
+title: Windows Indirect Command Execution Via Series Of Forfiles
+id: bfdaabe7-3db8-48c5-80c1-220f9b8f22be
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects excessive usage of the forfiles.exe process, which is often indicative of post-exploitation activities. The detection leverages data from Endpoint Detection and
+  Response (EDR) agents, focusing on process execution logs that include process GUID, process name, and parent process. This activity is significant because forfiles.exe can be abused to execute commands
+  on multiple files, a technique used by ransomware like Prestige. If confirmed malicious, this behavior could allow attackers to enumerate files, potentially leading to data exfiltration or further malicious
+  actions.
+references:
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/forfiles
+- https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS
+- https://www.microsoft.com/en-us/security/blog/2022/10/14/new-prestige-ransomware-impacts-organizations-in-ukraine-and-poland/
+tags:
+- attack.t1202
+date: '2022-12-07'
+original_spl: |-
+  | tstats `security_content_summariesonly` values(Processes.action) as action values(Processes.original_file_name) as original_file_name values(Processes.parent_process_exec) as parent_process_exec values(Processes.parent_process_guid) as parent_process_guid values(Processes.parent_process_id) as parent_process_id values(Processes.parent_process_path) as parent_process_path values(Processes.process) as process values(Processes.process_exec) as process_exec values(Processes.process_guid) as process_guid values(Processes.process_hash) as process_hash values(Processes.process_id) as process_id values(Processes.process_integrity_level) as process_integrity_level values(Processes.process_name) as process_name values(Processes.process_path) as process_path values(Processes.user) as user  values(Processes.user_id) as user_id values(Processes.vendor_product) as vendor_product count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name = "forfiles.exe"
+      OR
+      Processes.original_file_name = "forfiles.exe"
+    BY Processes.parent_process_name Processes.parent_process Processes.dest
+       Processes.user _time span=1m
+  | where count >=20
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_indirect_command_execution_via_series_of_forfiles_filter`
+splunk_rule_id: bfdaabe7-3db8-48c5-80c1-220f9b8f22be
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: forfiles.exe
+  selection_1:
+    OriginalFileName: forfiles.exe
+  condition: selection_0 and selection_1

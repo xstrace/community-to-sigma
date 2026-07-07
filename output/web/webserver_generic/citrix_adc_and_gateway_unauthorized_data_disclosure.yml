@@ -1,0 +1,35 @@
+title: Citrix ADC and Gateway Unauthorized Data Disclosure
+id: b593cac5-dd20-4358-972a-d945fefdaf17
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects attempts to exploit the Citrix Bleed vulnerability (CVE-2023-4966), which can lead to the leaking of session tokens. It identifies HTTP requests with a 200 status
+  code targeting the /oauth/idp/.well-known/openid-configuration URL endpoint. By parsing web traffic and filtering based on user agent details, HTTP method, source and destination IPs, and sourcetype,
+  it aims to identify potentially malicious requests. This activity is significant for a SOC because successful exploitation can allow attackers to impersonate legitimate users, bypass authentication, and
+  access sensitive data. If confirmed malicious, it could lead to unauthorized data access, network propagation, and critical information exfiltration.
+references:
+- https://www.assetnote.io/resources/research/citrix-bleed-leaking-session-tokens-with-cve-2023-4966
+- https://github.com/assetnote/exploits/tree/main/citrix/CVE-2023-4966
+tags:
+- attack.t1190
+date: '2023-10-24'
+original_spl: |-
+  | tstats count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Web
+    WHERE Web.url IN ("*/oauth/idp/.well-known/openid-configuration*")  Web.status=200
+    BY Web.http_user_agent, Web.status Web.http_method,
+       Web.url, Web.url_length, Web.src,
+       Web.dest, sourcetype
+  | `drop_dm_object_name("Web")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `citrix_adc_and_gateway_unauthorized_data_disclosure_filter`
+splunk_rule_id: b593cac5-dd20-4358-972a-d945fefdaf17
+splunk_rule_type: TTP
+logsource:
+  category: webserver
+detection:
+  selection_0:
+    cs-uri|contains: /oauth/idp/.well-known/openid-configuration
+  selection_1:
+    sc-status: 200
+  condition: selection_0 and selection_1

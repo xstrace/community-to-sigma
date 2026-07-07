@@ -1,0 +1,30 @@
+title: MS Exchange Mailbox Replication service writing Active Server Pages
+id: 985f322c-57a5-11ec-b9ac-acde48001122
+status: experimental
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies the creation of suspicious .aspx files in specific directories associated with Exchange exploitation by the HAFNIUM group and the ProxyShell vulnerability.
+  It detects this activity by monitoring the MSExchangeMailboxReplication.exe process, which typically does not write .aspx files. This behavior is significant as it may indicate an active exploitation
+  attempt on Exchange servers. If confirmed malicious, attackers could gain unauthorized access, execute arbitrary code, or maintain persistence within the environment. Immediate investigation and remediation
+  are crucial to prevent further compromise.
+references:
+- https://redcanary.com/blog/blackbyte-ransomware/
+tags:
+- attack.t1133
+- attack.t1190
+- attack.t1505.003
+date: '2021-03-18'
+original_spl: '| tstats `security_content_summariesonly` count FROM datamodel=Endpoint.Processes where Processes.process_name=MSExchangeMailboxReplication.exe  by _time span=1h Processes.process_id Processes.process_name
+  Processes.process_guid Processes.dest | `drop_dm_object_name(Processes)` | join process_guid, _time [| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM
+  datamodel=Endpoint.Filesystem where Filesystem.file_path IN ("*\\HttpProxy\\owa\\auth\\*", "*\\inetpub\\wwwroot\\aspnet_client\\*", "*\\HttpProxy\\OAB\\*") Filesystem.file_name="*.aspx" by _time span=1h
+  Filesystem.dest Filesystem.file_create_time Filesystem.file_name Filesystem.file_path | `drop_dm_object_name(Filesystem)` | fields _time dest file_create_time file_name file_path process_name process_path
+  process process_guid] | dedup file_create_time | table dest file_create_time, file_name, file_path, process_name | `ms_exchange_mailbox_replication_service_writing_active_server_pages_filter`'
+splunk_rule_id: 985f322c-57a5-11ec-b9ac-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: MSExchangeMailboxReplication.exe
+  condition: selection_0

@@ -1,0 +1,30 @@
+title: Windows Impair Defense Disable PUA Protection
+id: fbfef407-cfee-4866-88c1-f8de1c16147c
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a modification in the Windows registry to disable Windows Defender PUA protection by setting PUAProtection to 0. This detection leverages data from the Endpoint.Registry
+  datamodel, focusing on registry path changes related to Windows Defender. Disabling PUA protection is significant as it reduces defenses against Potentially Unwanted Applications (PUAs), which, while
+  not always malicious, can negatively impact user experience and security. If confirmed malicious, this activity could allow an attacker to introduce adware, browser toolbars, or other unwanted software,
+  potentially compromising system integrity and user productivity.
+references:
+- https://x.com/malmoeb/status/1742604217989415386?s=20
+- https://github.com/undergroundwires/privacy.sexy
+tags:
+- attack.t1685
+date: '2024-01-29'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry where Registry.registry_path= "*\\Windows Defender\\PUAProtection"
+  Registry.registry_value_data="0x00000000" by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_impair_defense_disable_pua_protection_filter`'
+splunk_rule_id: fbfef407-cfee-4866-88c1-f8de1c16147c
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \Windows Defender\PUAProtection
+  selection_1:
+    Details: '0x00000000'
+  condition: selection_0 and selection_1

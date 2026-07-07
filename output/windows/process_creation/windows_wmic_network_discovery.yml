@@ -1,0 +1,37 @@
+title: Windows Wmic Network Discovery
+id: cce82b81-c716-4b6c-bac9-33e6a6925cc2
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of Windows Management Instrumentation Command-line (WMIC) commands used for network interface discovery on a Windows system. Specifically, it identifies
+  commands such as “wmic nic” that retrieve detailed information about the network adapters installed on the device. While these commands are commonly used by IT administrators for legitimate network inventory
+  and diagnostics, they can also be leveraged by malicious actors for reconnaissance, enabling them to map network configurations and identify potential targets. Monitoring WMIC network interface queries
+  allows security teams to detect suspicious or unauthorized enumeration activities, supporting early threat identification and response.ß
+references:
+- https://cert.gov.ua/article/6284730
+tags:
+- attack.t1082
+date: '2021-05-07'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_wmic` (Processes.process="* nic*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_wmic_network_discovery_filter`
+splunk_rule_id: cce82b81-c716-4b6c-bac9-33e6a6925cc2
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: ' nic'
+  condition: selection_0

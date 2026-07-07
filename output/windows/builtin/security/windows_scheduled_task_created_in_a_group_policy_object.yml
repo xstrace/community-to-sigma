@@ -1,0 +1,52 @@
+title: Windows Scheduled Task Created in a Group Policy Object
+id: 350032cd-3d3f-4278-afc8-e01cf5c33524
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  When a scheduled task is created within a Group Policy, a characteristic file ScheduledTasks.xml with its definition is created in the respective subfolder of the SYSVOL share.
+  This rule can hit on legitimate GPO scheduled task creation, but this does not happen often and is therefore an effective way to monitor for malicious scheduled tasks.
+references:
+- https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-5145
+tags:
+- attack.t1484.001
+- attack.t1053.005
+date: '2026-05-05'
+original_spl: |-
+  `wineventlog_security`
+  EventID=5145
+  ShareName="\\*\\SYSVOL"
+  RelativeTargetName="*\\ScheduledTasks\\ScheduledTasks.xml"
+  RelativeTargetName="*\\Policies\\*"
+  AccessList IN (
+      "*%%4417*",
+      "*%%4418*"
+  )
+  | fillnull
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+    by Computer ShareName RelativeTargetName AccessList
+
+  | rename Computer as dest
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_scheduled_task_created_in_a_group_policy_object_filter`
+splunk_rule_id: 350032cd-3d3f-4278-afc8-e01cf5c33524
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5145
+  selection_1:
+    ShareName: \*\SYSVOL
+  selection_2:
+    RelativeTargetName|endswith: \ScheduledTasks\ScheduledTasks.xml
+  selection_3:
+    RelativeTargetName|contains: \Policies\
+  selection_4:
+    AccessList|contains:
+    - '%%4417'
+    - '%%4418'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

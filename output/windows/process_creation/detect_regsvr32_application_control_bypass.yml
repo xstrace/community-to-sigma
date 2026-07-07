@@ -1,0 +1,40 @@
+title: Detect Regsvr32 Application Control Bypass
+id: 070e9b80-6252-11eb-ae93-0242ac130002
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies the abuse of Regsvr32.exe to proxy execution of malicious code, specifically detecting the loading of "scrobj.dll" by Regsvr32.exe. This detection leverages
+  data from Endpoint Detection and Response (EDR) agents, focusing on process creation events and command-line executions. This activity is significant because Regsvr32.exe is a trusted, signed Microsoft
+  binary, often used in "Squiblydoo" attacks to bypass application control mechanisms. If confirmed malicious, this technique could allow an attacker to execute arbitrary code, potentially leading to system
+  compromise and persistent access.
+references:
+- https://attack.mitre.org/techniques/T1218/010/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218.010/T1218.010.md
+- https://lolbas-project.github.io/lolbas/Binaries/Regsvr32/
+- https://support.microsoft.com/en-us/topic/how-to-use-the-regsvr32-tool-and-troubleshoot-regsvr32-error-messages-a98d960a-7392-e6fe-d90a-3f4e0cb543e5
+tags:
+- attack.t1218.010
+date: '2021-01-29'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_regsvr32` Processes.process=*scrobj*
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `detect_regsvr32_application_control_bypass_filter`
+splunk_rule_id: 070e9b80-6252-11eb-ae93-0242ac130002
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: scrobj
+  condition: selection_0

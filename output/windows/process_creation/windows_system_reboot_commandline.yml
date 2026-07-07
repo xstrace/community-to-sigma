@@ -1,0 +1,57 @@
+title: Windows System Reboot CommandLine
+id: 97fc2b60-c8eb-4711-93f7-d26fade3686f
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies the execution of the Windows command line to reboot a host machine using "shutdown.exe" with specific parameters. This detection leverages data from Endpoint
+  Detection and Response (EDR) agents, focusing on process names and command-line arguments. This activity is significant as it is often associated with advanced persistent threats (APTs) and remote access
+  trojans (RATs) like dcrat, which may use system reboots to disrupt operations, aid in system destruction, or inhibit recovery. If confirmed malicious, this could lead to system downtime, data loss, or
+  hindered incident response efforts.
+references:
+- https://attack.mitre.org/techniques/T1529/
+- https://www.mandiant.com/resources/analyzing-dark-crystal-rat-backdoor
+tags:
+- attack.t1529
+date: '2022-07-27'
+original_spl: |-
+  | tstats `security_content_summariesonly` values(Processes.process) as process min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name = shutdown.exe
+          OR
+          Processes.original_file_name = shutdown.exe
+      )
+      Processes.process="*shutdown*" Processes.process IN ("* /r*", "* -r*") Processes.process IN ("* /t*","* -t*","* /f*","* -f*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_system_reboot_commandline_filter`
+splunk_rule_id: 97fc2b60-c8eb-4711-93f7-d26fade3686f
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: shutdown.exe
+  selection_1:
+    OriginalFileName: shutdown.exe
+  selection_2:
+    CommandLine|contains: shutdown
+  selection_3:
+    CommandLine|contains:
+    - ' /r'
+    - ' -r'
+  selection_4:
+    CommandLine|contains:
+    - ' /t'
+    - ' -t'
+    - ' /f'
+    - ' -f'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

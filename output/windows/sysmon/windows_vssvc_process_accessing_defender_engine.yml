@@ -1,0 +1,45 @@
+title: Windows VSSVC Process Accessing Defender Engine
+id: 0c398be7-e33a-4882-9546-12166ceaf73c
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects vssvc.exe opening a handle to MsMpEng.exe.
+  In the RedSun exploit, VSS participates in the cloud-file restore race that directs WD to write through the NTFS junction.
+  This handle acquisition is observed at the exact moment of exploitation.
+  vssvc querying MsMpEng is not expected in normal operation.
+references:
+- https://github.com/Nightmare-Eclipse/RedSun
+- https://www.huntress.com/blog/nightmare-eclipse-intrusion
+tags:
+- attack.t1068
+date: '2026-05-01'
+original_spl: |-
+  `sysmon`
+  EventCode=10
+  TargetImage="*\\MsMpEng.exe"
+  SourceImage="*\\vssvc.exe"
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+    by EventID GrantedAccess Guid Opcode ProcessID
+       SourceImage SourceProcessGUID  SourceProcessId
+       TargetImage TargetProcessGUID TargetProcessId
+       UserID dest CallTrace user_id parent_process_name
+       parent_process_guid process_name
+       process_guid process_id signature
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_vssvc_process_accessing_defender_engine_filter`
+splunk_rule_id: 0c398be7-e33a-4882-9546-12166ceaf73c
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 10
+  selection_1:
+    TargetImage|endswith: \MsMpEng.exe
+  selection_2:
+    SourceImage|endswith: \vssvc.exe
+  condition: selection_0 and selection_1 and selection_2

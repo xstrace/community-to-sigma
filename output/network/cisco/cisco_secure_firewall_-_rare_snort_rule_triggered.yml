@@ -1,0 +1,39 @@
+title: Cisco Secure Firewall - Rare Snort Rule Triggered
+id: e20313d2-7d63-4fcf-b2d9-d6e12c6c7bd7
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic identifies Snort signatures that have triggered only once in the past 7 days across all Cisco Secure Firewall IntrusionEvent logs. While these rules typically do not trigger in day-to-day network activity, their sudden appearance may indicate early-stage compromise, previously unseen malware, or reconnaissance activity against less commonly exposed services. Investigating these outliers can provide valuable insight into new or low-noise adversary behaviors.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/firepower/741/api/FQE/secure_firewall_estreamer_fqe_guide_740.pdf
+tags:
+- attack.t1598
+- attack.t1583.006
+date: '2025-04-16'
+original_spl: |-
+  `cisco_secure_firewall` EventType=IntrusionEvent earliest=-7d
+  | stats dc(_time) as TriggerCount min(_time) as firstTime max(_time) as lastTime
+          values(signature) as signature
+          values(src) as src
+          values(dest) as dest
+          values(dest_port) as dest_port
+          values(transport) as transport
+          values(app) as app
+          values(rule) as rule
+          by signature_id class_desc MitreAttackGroups InlineResult InlineResultReason
+  | where TriggerCount = 1
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_secure_firewall___rare_snort_rule_triggered_filter`
+splunk_rule_id: e20313d2-7d63-4fcf-b2d9-d6e12c6c7bd7
+splunk_rule_type: Hunting
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: IntrusionEvent
+  selection_1:
+    earliest: -7
+  condition: selection_0 and selection_1

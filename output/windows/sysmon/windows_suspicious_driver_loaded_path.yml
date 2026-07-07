@@ -1,0 +1,42 @@
+title: Windows Suspicious Driver Loaded Path
+id: 2ca1c4a1-8342-4750-9363-905650e0c933
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the loading of drivers from suspicious paths, which is a technique often used by malicious software such as coin miners (e.g., xmrig). It leverages Sysmon EventCode
+  6 to identify drivers loaded from non-standard directories. This activity is significant because legitimate drivers typically reside in specific system directories, and deviations may indicate malicious
+  activity. If confirmed malicious, this could allow an attacker to execute code at the kernel level, potentially leading to privilege escalation, persistence, or further system compromise.
+references:
+- https://www.trendmicro.com/vinfo/hk/threat-encyclopedia/malware/trojan.ps1.powtran.a/
+- https://redcanary.com/blog/tracking-driver-inventory-to-expose-rootkits/
+- https://whiteknightlabs.com/2025/11/25/discreet-driver-loading-in-windows/
+tags:
+- attack.t1543.003
+date: '2021-05-07'
+original_spl: '`sysmon` EventCode=6 ImageLoaded IN("*\\windows\\fonts\\*", "*\\users\\public\\*", "*\\windows\\debug\\*", "*\\Users\\Administrator\\Music\\*", "*Recycle.bin*", "*\\Windows\\Media\\*","\\Windows\\repair\\*",
+  "*\\PerfLogs\\*", "*:\\Windows\\Prefetch\\*", "*:\\Windows\\Cursors\\*", "*\\temp\\*", "*\\download*", "*\\appdata\\*") |  stats  min(_time) as firstTime max(_time) as lastTime count by ImageLoaded dest
+  dvc process_hash process_path signature signature_id user_id vendor_product | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_suspicious_driver_loaded_path_filter`'
+splunk_rule_id: 2ca1c4a1-8342-4750-9363-905650e0c933
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 6
+  selection_1:
+    ImageLoaded:
+    - '*\windows\fonts\*'
+    - '*\users\public\*'
+    - '*\windows\debug\*'
+    - '*\Users\Administrator\Music\*'
+    - '*Recycle.bin*'
+    - '*\Windows\Media\*'
+    - \Windows\repair\*
+    - '*\PerfLogs\*'
+    - '*:\Windows\Prefetch\*'
+    - '*:\Windows\Cursors\*'
+    - '*\temp\*'
+    - '*\download*'
+    - '*\appdata\*'
+  condition: selection_0 and selection_1

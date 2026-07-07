@@ -1,0 +1,29 @@
+title: Windows Modify Registry EnableLinkedConnections
+id: 93048164-3358-4af0-8680-aa5f38440516
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a suspicious modification to the Windows registry setting for EnableLinkedConnections. It leverages data from the Endpoint.Registry datamodel to identify changes
+  where the registry path is "*\\Microsoft\\Windows\\CurrentVersion\\Policies\\System\\EnableLinkedConnections" and the value is set to "0x00000001". This activity is significant because enabling linked
+  connections can allow network shares to be accessed with both standard and administrator-level privileges, a technique often abused by malware like BlackByte ransomware. If confirmed malicious, this could
+  lead to unauthorized access to sensitive network resources, escalating the attacker's privileges.
+references:
+- https://www.microsoft.com/en-us/security/blog/2023/07/06/the-five-day-job-a-blackbyte-ransomware-intrusion-case-study/
+tags:
+- attack.t1112
+date: '2023-07-10'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path= "*\\Microsoft\\Windows\\CurrentVersion\\Policies\\System\\EnableLinkedConnections"
+  Registry.registry_value_data = "0x00000001") by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_modify_registry_enablelinkedconnections_filter`'
+splunk_rule_id: 93048164-3358-4af0-8680-aa5f38440516
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \Microsoft\Windows\CurrentVersion\Policies\System\EnableLinkedConnections
+  selection_1:
+    Details: '0x00000001'
+  condition: selection_0 and selection_1

@@ -1,0 +1,59 @@
+title: Linux Auditd Preload Hijack Via Preload File
+id: c1b7abca-55cb-4a39-bdfb-e28c1c12745f
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  The following analytic detects suspicious preload hijacking via the `preload` file, which may indicate an attacker's attempt to intercept or manipulate library loading processes.
+  The `preload` file can be used to force the loading of specific libraries before others, potentially allowing malicious code to execute or alter application behavior.
+  By monitoring for unusual or unauthorized modifications to the `preload` file, this analytic helps identify attempts to hijack preload mechanisms, enabling security teams to investigate and address potential threats to system integrity and security.
+  Correlate this with related EXECVE or PROCTITLE events to identify the process or user responsible for the access or modification.
+references:
+- https://www.splunk.com/en_us/blog/security/deep-dive-on-persistence-privilege-escalation-technique-and-detection-in-linux-platform.html
+tags:
+- attack.t1574.006
+date: '2022-01-12'
+original_spl: |-
+  `linux_auditd`
+  (type=PATH OR type=CWD)
+  | rex "msg=audit\([^)]*:(?<audit_id>\d+)\)"
+
+  | stats
+    values(type) as types
+    values(name) as names
+    values(nametype) as nametype
+    values(cwd) as cwd_list
+    values(_time) as event_times
+    by audit_id, host
+
+  | eval current_working_directory = coalesce(mvindex(cwd_list, 0), "N/A")
+  | eval candidate_paths = mvmap(names, if(match(names, "^/"), names, current_working_directory + "/" + names))
+  | eval matched_paths = mvfilter(match(candidate_paths, "/etc/ld.so.preload.*"))
+  | eval match_count = mvcount(matched_paths)
+  | eval reconstructed_path = mvindex(matched_paths, 0)
+  | eval e_time = mvindex(event_times, 0)
+  | where match_count > 0
+  | rename host as dest
+
+  | stats count min(e_time) as firstTime max(e_time) as lastTime
+    values(nametype) as nametype
+    by current_working_directory
+       reconstructed_path
+       match_count
+       dest
+       audit_id
+
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_auditd_preload_hijack_via_preload_file_filter`
+splunk_rule_id: c1b7abca-55cb-4a39-bdfb-e28c1c12745f
+splunk_rule_type: TTP
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    type: PATH
+  selection_1:
+    type: CWD
+  condition: selection_0 and selection_1

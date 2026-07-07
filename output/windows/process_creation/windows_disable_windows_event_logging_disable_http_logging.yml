@@ -1,0 +1,48 @@
+title: Windows Disable Windows Event Logging Disable HTTP Logging
+id: 23fb6787-255f-4d5b-9a66-9fd7504032b5
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of AppCmd.exe to disable HTTP logging on IIS servers. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process execution
+  events where AppCmd.exe is used with specific parameters to alter logging settings. This activity is significant because disabling HTTP logging can help adversaries hide their tracks and avoid detection
+  by removing evidence of their actions. If confirmed malicious, this could allow attackers to operate undetected, making it difficult to trace their activities and respond to the intrusion effectively.
+references:
+- https://www.crowdstrike.com/wp-content/uploads/2022/05/crowdstrike-iceapple-a-novel-internet-information-services-post-exploitation-framework-1.pdf
+- https://unit42.paloaltonetworks.com/unit42-oilrig-uses-rgdoor-iis-backdoor-targets-middle-east/
+- https://www.secureworks.com/research/bronze-union
+- https://strontic.github.io/xcyclopedia/library/appcmd.exe-055B2B09409F980BF9B5A3969D01E5B2.html
+tags:
+- attack.t1505.004
+- attack.t1685.001
+date: '2022-06-17'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE NOT (Processes.parent_process_name  IN ("msiexec.exe", "iissetup.exe")) Processes.process_name=appcmd.exe Processes.process IN ("*httplogging*","*dontlog:true*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_disable_windows_event_logging_disable_http_logging_filter`
+splunk_rule_id: 23fb6787-255f-4d5b-9a66-9fd7504032b5
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  filter_0:
+    ParentImage:
+    - msiexec.exe
+    - iissetup.exe
+  selection_1:
+    Image: appcmd.exe
+  selection_2:
+    CommandLine|contains:
+    - httplogging
+    - dontlog:true
+  condition: (selection_1 and selection_2) and not (filter_0)

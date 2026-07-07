@@ -1,0 +1,50 @@
+title: Linux Node Privilege Escalation
+id: 2e58a4ff-398f-42f4-8fd0-e01ebfe2a8ce
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Splunk
+description: The following analytic identifies the execution of Node.js with elevated privileges using sudo, specifically when spawning child processes. It leverages data from Endpoint Detection and Response
+  (EDR) agents, focusing on command-line executions that include specific Node.js commands. This activity is significant because running Node.js as a superuser without dropping privileges can allow unauthorized
+  access to the file system and potential privilege escalation. If confirmed malicious, this could enable an attacker to maintain privileged access, execute arbitrary code, and compromise sensitive data
+  within the environment.
+references:
+- https://gtfobins.github.io/gtfobins/docker/
+- https://en.wikipedia.org/wiki/Node.js
+tags:
+- attack.t1548.003
+date: '2022-08-02'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process="*sudo*node*"
+      AND
+      Processes.process="*-e*"
+      AND
+      Processes.process="*child_process.spawn*"
+      AND
+      Processes.process="*stdio*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_node_privilege_escalation_filter`
+splunk_rule_id: 2e58a4ff-398f-42f4-8fd0-e01ebfe2a8ce
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: sudo*node
+  selection_1:
+    CommandLine|contains: -e
+  selection_2:
+    CommandLine|contains: child_process.spawn
+  selection_3:
+    CommandLine|contains: stdio
+  condition: selection_0 and selection_1 and selection_2 and selection_3

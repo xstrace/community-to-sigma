@@ -1,0 +1,31 @@
+title: Linux Auditd Add User Account Type
+id: f8c325ea-506e-4105-8ccf-da1492e90115
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the suspicious add user account type. This behavior is critical for a SOC to monitor because it may indicate attempts to gain unauthorized access or maintain
+  control over a system. Such actions could be signs of malicious activity. If confirmed, this could lead to serious consequences, including a compromised system, unauthorized access to sensitive data,
+  or even a wider breach affecting the entire network. Detecting and responding to these signs early is essential to prevent potential security incidents.
+references:
+- https://www.splunk.com/en_us/blog/security/deep-dive-on-persistence-privilege-escalation-technique-and-detection-in-linux-platform.html
+tags:
+- attack.t1136.001
+date: '2024-08-12'
+original_spl: |-
+  `linux_auditd` type=ADD_USER
+    | rename host as dest
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY exe pid dest
+         res type
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `linux_auditd_add_user_account_type_filter`
+splunk_rule_id: f8c325ea-506e-4105-8ccf-da1492e90115
+splunk_rule_type: Anomaly
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    type: ADD_USER
+  condition: selection_0

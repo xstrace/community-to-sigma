@@ -1,0 +1,38 @@
+title: O365 Multiple OS Vendors Authenticating From User
+id: 3451e58a-9457-4985-a600-b616b0cbfda1
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic identifies when multiple operating systems are used to authenticate to Azure/EntraID/Office 365 by the same user account over a short period of time. This activity could
+  be indicative of attackers enumerating various logon capabilities of Azure/EntraID/Office 365 and attempting to discover weaknesses in the organizational MFA or conditional access configurations. Usage
+  of the tools like "MFASweep" will trigger this detection.
+references:
+- https://attack.mitre.org/techniques/T1110
+- https://www.blackhillsinfosec.com/exploiting-mfa-inconsistencies-on-microsoft-services/
+- https://sra.io/blog/msspray-wait-how-many-endpoints-dont-have-mfa/
+- https://github.com/dafthack/MFASweep/tree/master
+tags:
+- attack.t1110
+date: '2025-01-06'
+original_spl: |-
+  `o365_management_activity` Operation IN (UserLoginFailed,UserLoggedIn)
+  | eval -time = _time
+  | bin _time span=15m
+  | fillnull
+  | stats values(Operation) as signature, values(ErrorNumber) as signature_id, values(OS) as os_name, dc(OS) as os_count, count, min(-time) as firstTime, max(-time) as lastTime by ClientIP, UserId, _time, dest, vendor_account, vendor_product
+  | where os_count >= 4
+  | eval src = ClientIP, user = UserId
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `o365_multiple_os_vendors_authenticating_from_user_filter`
+splunk_rule_id: 3451e58a-9457-4985-a600-b616b0cbfda1
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Operation:
+    - UserLoginFailed
+    - UserLoggedIn
+  condition: selection_0

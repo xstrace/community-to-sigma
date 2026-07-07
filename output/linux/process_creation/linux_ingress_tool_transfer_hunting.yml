@@ -1,0 +1,46 @@
+title: Linux Ingress Tool Transfer Hunting
+id: 52fd468b-cb6d-48f5-b16a-92f1c9bb10cf
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of 'curl' and 'wget' commands within a Linux environment. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names,
+  user information, and command-line executions. This activity is significant as 'curl' and 'wget' are commonly used for downloading files, which can indicate potential ingress of malicious tools. If confirmed
+  malicious, this activity could lead to unauthorized code execution, data exfiltration, or further compromise of the system. Monitoring and tuning this detection helps identify and differentiate between
+  normal and potentially harmful usage.
+references:
+- https://gtfobins.github.io/gtfobins/curl/
+- https://curl.se/docs/manpage.html#-I
+- https://gtfobins.github.io/gtfobins/curl/
+- https://github.com/rapid7/metasploit-framework/search?q=curl
+tags:
+- attack.t1105
+date: '2022-06-17'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name=curl
+          OR
+          Processes.process_name=wget
+      )
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_ingress_tool_transfer_hunting_filter`
+splunk_rule_id: 52fd468b-cb6d-48f5-b16a-92f1c9bb10cf
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image: curl
+  selection_1:
+    Image: wget
+  condition: selection_0 and selection_1

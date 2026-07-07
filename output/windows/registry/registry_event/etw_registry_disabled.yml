@@ -1,0 +1,32 @@
+title: ETW Registry Disabled
+id: 8ed523ac-276b-11ec-ac39-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic detects a registry modification that disables the ETW for the .NET Framework. It leverages data from the Endpoint.Registry data model, specifically monitoring changes
+  to the ETWEnabled registry value under the .NETFramework path. This activity is significant because disabling ETW can allow attackers to evade Endpoint Detection and Response (EDR) tools and hide their
+  execution from audit logs. If confirmed malicious, this action could enable attackers to operate undetected, potentially leading to further compromise and persistent access within the environment.
+references:
+- https://gist.github.com/Cyb3rWard0g/a4a115fd3ab518a0e593525a379adee3
+- https://blog.xpnsec.com/hiding-your-dotnet-complus-etwenabled/
+tags:
+- attack.t1127
+- attack.t1685
+date: '2021-10-07'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path="*\\SOFTWARE\\Microsoft\\.NETFramework*"
+  Registry.registry_value_name = ETWEnabled Registry.registry_value_data=0x00000000) by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path
+  Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)`
+  | where isnotnull(registry_value_data) | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `etw_registry_disabled_filter`'
+splunk_rule_id: 8ed523ac-276b-11ec-ac39-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \SOFTWARE\Microsoft\.NETFramework
+  selection_1:
+    Details: ETWEnabled
+  selection_2:
+    Details: '0x00000000'
+  condition: selection_0 and selection_1 and selection_2

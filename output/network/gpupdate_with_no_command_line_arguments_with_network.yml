@@ -1,0 +1,46 @@
+title: GPUpdate with no Command Line Arguments with Network
+id: 2c853856-a140-11eb-a5b5-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of gpupdate.exe without command line arguments and with an active network connection. This behavior is identified using Endpoint Detection and Response
+  (EDR) telemetry, focusing on process execution and network traffic data. It is significant because gpupdate.exe typically runs with specific arguments, and its execution without them, especially with
+  network activity, is often associated with malicious software like Cobalt Strike. If confirmed malicious, this activity could indicate an attacker leveraging gpupdate.exe for lateral movement, command
+  and control, or other nefarious purposes, potentially leading to system compromise.
+references:
+- https://raw.githubusercontent.com/xx0hcd/Malleable-C2-Profiles/0ef8cf4556e26f6d4190c56ba697c2159faa5822/crimeware/trick_ryuk.profile
+- https://www.cobaltstrike.com/blog/learn-pipe-fitting-for-all-of-your-offense-projects/
+tags:
+- attack.t1055
+date: '2021-04-19'
+original_spl: |-
+  | tstats `security_content_summariesonly` count FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=gpupdate.exe
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | regex process="(?i)(gpupdate\.exe.{0,4}$)"
+  | join process_id dest [
+  | tstats `security_content_summariesonly` count values(All_Traffic.app) as app values(All_Traffic.dest_ip) as dest_ip values(All_Traffic.direction) as direction values(All_Traffic.dvc) as dvc values(All_Traffic.protocol) as protocol values(All_Traffic.protocol_version) as protocol_version values(All_Traffic.src) as src values(All_Traffic.src_ip) as src_ip values(All_Traffic.src_port) as src_port values(All_Traffic.transport) as transport FROM datamodel=Network_Traffic.All_Traffic
+    WHERE All_Traffic.dest_port != 0
+    BY All_Traffic.process_id All_Traffic.src All_Traffic.dest All_Traffic.dest_port
+  | `drop_dm_object_name(All_Traffic)`
+  | rename dest as C2
+  | rename src as dest ]
+  | table _time user dest parent_process_name process_name process_path process process_id dest_port C2 app dest_ip direction dvc protocol protocol_version src src_ip src_port transport
+  | `gpupdate_with_no_command_line_arguments_with_network_filter`
+splunk_rule_id: 2c853856-a140-11eb-a5b5-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: all_traffic
+detection:
+  selection_0:
+    Image: gpupdate.exe
+  condition: selection_0

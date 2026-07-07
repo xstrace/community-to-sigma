@@ -1,0 +1,33 @@
+title: Spoolsv Writing a DLL - Sysmon
+id: 347fd388-da87-11eb-836d-acde48001122
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects `spoolsv.exe` writing a `.dll` file, which is unusual behavior and may indicate exploitation of vulnerabilities like CVE-2021-34527 (PrintNightmare). This detection
+  leverages Sysmon EventID 11 to monitor file creation events in the `\spool\drivers\x64\` directory. This activity is significant because `spoolsv.exe` typically does not write DLL files, and such behavior
+  could signify an ongoing attack. If confirmed malicious, this could allow an attacker to execute arbitrary code, escalate privileges, or maintain persistence on the compromised system.
+references:
+- https://github.com/cube0x0/impacket/commit/73b9466c17761384ece11e1028ec6689abad6818
+- https://www.truesec.com/hub/blog/fix-for-printnightmare-cve-2021-1675-exploit-to-keep-your-print-servers-running-while-a-patch-is-not-available
+- https://www.truesec.com/hub/blog/exploitable-critical-rce-vulnerability-allows-regular-users-to-fully-compromise-active-directory-printnightmare-cve-2021-1675
+- https://www.reddit.com/r/msp/comments/ob6y02/critical_vulnerability_printnightmare_exposes
+tags:
+- attack.t1547.012
+date: '2021-07-01'
+original_spl: '`sysmon` EventID=11 process_name=spoolsv.exe file_path="*\\spool\\drivers\\x64\\*" file_name=*.dll | stats count min(_time) as firstTime max(_time) as lastTime by action dest file_name file_path  process_guid
+  process_id user_id vendor_product | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `spoolsv_writing_a_dll___sysmon_filter`'
+splunk_rule_id: 347fd388-da87-11eb-836d-acde48001122
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 11
+  selection_1:
+    process_name: spoolsv.exe
+  selection_2:
+    file_path|contains: \spool\drivers\x64\
+  selection_3:
+    file_name|endswith: .dll
+  condition: selection_0 and selection_1 and selection_2 and selection_3

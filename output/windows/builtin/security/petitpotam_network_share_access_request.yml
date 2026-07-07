@@ -1,0 +1,36 @@
+title: PetitPotam Network Share Access Request
+id: 95b8061a-0a67-11ec-85ec-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Mauricio Velazco, Splunk
+description: The following analytic detects network share access requests indicative of the PetitPotam attack (CVE-2021-36942). It leverages Windows Event Code 5145, which logs attempts to access network
+  share objects. This detection is significant as PetitPotam can coerce authentication from domain controllers, potentially leading to unauthorized access. If confirmed malicious, this activity could allow
+  attackers to escalate privileges or move laterally within the network, posing a severe security risk. Ensure Event Code 5145 is enabled via Group Policy to utilize this analytic effectively.
+references:
+- https://attack.mitre.org/techniques/T1187/
+- https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventid=5145
+- https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-5145
+tags:
+- attack.t1187
+date: '2021-09-01'
+original_spl: |-
+  `wineventlog_security` SubjectUserName="ANONYMOUS LOGON" EventCode=5145 RelativeTargetName=lsarpc
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest, SubjectUserSid, ShareName,
+         src, AccessMask, AccessReason
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `petitpotam_network_share_access_request_filter`
+splunk_rule_id: 95b8061a-0a67-11ec-85ec-acde48001122
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    SubjectUserName: ANONYMOUS LOGON
+  selection_1:
+    EventID: 5145
+  selection_2:
+    RelativeTargetName: lsarpc
+  condition: selection_0 and selection_1 and selection_2

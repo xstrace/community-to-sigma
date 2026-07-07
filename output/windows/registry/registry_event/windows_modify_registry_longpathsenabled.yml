@@ -1,0 +1,29 @@
+title: Windows Modify Registry LongPathsEnabled
+id: 36f9626c-4272-4808-aadd-267acce681c0
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a modification to the Windows registry setting "LongPathsEnabled," which allows file paths longer than 260 characters. This detection leverages data from the
+  Endpoint.Registry datamodel, focusing on changes to the specific registry path and value. This activity is significant because adversaries, including malware like BlackByte, exploit this setting to bypass
+  file path limitations, potentially aiding in evasion techniques. If confirmed malicious, this modification could facilitate the execution of long-path payloads, aiding in persistence and further system
+  compromise.
+references:
+- https://www.microsoft.com/en-us/security/blog/2023/07/06/the-five-day-job-a-blackbyte-ransomware-intrusion-case-study/
+tags:
+- attack.t1112
+date: '2023-07-10'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path= "*\\CurrentControlSet\\Control\\FileSystem\\LongPathsEnabled"
+  Registry.registry_value_data = "0x00000001") by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_modify_registry_longpathsenabled_filter`'
+splunk_rule_id: 36f9626c-4272-4808-aadd-267acce681c0
+splunk_rule_type: Anomaly
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \CurrentControlSet\Control\FileSystem\LongPathsEnabled
+  selection_1:
+    Details: '0x00000001'
+  condition: selection_0 and selection_1

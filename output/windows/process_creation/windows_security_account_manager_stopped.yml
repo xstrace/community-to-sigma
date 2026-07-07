@@ -1,0 +1,38 @@
+title: Windows Security Account Manager Stopped
+id: 69c12d59-d951-431e-ab77-ec426b8d65e6
+status: stable
+level: medium
+author: Rod Soto, Jose Hernandez, Splunk
+description: The following analytic detects the stopping of the Windows Security Account Manager (SAM) service via command-line, typically using the "net stop samss" command. This detection leverages data
+  from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line executions. This activity is significant because stopping the SAM service can disrupt authentication mechanisms
+  and is often associated with ransomware attacks like Ryuk. If confirmed malicious, this action could lead to unauthorized access, privilege escalation, and potential system-wide compromise.
+tags:
+- attack.t1489
+date: '2020-11-06'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          "Processes.process_name"="net*.exe" "Processes.process"="*stop \"samss\"*"
+      )
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(lastTime)`
+  | `security_content_ctime(firstTime)`
+  | `windows_security_account_manager_stopped_filter`
+splunk_rule_id: 69c12d59-d951-431e-ab77-ec426b8d65e6
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    '"Processes.process_name"': net*.exe
+  selection_1:
+    '"Processes.process"|contains': stop \"samss\"
+  condition: selection_0 and selection_1

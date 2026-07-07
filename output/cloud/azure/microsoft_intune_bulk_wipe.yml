@@ -1,0 +1,44 @@
+title: Microsoft Intune Bulk Wipe
+id: c3f48aa9-878e-443f-8889-e42a11a9bea9
+status: stable
+level: medium
+author: Jake Enea
+description: |-
+  The following analytic detects a high volume of "wipe ManagedDevice" events from the Intune admin portal (5+ per hour by default).
+  It leverages Intune audit logs to identify when this action is triggered. This activity is significant beacuse the "wipe ManagedDevice" action factory resets devices connected to your Microsoft Intune tenant.
+  If confirmed malicious, an attacker can abuse this action to perform a large-scale data wiping attack against your managed endpoints.
+references:
+- https://www.lumos.com/blog/stryker-hack
+- https://www.covertswarm.com/post/swarm-intelligence-strykers-intune-wipe-proves-your-bcdr-plan-has-a-single-point-of-failure
+- https://www.wwt.com/blog/how-the-stryker-intune-wipe-incident-highlights-a-critical-gap-in-endpoint-control
+tags:
+- attack.t1561.001
+date: '2026-04-15'
+original_spl: |-
+  `azure_monitor_activity`
+  operationName="wipe ManagedDevice"
+  | rename identity as user
+           resultType as result
+  | fillnull
+  | table _time action command dest user src
+          vendor_account vendor_product change_type
+          properties.Targets.*
+
+  | stats min(_time) as firstTime
+          max(_time) as lastTime
+          values(*) as *
+    count by user
+
+  | where count >= 5
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `microsoft_intune_bulk_wipe_filter`
+splunk_rule_id: c3f48aa9-878e-443f-8889-e42a11a9bea9
+splunk_rule_type: TTP
+logsource:
+  product: azure
+  service: activity
+detection:
+  selection_0:
+    operationName: wipe ManagedDevice
+  condition: selection_0

@@ -1,0 +1,32 @@
+title: Windows Impair Defense Configure App Install Control
+id: c54b7439-cfb1-44c3-bb35-b0409553077c
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects modifications to the Windows registry that disable the Windows Defender SmartScreen App Install Control feature. It leverages data from the Endpoint.Registry
+  data model to identify changes to specific registry values. This activity is significant because disabling App Install Control can allow users to install potentially malicious web-based applications without
+  restrictions, increasing the risk of security vulnerabilities. If confirmed malicious, this action could lead to the installation of harmful applications, potentially compromising the system and exposing
+  sensitive information.
+references:
+- https://x.com/malmoeb/status/1742604217989415386?s=20
+- https://github.com/undergroundwires/privacy.sexy
+tags:
+- attack.t1685
+date: '2024-01-30'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path= "*\\Microsoft\\Windows Defender\\SmartScreen\\ConfigureAppInstallControl"
+  Registry.registry_value_data= "Anywhere") OR (Registry.registry_path= "*\\Microsoft\\Windows Defender\\SmartScreen\\ConfigureAppInstallControlEnabled" Registry.registry_value_data= "0x00000000") by Registry.action
+  Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name Registry.registry_value_type
+  Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_impair_defense_configure_app_install_control_filter`'
+splunk_rule_id: c54b7439-cfb1-44c3-bb35-b0409553077c
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: '*\Microsoft\Windows Defender\SmartScreen\ConfigureAppInstallControl'
+    Details: Anywhere
+  selection_1:
+    TargetObject|endswith: '*\Microsoft\Windows Defender\SmartScreen\ConfigureAppInstallControlEnabled'
+    Details: '0x00000000'
+  condition: selection_0 and selection_1

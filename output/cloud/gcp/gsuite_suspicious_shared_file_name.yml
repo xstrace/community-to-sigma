@@ -1,0 +1,62 @@
+title: Gsuite Suspicious Shared File Name
+id: 07eed200-03f5-11ec-98fb-acde48001122
+status: experimental
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects shared files in Google Drive with suspicious filenames commonly used in spear phishing campaigns. It leverages GSuite Drive logs to identify documents with titles
+  that include keywords like "dhl," "ups," "invoice," and "shipment." This activity is significant because such filenames are often used to lure users into opening malicious documents or clicking harmful
+  links. If confirmed malicious, this activity could lead to unauthorized access, data theft, or further compromise of the user's system.
+references:
+- https://www.redhat.com/en/topics/devops/what-is-devsecops
+- https://www.mandiant.com/resources/top-words-used-in-spear-phishing-attacks
+tags:
+- attack.t1566.001
+date: '2021-08-23'
+original_spl: |-
+  `gsuite_drive` parameters.owner_is_team_drive=false "parameters.doc_title" IN ("*dhl*", "* ups *", "*delivery*", "*parcel*", "*label*", "*invoice*", "*postal*", "*fedex*", "* usps *", "* express *", "*shipment*", "*Banking/Tax*","*shipment*", "*new order*") parameters.doc_type IN ("document","pdf", "msexcel", "msword", "spreadsheet", "presentation")
+    | rex field=parameters.owner "[^@]+@(?<source_domain>[^@]+)"
+    | rex field=parameters.target_user "[^@]+@(?<dest_domain>[^@]+)"
+    | where not source_domain="internal_test_email.com" and dest_domain="internal_test_email.com"
+    | eval phase="plan"
+    | eval severity="low"
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY email parameters.owner parameters.target_user
+         parameters.doc_title parameters.doc_type phase
+         severity
+    | rename parameters.target_user AS user
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `gsuite_suspicious_shared_file_name_filter`
+splunk_rule_id: 07eed200-03f5-11ec-98fb-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  product: google_workspace
+  service: drive
+detection:
+  selection_0:
+    parameters.owner_is_team_drive: 'false'
+  selection_1:
+    '"parameters.doc_title"|contains':
+    - dhl
+    - ' ups '
+    - delivery
+    - parcel
+    - label
+    - invoice
+    - postal
+    - fedex
+    - ' usps '
+    - ' express '
+    - shipment
+    - Banking/Tax
+    - shipment
+    - new order
+  selection_2:
+    parameters.doc_type:
+    - document
+    - pdf
+    - msexcel
+    - msword
+    - spreadsheet
+    - presentation
+  condition: selection_0 and selection_1 and selection_2

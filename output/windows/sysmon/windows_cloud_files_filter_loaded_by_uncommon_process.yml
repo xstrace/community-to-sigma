@@ -1,0 +1,60 @@
+title: Windows Cloud Files Filter Loaded by Uncommon Process
+id: 77b85062-274e-43a5-9dab-c25862b85291
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  The following analytic detects cldapi.dll being loaded by a process not associated with legitimate cloud sync activity.
+  The Windows Cloud Files API (cldapi.dll) is abused by several local privilege escalation exploits.
+references:
+- https://www.huntress.com/blog/nightmare-eclipse-intrusion
+- https://www.threatlocker.com/blog/miniplasma-windows-privilege-escalation-zero-day-affects-fully-patched-systems
+tags:
+- attack.t1543.003
+date: '2026-05-18'
+original_spl: |-
+  `sysmon`
+  EventID=7
+  ImageLoaded="*\\cldapi.dll"
+  NOT Image IN (
+    "*\\box.exe",
+    "*\\dropbox.exe",
+    "*\\googledrivefs.exe",
+    "*\\icloud.exe",
+    "*\\onedrive*.exe",
+    "*\\Windows\\explorer.exe"
+    "*\\Windows\\System32\\*",
+    "*\\Windows\\Syswow64\\*",
+    "*\\Windows\\WinSxS\\*"
+  )
+  | stats count min(_time) as firstTime
+                  max(_time) as lastTime
+      by Computer ImageLoaded EventID dest loaded_file loaded_file_path process_exec
+         process_guid process_hash process_id process_name process_path
+         service_dll_signature_exists service_dll_signature_verified signature_id user_id
+         vendor_product
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_cloud_files_filter_loaded_by_uncommon_process_filter`
+splunk_rule_id: 77b85062-274e-43a5-9dab-c25862b85291
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 7
+  selection_1:
+    ImageLoaded|endswith: \cldapi.dll
+  filter_2:
+    Image:
+    - '*\box.exe'
+    - '*\dropbox.exe'
+    - '*\googledrivefs.exe'
+    - '*\icloud.exe'
+    - '*\onedrive*.exe'
+    - '*\Windows\explorer.exe'
+    - '*\Windows\System32\*'
+    - '*\Windows\Syswow64\*'
+    - '*\Windows\WinSxS\*'
+  condition: (selection_0 and selection_1) and not (filter_2)

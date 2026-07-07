@@ -1,0 +1,36 @@
+title: Cisco Secure Firewall - Potential Data Exfiltration
+id: 3d8536b6-52b4-4c3e-b695-3f2e90bb22be
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects potentially suspicious large volumes of data sent by the connection initiator on flows from internal to external networks. It leverages Cisco Secure Firewall Threat Defense ConnectionEvent logs and thresholds on InitiatorBytes (bytes transmitted by the initiator), which for typical inside-initiated client sessions approximates upload or outbound payload from the internal host and avoids flagging large downloads where most bytes appear in ResponderBytes. Connections where the initiator sent at least 100 MB are flagged, as these may indicate unauthorized data exfiltration, especially if associated with unusual users, hosts, or processes. This analytic is scoped to inside-to-outside flows using a macro (cisco_secure_firewall_inside_to_outside) to abstract environment-specific zone definitions. If confirmed malicious, this behavior may reflect data staging and exfiltration over an encrypted or stealthy transport.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/firepower/741/api/FQE/secure_firewall_estreamer_fqe_guide_740.pdf
+tags:
+- attack.t1041
+- attack.t1567.002
+- attack.t1048.003
+date: '2025-04-03'
+original_spl: |-
+  `cisco_secure_firewall` EventType=ConnectionEvent `cisco_secure_firewall_inside_to_outside`
+  | eval initiator_mb = round(InitiatorBytes / 1024 / 1024, 2)
+  | where initiator_mb >= 100
+  | eval Potentially_Exfiltrated = initiator_mb + " MB"
+  | stats min(_time) as firstTime max(_time) as lastTime
+      Values(url) as url
+      Values(rule) as rule
+      Values(dest_port) as dest_port
+      by src, dest, Potentially_Exfiltrated, transport, action
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_secure_firewall___potential_data_exfiltration_filter`
+splunk_rule_id: 3d8536b6-52b4-4c3e-b695-3f2e90bb22be
+splunk_rule_type: Anomaly
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: ConnectionEvent
+  condition: selection_0

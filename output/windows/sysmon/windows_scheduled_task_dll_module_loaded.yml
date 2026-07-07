@@ -1,0 +1,44 @@
+title: Windows Scheduled Task DLL Module Loaded
+id: bc5b2304-f241-419b-874a-e927f667b7b6
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects instances where the taskschd.dll is loaded by processes running in suspicious or writable directories. This activity is unusual, as legitimate processes that
+  load taskschd.dll typically reside in protected system locations. Malware or threat actors may attempt to load this DLL from writable or non-standard directories to manipulate the Task Scheduler and execute
+  malicious tasks. By identifying processes that load taskschd.dll in these unsafe locations, this detection helps security analysts flag potentially malicious activity and investigate further to prevent
+  unauthorized system modifications.
+references:
+- https://www.proofpoint.com/us/blog/threat-insight/chinese-malware-appears-earnest-across-cybercrime-threat-landscape
+- https://www.fortinet.com/blog/threat-research/valleyrat-campaign-targeting-chinese-speakers
+tags:
+- attack.t1053
+date: '2024-09-19'
+original_spl: '`sysmon` EventCode=7 Image IN ("*\\windows\\fonts\\*", "*\\windows\\temp\\*", "*\\users\\public\\*", "*\\windows\\debug\\*", "*\\Users\\Administrator\\Music\\*", "*\\Windows\\servicing\\*",
+  "*\\Users\\Default\\*", "*Recycle.bin*", "*\\Windows\\Media\\*", "\\Windows\\repair\\*", "*\\temp\\*", "*\\PerfLogs\\*") ImageLoaded = "*\\taskschd.dll" | fillnull | stats count min(_time) as firstTime
+  max(_time) as lastTime by Image ImageLoaded dest loaded_file loaded_file_path original_file_name process_exec process_guid process_hash process_id process_name process_path service_dll_signature_exists
+  service_dll_signature_verified signature signature_id user_id vendor_product | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_scheduled_task_dll_module_loaded_filter`'
+splunk_rule_id: bc5b2304-f241-419b-874a-e927f667b7b6
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 7
+  selection_1:
+    Image:
+    - '*\windows\fonts\*'
+    - '*\windows\temp\*'
+    - '*\users\public\*'
+    - '*\windows\debug\*'
+    - '*\Users\Administrator\Music\*'
+    - '*\Windows\servicing\*'
+    - '*\Users\Default\*'
+    - '*Recycle.bin*'
+    - '*\Windows\Media\*'
+    - \Windows\repair\*
+    - '*\temp\*'
+    - '*\PerfLogs\*'
+  selection_2:
+    ImageLoaded|endswith: \taskschd.dll
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,50 @@
+title: Unknown Process Using The Kerberos Protocol
+id: c91a0852-9fbb-11ec-af44-acde48001122
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies a non-lsass.exe process making an outbound connection on port 88, which is typically used by the Kerberos authentication protocol. This detection leverages
+  data from Endpoint Detection and Response (EDR) agents, focusing on process and network traffic logs. This activity is significant because, under normal circumstances, only the lsass.exe process should
+  interact with the Kerberos Distribution Center. If confirmed malicious, this behavior could indicate an adversary attempting to abuse the Kerberos protocol, potentially leading to unauthorized access
+  or lateral movement within the network.
+references:
+- https://stealthbits.com/blog/how-to-detect-overpass-the-hash-attacks/
+- https://www.thehacker.recipes/ad/movement/kerberos/ptk
+tags:
+- attack.t1550
+date: '2022-03-10'
+original_spl: |-
+  | tstats `security_content_summariesonly` count FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name!=lsass.exe
+    BY _time Processes.action Processes.dest
+       Processes.original_file_name Processes.parent_process Processes.parent_process_exec
+       Processes.parent_process_guid Processes.parent_process_id Processes.parent_process_name
+       Processes.parent_process_path Processes.process Processes.process_exec
+       Processes.process_guid Processes.process_hash Processes.process_id
+       Processes.process_integrity_level Processes.process_name Processes.process_path
+       Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | join  process_id dest [
+  | tstats `security_content_summariesonly` count FROM datamodel=Network_Traffic.All_Traffic
+    WHERE All_Traffic.dest_port = 88
+    BY All_Traffic.action All_Traffic.app All_Traffic.bytes
+       All_Traffic.bytes_in All_Traffic.bytes_out All_Traffic.dest
+       All_Traffic.dest_ip All_Traffic.dest_port All_Traffic.dvc
+       All_Traffic.protocol All_Traffic.protocol_version All_Traffic.src
+       All_Traffic.src_ip All_Traffic.src_port All_Traffic.transport
+       All_Traffic.user All_Traffic.vendor_product All_Traffic.direction
+       All_Traffic.process_id
+  | `drop_dm_object_name(All_Traffic)`
+  | rename src as dest ]
+  | table _time dest parent_process_name process_name process_path process process_id dest_port
+  | `unknown_process_using_the_kerberos_protocol_filter`
+splunk_rule_id: c91a0852-9fbb-11ec-af44-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: all_traffic
+detection:
+  selection_0:
+    Image: lsass.exe
+  condition: selection_0

@@ -1,0 +1,49 @@
+title: O365 Email Send Attachments Excessive Volume
+id: 70a050a2-8537-488a-a628-b60a9558d96a
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic identifies when an O365 email account sends an excessive number of email attachments to external recipients within a short period (within 1 hour). This behavior may indicate
+  a compromised account where the threat actor is attempting to exfiltrate data from the mailbox. Threat actors may attempt to transfer data through email as a simple means of exfiltration from the compromised
+  mailbox. Some account owner legitimate behaviors can trigger this alert, however these actions may not be aligned with organizational expectations / best practice behaviors.
+references:
+- https://attack.mitre.org/techniques/T1114/
+- https://www.hhs.gov/sites/default/files/help-desk-social-engineering-sector-alert-tlpclear.pdf
+- https://intelligence.abnormalsecurity.com/attack-library/threat-actor-convincingly-impersonates-employee-requesting-direct-deposit-update-in-likely-ai-generated-attack
+tags:
+- attack.t1070.008
+- attack.t1485
+date: '2025-01-23'
+original_spl: |-
+  `o365_messagetrace` Status=Delivered
+  | eval mailtime = _time
+  | bin _time span=1hr
+  | eval user = lower(SenderAddress), recipient = lower(RecipientAddress)
+  | eval InternetMessageId = lower(MessageId)
+  | join InternetMessageId, user, _time max=0
+    [
+    | search `o365_management_activity` Workload=Exchange Operation IN ("Send","SendAs","SendOnBehalf")
+    | eval user = lower(UserId), sender = lower(CASE(isnotnull(SendAsUserSmtp),SendAsUserSmtp,isnotnull(SendOnBehalfOfUserSmtp),SendOnBehalfOfUserSmtp,true(),MailboxOwnerUPN)), subject = trim(CASE(Operation IN ("Send","SendAs","SendOnBehalf"),'Item.Subject',Operation IN ("SoftDelete","HardDelete"),'AffectedItems{}.Subject')), -time = _time,file_name = trim(CASE(Operation IN ("Send","SendAs","SendOnBehalf"),split('Item.Attachments',"; "),Operation IN ("SoftDelete","HardDelete"),split('AffectedItems{}.Attachments',"; "))), file_size = CASE(Operation IN ("Send","SendAs","SendOnBehalf"),round(tonumber('Item.SizeInBytes')/1024/1024,2),true(),round(tonumber(replace(file_name, "(.+)\s\((\d+)(b\)$)", "\2"))/1024/1024,2)), InternetMessageId = lower('Item.InternetMessageId')
+    | bin _time span=1hr
+    | eval file_name = mvfilter(NOT match(file_name, "\.jpg |\.png |\.jpeg |\.gif "))
+    | search file_name=*
+    | stats values(sender) as sender, values(ClientIPAddress) as src, values(ClientInfoString) as http_user_agent, values(Operation) as signature, values(file_name) as file_name, sum(file_size) as file_size, values(Folder.Path) as file_path, min(-time) as firstTime, max(-time) as lastTime, dc(file_name) as count by _time,user,InternetMessageId
+    | where count > 25
+    | eval file_name = mvjoin(file_name,"||")
+    ]
+  | eval file_name = split(file_name,"||")
+  | stats values(sender) as sender, values(recipient) as recipient, values(http_user_agent) as http_user_agent, values(signature) as signature, values(file_name) as file_name, max(file_size) as file_size, min(firstTime) as firstTime, max(lastTime) as lastTime max(count) as count by subject,user,Organization,InternetMessageId
+  | eval recipient = mvmap(recipient, if(match(mvindex(split(lower(recipient),"@"),1),mvindex(split(lower(user),"@"),1)), null(),recipient))
+  | search recipient = *
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `o365_email_send_attachments_excessive_volume_filter`
+splunk_rule_id: 70a050a2-8537-488a-a628-b60a9558d96a
+splunk_rule_type: Anomaly
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    Status: Delivered
+  condition: selection_0

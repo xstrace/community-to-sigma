@@ -1,0 +1,37 @@
+title: O365 Safe Links Detection
+id: 711d9e8c-2cb0-45cf-8813-5f191ecb9b26
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic detects when any Microsoft Safe Links alerting is triggered. This behavior may indicate when user has interacted with a phishing or otherwise malicious link within the
+  Microsoft Office ecosystem.
+references:
+- https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/safe-links-about?view=o365-worldwide
+- https://attack.mitre.org/techniques/T1566/
+tags:
+- attack.t1566.001
+date: '2024-04-07'
+original_spl: |-
+  `o365_management_activity` Name="*a potentially malicious URL*" Operation=AlertEntityGenerated
+    | fromjson Data
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime values(ObjectId) as url values(od) as desc
+      BY AlertId, trc, Name,
+         ot, dest, vendor_account,
+         vendor_product, src
+    | rename Name as signature, AlertId as signature_id, trc as user, ot as action
+    | eval action = CASE(action == "Allowed", "allowed", action=="BlockPageOverride", "allowed", true(),"blocked")
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `o365_safe_links_detection_filter`
+splunk_rule_id: 711d9e8c-2cb0-45cf-8813-5f191ecb9b26
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Name|contains: a potentially malicious URL
+  selection_1:
+    Operation: AlertEntityGenerated
+  condition: selection_0 and selection_1

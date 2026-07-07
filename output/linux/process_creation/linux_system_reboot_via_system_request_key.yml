@@ -1,0 +1,44 @@
+title: Linux System Reboot Via System Request Key
+id: e1912b58-ed9c-422c-bbb0-2dbc70398345
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of the SysReq hack to reboot a Linux system host. It leverages Endpoint Detection and Response (EDR) data to identify processes executing the command
+  to pipe 'b' to /proc/sysrq-trigger. This activity is significant as it is an uncommon method to reboot a system and was observed in the Awfulshred malware wiper. If confirmed malicious, this technique
+  could indicate the presence of suspicious processes and potential system compromise, leading to unauthorized reboots and disruption of services.
+references:
+- https://www.kernel.org/doc/html/latest/admin-guide/sysrq.html
+- https://cert.gov.ua/article/3718487
+- https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog/overview-of-the-cyber-weapons-used-in-the-ukraine-russia-war/
+tags:
+- attack.t1529
+date: '2023-02-09'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name IN ("dash", "sudo", "bash")  Processes.process =  "* echo b > *" Processes.process = "*/proc/sysrq-trigger"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `linux_system_reboot_via_system_request_key_filter`
+splunk_rule_id: e1912b58-ed9c-422c-bbb0-2dbc70398345
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image:
+    - dash
+    - sudo
+    - bash
+  selection_1:
+    CommandLine|contains: ' echo b > '
+  selection_2:
+    CommandLine|endswith: /proc/sysrq-trigger
+  condition: selection_0 and selection_1 and selection_2

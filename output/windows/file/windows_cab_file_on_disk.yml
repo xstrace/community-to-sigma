@@ -1,0 +1,36 @@
+title: Windows CAB File on Disk
+id: 622f08d0-69ef-42c2-8139-66088bc25acd
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects .cab files being written to disk. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on events where the file name is '*.cab' and the
+  action is 'write'. This activity is significant as .cab files can be used to deliver malicious payloads, including embedded .url files that execute harmful code. If confirmed malicious, this behavior
+  could lead to unauthorized code execution and potential system compromise. Analysts should review the file path and associated artifacts for further investigation.
+references:
+- https://github.com/PaloAltoNetworks/Unit42-timely-threat-intel/blob/main/2023-10-25-IOCs-from-DarkGate-activity.txt
+tags:
+- attack.t1566.001
+date: '2023-11-16'
+original_spl: |-
+  | tstats `security_content_summariesonly` count values(Filesystem.file_path) as file_path min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Filesystem
+    WHERE (
+          Filesystem.file_name=*.cab
+      )
+    BY Filesystem.action Filesystem.dest Filesystem.file_access_time
+       Filesystem.file_create_time Filesystem.file_hash Filesystem.file_modify_time
+       Filesystem.file_name Filesystem.file_path Filesystem.file_acl
+       Filesystem.file_size Filesystem.process_guid Filesystem.process_id
+       Filesystem.user Filesystem.vendor_product
+  | `drop_dm_object_name("Filesystem")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_cab_file_on_disk_filter`
+splunk_rule_id: 622f08d0-69ef-42c2-8139-66088bc25acd
+splunk_rule_type: Anomaly
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|endswith: .cab
+  condition: selection_0

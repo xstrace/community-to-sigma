@@ -1,0 +1,55 @@
+title: Cisco Isovalent - Potential Escape to Host
+id: 2b8a7a21-bec6-4e1f-84c4-7b319f45d2ab
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: |
+  This analytic detects potential container escape or reconnaissance attempts by monitoring for the rapid execution of multiple suspicious Linux commands (nsenter, mount, ps aux, and ls) within a short time window. The search aggregates process execution logs into 5-minute buckets and identifies when two or more distinct commands occur in quick succession. This behavior is noteworthy because attackers often chain these commands together to pivot from a container into the host, enumerate processes, or browse filesystems. For a SOC, catching these clustered command executions is important because it highlights possible adversary activity attempting to break isolation and escalate privileges inside a Kubernetes environment.
+references:
+- https://attack.mitre.org/techniques/T1611/
+- https://unit42.paloaltonetworks.com/hildegard-malware-teamtnt/
+tags:
+- attack.t1611
+date: '2026-01-05'
+original_spl: |-
+  `cisco_isovalent_process_exec`
+
+  (
+      process_name IN ("nsenter","mount","ps","ls")
+      OR
+      process IN ("*nsenter*", "*mount*", "*ps aux*", "*ps -ef*")
+  )
+  | bin _time span=5m
+  | stats
+      count AS total_events
+      dc(process_name) AS distinct_cmds
+      min(_time) AS firstTime
+      max(_time) AS lastTime
+      values(process) AS process
+      values(process_name) AS process_name
+    BY cluster_name node_name pod_name _time
+  | eval duration_s = round(lastTime - firstTime, 0)
+  | where distinct_cmds >= 2 AND duration_s <= 120
+  | table _time cluster_name node_name pod_name total_events distinct_cmds duration_s firstTime lastTime process process_name
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_isovalent___potential_escape_to_host_filter`
+splunk_rule_id: 2b8a7a21-bec6-4e1f-84c4-7b319f45d2ab
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    process_name:
+    - nsenter
+    - mount
+    - ps
+    - ls
+  selection_1:
+    process|contains:
+    - nsenter
+    - mount
+    - ps aux
+    - ps -ef
+  condition: selection_0 and selection_1

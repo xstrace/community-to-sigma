@@ -1,0 +1,45 @@
+title: HTTP Possible Request Smuggling
+id: 97d85f98-9d15-41a0-8682-7030454875e7
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: HTTP request smuggling is a technique for interfering with the way a web site processes sequences of HTTP requests that are received from one or more users. Request smuggling vulnerabilities
+  are often critical in nature, allowing an attacker to bypass security controls, gain unauthorized access to sensitive data, and directly compromise other application users. This detection identifies a
+  common request smuggling technique of using both Content-Length and Transfer-Encoding headers to cause a parsing confusion between the frontend and backend.
+references:
+- https://portswigger.net/web-security/request-smuggling#what-is-http-request-smuggling
+- https://portswigger.net/research/http1-must-die
+- https://www.vaadata.com/blog/what-is-http-request-smuggling-exploitations-and-security-best-practices/
+- https://www.securityweek.com/new-http-request-smuggling-attacks-impacted-cdns-major-orgs-millions-of-websites/
+tags:
+- attack.t1071.001
+date: '2025-10-21'
+original_spl: |-
+  `suricata` (http.request_headers{}.name="*Content-Length*" http.request_headers{}.name="*Transfer-Encoding*") OR (http.request_headers{}.name="*Content-Length*" http.request_headers{}.value="*Transfer-Encoding*") OR (http.request_headers{}.value="*Content-Length*" http.request_headers{}.name="*Transfer-Encoding*") OR (http.request_headers{}.name="*Content-Length*" http.request_headers{}.value="0")
+    | rename dest_ip as dest
+    | rex field=_raw "request_headers.:\[(?<headers>.*)\]"
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest, dest_port, src_ip,
+         http.url, http.http_method, http.http_user_agent,
+         http.protocol, http.status, headers
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `http_possible_request_smuggling_filter`
+splunk_rule_id: 97d85f98-9d15-41a0-8682-7030454875e7
+splunk_rule_type: TTP
+logsource:
+  product: suricata
+  service: ids
+detection:
+  selection_0:
+    http.request_headers{}.name|contains: '*Content-Length*'
+  selection_1:
+    http.request_headers{}.name|contains: '*Content-Length*'
+    http.request_headers{}.value|contains: '*Transfer-Encoding*'
+  selection_2:
+    http.request_headers{}.value|contains: '*Content-Length*'
+    http.request_headers{}.name|contains: '*Transfer-Encoding*'
+  selection_3:
+    http.request_headers{}.name|contains: '*Content-Length*'
+    http.request_headers{}.value: '0'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

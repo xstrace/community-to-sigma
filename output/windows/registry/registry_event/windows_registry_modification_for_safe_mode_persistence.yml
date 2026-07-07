@@ -1,0 +1,30 @@
+title: Windows Registry Modification for Safe Mode Persistence
+id: c6149154-c9d8-11eb-9da7-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Michael Haag, Splunk
+description: The following analytic identifies modifications to the SafeBoot registry keys, specifically within the Minimal and Network paths. This detection leverages registry activity logs from endpoint
+  data sources like Sysmon or EDR tools. Monitoring these keys is crucial as adversaries can use them to persist drivers or services in Safe Mode, with Network allowing network connections. If confirmed
+  malicious, this activity could enable attackers to maintain persistence even in Safe Mode, potentially bypassing certain security measures and facilitating further malicious actions.
+references:
+- https://malware.news/t/threat-analysis-unit-tau-threat-intelligence-notification-snatch-ransomware/36365
+- https://redcanary.com/blog/tracking-driver-inventory-to-expose-rootkits/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1112/T1112.md
+- https://blog.didierstevens.com/2007/03/26/playing-with-safe-mode/
+tags:
+- attack.t1547.001
+date: '2022-03-31'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry where Registry.registry_path IN ("*SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\Minimal\\*","*SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\Network\\*")
+  by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name
+  Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_registry_modification_for_safe_mode_persistence_filter`'
+splunk_rule_id: c6149154-c9d8-11eb-9da7-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains:
+    - SYSTEM\CurrentControlSet\Control\SafeBoot\Minimal\
+    - SYSTEM\CurrentControlSet\Control\SafeBoot\Network\
+  condition: selection_0

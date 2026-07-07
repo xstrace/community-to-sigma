@@ -1,0 +1,50 @@
+title: Execution of File with Multiple Extensions
+id: b06a555e-dce0-417d-a2eb-28a5d8d66ef7
+status: stable
+level: medium
+author: Rico Valdez, Teoderick Contreras, Splunk
+description: The following analytic detects the execution of files with multiple extensions, such as ".doc.exe" or ".pdf.exe". This behavior is identified using Endpoint Detection and Response (EDR) telemetry,
+  focusing on process creation events where the file name contains double extensions. This activity is significant because attackers often use double extensions to disguise malicious executables as benign
+  documents, increasing the likelihood of user execution. If confirmed malicious, this technique can lead to unauthorized code execution, potentially compromising the endpoint and allowing further malicious
+  activities.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.asyncrat
+tags:
+- attack.t1036.003
+date: '2020-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process IN ("*.doc.exe", "*.xls.exe","*.ppt.exe", "*.htm.exe", "*.html.exe", "*.txt.exe", "*.pdf.exe", "*.docx.exe", "*.xlsx.exe", "*.pptx.exe","*.one.exe", "*.bat.exe", "*.rtf.exe")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `drop_dm_object_name(Processes)`
+  | `execution_of_file_with_multiple_extensions_filter`
+splunk_rule_id: b06a555e-dce0-417d-a2eb-28a5d8d66ef7
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|endswith:
+    - .doc.exe
+    - .xls.exe
+    - .ppt.exe
+    - .htm.exe
+    - .html.exe
+    - .txt.exe
+    - .pdf.exe
+    - .docx.exe
+    - .xlsx.exe
+    - .pptx.exe
+    - .one.exe
+    - .bat.exe
+    - .rtf.exe
+  condition: selection_0

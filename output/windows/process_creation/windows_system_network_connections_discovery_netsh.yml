@@ -1,0 +1,53 @@
+title: Windows System Network Connections Discovery Netsh
+id: abfb7cc5-c275-4a97-9029-62cd8d4ffeca
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of the Windows built-in tool netsh.exe to display the state, configuration, and profile of the host firewall. This detection leverages data from
+  Endpoint Detection and Response (EDR) agents, focusing on command-line executions and process metadata. Monitoring this activity is crucial as netsh.exe can be used by adversaries to bypass firewall rules
+  or discover firewall settings. If confirmed malicious, this activity could allow attackers to manipulate firewall configurations, potentially leading to unauthorized network access or data exfiltration.
+references:
+- https://attack.mitre.org/techniques/T1049/
+- https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS
+- https://www.microsoft.com/en-us/security/blog/2022/10/14/new-prestige-ransomware-impacts-organizations-in-ukraine-and-poland/
+tags:
+- attack.t1049
+date: '2022-12-06'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  FROM datamodel=Endpoint.Processes WHERE
+
+  `process_netsh`
+  Processes.process="* show *"
+  Processes.process IN ("*state*", "*config*", "*wlan*", "*profile*")
+
+  BY Processes.action Processes.dest Processes.original_file_name
+     Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+     Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+     Processes.process Processes.process_exec Processes.process_guid
+     Processes.process_hash Processes.process_id Processes.process_integrity_level
+     Processes.process_name Processes.process_path Processes.user
+     Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_system_network_connections_discovery_netsh_filter`
+splunk_rule_id: abfb7cc5-c275-4a97-9029-62cd8d4ffeca
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: ' show '
+  selection_1:
+    CommandLine|contains:
+    - state
+    - config
+    - wlan
+    - profile
+  condition: selection_0 and selection_1

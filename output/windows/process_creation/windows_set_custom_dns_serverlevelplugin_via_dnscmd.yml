@@ -1,0 +1,50 @@
+title: Windows Set Custom DNS ServerLevelPlugin Via Dnscmd
+id: 9add7765-4af5-45aa-a078-3b32de303e3e
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  The following analytic detects command-line usage of dnscmd.exe to configure the Microsoft DNS ServerLevelPluginDll setting.
+  This setting allows the DNS service to load an arbitrary DLL, which can be abused by attackers with DNS administrative privileges to execute code in the context of the DNS service.
+  If confirmed malicious, this activity could enable persistence, privilege escalation, or domain controller compromise through malicious DLL loading.
+references:
+- https://medium.com/@esnesenon/feature-not-bug-dnsadmin-to-dc-compromise-in-one-line-a0f779b8dc83
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/dnscmd
+tags:
+- attack.t1574
+date: '2026-05-05'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  from datamodel=Endpoint.Processes where
+
+  Processes.process_name="dnscmd.exe"
+  Processes.process="*/config *"
+  Processes.process="*/serverlevelplugindll *"
+
+  by Processes.process Processes.vendor_product Processes.user_id Processes.process_hash
+     Processes.parent_process_name Processes.parent_process_exec Processes.action
+     Processes.dest Processes.process_current_directory Processes.process_path
+     Processes.process_integrity_level Processes.original_file_name Processes.parent_process
+     Processes.parent_process_path Processes.parent_process_guid Processes.parent_process_id
+     Processes.process_guid Processes.process_id Processes.user Processes.process_name
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_set_custom_dns_serverlevelplugin_via_dnscmd_filter`
+splunk_rule_id: 9add7765-4af5-45aa-a078-3b32de303e3e
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: dnscmd.exe
+  selection_1:
+    CommandLine|contains: '/config '
+  selection_2:
+    CommandLine|contains: '/serverlevelplugindll '
+  condition: selection_0 and selection_1 and selection_2

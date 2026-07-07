@@ -1,0 +1,38 @@
+title: Windows Odbcconf Hunting
+id: 0562ad4b-fdaa-4882-b12f-7b8e0034cd72
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies the execution of Odbcconf.exe within the environment. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process creation events
+  where the process name is Odbcconf.exe. This activity is significant because Odbcconf.exe can be used by attackers to execute arbitrary commands or load malicious DLLs, potentially leading to code execution
+  or persistence. If confirmed malicious, this behavior could allow an attacker to maintain access to the system, execute further malicious activities, or escalate privileges, posing a significant threat
+  to the environment.
+references:
+- https://strontic.github.io/xcyclopedia/library/odbcconf.exe-07FBA12552331355C103999806627314.html
+- https://twitter.com/redcanary/status/1541838407894171650?s=20&t=kp3WBPtfnyA3xW7D7wx0uw
+tags:
+- attack.t1218.008
+date: '2022-06-17'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=odbcconf.exe
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_odbcconf_hunting_filter`
+splunk_rule_id: 0562ad4b-fdaa-4882-b12f-7b8e0034cd72
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: odbcconf.exe
+  condition: selection_0

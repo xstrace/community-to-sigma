@@ -1,0 +1,60 @@
+title: Cisco NVM - Rundll32 Abuse of MSHTML.DLL for Payload Download
+id: 18f0d27d-569e-4bc4-96e1-09b214fa73c0
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects suspicious use of `rundll32.exe` in combination with `mshtml.dll` and the export `RunHTMLApplication`.
+  This behavior is often observed in malware to execute JavaScript or VBScript in memory, enabling payload staging or
+  bypassing script execution policies and bypassing the usage of the "mshta.exe" binary.
+  The detection leverages Cisco Network Visibility Module telemetry which offers network flow activity
+  along with process information such as command-line arguments
+  If confirmed malicious, this activity may indicate initial access or payload download.
+references:
+- https://lolbas-project.github.io/lolbas/Binaries/Rundll32/
+- https://redcanary.com/blog/threat-detection/threat-research-questions/
+- https://twitter.com/n1nj4sec/status/1421190238081277959
+- https://hyp3rlinx.altervista.org/advisories/MICROSOFT_WINDOWS_DEFENDER_TROJAN.WIN32.POWESSERE.G_MITIGATION_BYPASS_PART2.txt
+- http://hyp3rlinx.altervista.org/advisories/MICROSOFT_WINDOWS_DEFENDER_DETECTION_BYPASS.txt
+tags:
+- attack.t1218.005
+date: '2025-07-01'
+original_spl: |-
+  `cisco_network_visibility_module_flowdata`
+  process_name = "rundll32.exe"
+  process_arguments = "*mshtml*"
+  process_arguments IN ("*135*", "*RunHTMLApplication*")
+  | stats count min(_time) as firstTime max(_time) as lastTime
+          values(parent_process_arguments) as parent_process_arguments
+          values(process_arguments) as process_arguments
+          values(parent_process_hash) as parent_process_hash
+          values(process_hash) as process_hash
+          values(module_name_list) as module_name_list
+          values(module_hash_list) as module_hash_list
+          values(dest_port) as dest_port
+          values(aliul) as additional_logged_in_users_list
+          values(dest_hostname) as dest_hostname
+          by src dest parent_process_path parent_process_integrity_level process_path process_name process_integrity_level process_id transport
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | table
+    parent_process_integrity_level parent_process_path parent_process_arguments parent_process_hash
+    process_integrity_level process_path process_name process_arguments process_hash process_id
+    additional_logged_in_users_list module_name_list module_hash_list
+    src dest_hostname dest dest_port transport firstTime lastTime
+  | `cisco_nvm___rundll32_abuse_of_mshtml_dll_for_payload_download_filter`
+splunk_rule_id: 18f0d27d-569e-4bc4-96e1-09b214fa73c0
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    process_name: rundll32.exe
+  selection_1:
+    process_arguments|contains: mshtml
+  selection_2:
+    process_arguments|contains:
+    - '135'
+    - RunHTMLApplication
+  condition: selection_0 and selection_1 and selection_2

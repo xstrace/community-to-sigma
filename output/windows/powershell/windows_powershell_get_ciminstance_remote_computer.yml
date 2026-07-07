@@ -1,0 +1,38 @@
+title: Windows PowerShell Get CIMInstance Remote Computer
+id: d8c972eb-ed84-431a-8869-ca4bd83257d1
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of the Get-CimInstance cmdlet with the -ComputerName parameter, indicating an attempt to retrieve information from a remote computer. It leverages PowerShell
+  Script Block Logging to identify this specific command execution. This activity is significant as it may indicate unauthorized remote access or information gathering by an attacker. If confirmed malicious,
+  this could allow the attacker to collect sensitive data from remote systems, potentially leading to further exploitation or lateral movement within the network.
+references:
+- https://learn.microsoft.com/en-us/powershell/module/cimcmdlets/get-ciminstance?view=powershell-7.3
+tags:
+- attack.t1059.001
+date: '2023-03-27'
+original_spl: |-
+  `powershell` EventCode=4104 ScriptBlockText="*get-ciminstance*" AND ScriptBlockText="*computername*"
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest signature signature_id
+         user_id vendor_product EventID
+         Guid Opcode Name
+         Path ProcessID ScriptBlockId
+         ScriptBlockText
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_powershell_get_ciminstance_remote_computer_filter`
+splunk_rule_id: d8c972eb-ed84-431a-8869-ca4bd83257d1
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: get-ciminstance
+  selection_2:
+    ScriptBlockText|contains: computername
+  condition: selection_0 and selection_1 and selection_2

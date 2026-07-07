@@ -1,0 +1,37 @@
+title: O365 High Number Of Failed Authentications for User
+id: 31641378-2fa9-42b1-948e-25e281cb98f7
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies an O365 account experiencing more than 20 failed authentication attempts within 5 minutes. It uses O365 Unified Audit Logs, specifically "UserLoginFailed"
+  events, to monitor and flag accounts exceeding this threshold. This activity is significant as it may indicate a brute force attack or password guessing attempt. If confirmed malicious, an attacker could
+  gain unauthorized access to the O365 environment, potentially compromising sensitive emails, documents, and other data. Prompt investigation and action are crucial to prevent unauthorized access and data
+  breaches.
+references:
+- https://attack.mitre.org/techniques/T1110/
+- https://attack.mitre.org/techniques/T1110/001/
+tags:
+- attack.t1110.001
+date: '2023-12-06'
+original_spl: |-
+  `o365_management_activity` Operation=UserLoginFailed record_type=AzureActiveDirectoryStsLogon Workload=AzureActiveDirectory
+    | bucket span=5m _time
+    | fillnull
+    | stats dc(_raw) AS failed_attempts values(src_ip) as src
+      BY signature user _time
+         dest vendor_account vendor_product
+    | where failed_attempts > 10
+    | `o365_high_number_of_failed_authentications_for_user_filter`
+splunk_rule_id: 31641378-2fa9-42b1-948e-25e281cb98f7
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Operation: UserLoginFailed
+  selection_1:
+    record_type: AzureActiveDirectoryStsLogon
+  selection_2:
+    Workload: AzureActiveDirectory
+  condition: selection_0 and selection_1 and selection_2

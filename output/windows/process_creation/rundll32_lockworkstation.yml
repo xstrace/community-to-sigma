@@ -1,0 +1,38 @@
+title: Rundll32 LockWorkStation
+id: fa90f372-f91d-11eb-816c-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of the rundll32.exe command with the user32.dll,LockWorkStation parameter, which is used to lock the workstation via command line. This detection
+  leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line executions. This activity is significant as it is an uncommon method to lock a screen and has
+  been observed in CONTI ransomware tooling for defense evasion. If confirmed malicious, this technique could indicate an attempt to evade detection and hinder incident response efforts.
+references:
+- https://threadreaderapp.com/thread/1423361119926816776.html
+tags:
+- attack.t1218.011
+date: '2021-08-09'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=rundll32.exe Processes.process= "*user32.dll,LockWorkStation*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `rundll32_lockworkstation_filter`
+splunk_rule_id: fa90f372-f91d-11eb-816c-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: rundll32.exe
+  selection_1:
+    CommandLine|contains: user32.dll,LockWorkStation
+  condition: selection_0 and selection_1

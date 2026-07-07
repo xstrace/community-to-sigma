@@ -1,0 +1,43 @@
+title: Windows Raccine Scheduled Task Deletion
+id: c9f010da-57ab-11ec-82bd-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies the deletion of the Raccine Rules Updater scheduled task using the `schtasks.exe` command. This detection leverages data from Endpoint Detection and Response
+  (EDR) agents, focusing on process names and command-line executions. This activity is significant because adversaries may delete this task to disable Raccine, a tool designed to prevent ransomware attacks.
+  If confirmed malicious, this action could allow ransomware to execute without interference, leading to potential data encryption and loss.
+references:
+- https://redcanary.com/blog/blackbyte-ransomware/
+- https://github.com/Neo23x0/Raccine
+tags:
+- attack.t1685
+date: '2021-12-08'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=schtasks.exe Processes.process="*delete*"
+      AND
+      Processes.process="*Raccine*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_raccine_scheduled_task_deletion_filter`
+splunk_rule_id: c9f010da-57ab-11ec-82bd-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: schtasks.exe
+  selection_1:
+    CommandLine|contains: delete
+  selection_2:
+    CommandLine|contains: Raccine
+  condition: selection_0 and selection_1 and selection_2

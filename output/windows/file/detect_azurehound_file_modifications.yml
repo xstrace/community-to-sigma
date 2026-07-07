@@ -1,0 +1,45 @@
+title: Detect AzureHound File Modifications
+id: 1c34549e-c31b-11eb-996b-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the creation of specific AzureHound-related files, such as `*-azurecollection.zip` and various `.json` files, on disk. It leverages data from the Endpoint.Filesystem
+  datamodel, focusing on file creation events with specific filenames. This activity is significant because AzureHound is a tool used to gather information about Azure environments, similar to SharpHound
+  for on-premises Active Directory. If confirmed malicious, this activity could indicate an attacker is collecting sensitive Azure environment data, potentially leading to further exploitation or privilege
+  escalation within the cloud infrastructure.
+references:
+- https://posts.specterops.io/introducing-bloodhound-4-0-the-azure-update-9b2b26c5e350
+- https://github.com/BloodHoundAD/Legacy-AzureHound.ps1/blob/master/AzureHound.ps1
+tags:
+- attack.t1069.001
+- attack.t1069.002
+- attack.t1087.001
+- attack.t1087.002
+- attack.t1482
+date: '2021-06-03'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Filesystem
+    WHERE Filesystem.file_name IN ("*-azurecollection.zip", "*-azprivroleadminrights.json", "*-azglobaladminrights.json", "*-azcloudappadmins.json", "*-azapplicationadmins.json")
+    BY Filesystem.action Filesystem.dest Filesystem.file_access_time
+       Filesystem.file_create_time Filesystem.file_hash Filesystem.file_modify_time
+       Filesystem.file_name Filesystem.file_path Filesystem.file_acl
+       Filesystem.file_size Filesystem.process_guid Filesystem.process_id
+       Filesystem.user Filesystem.vendor_product
+  | `drop_dm_object_name(Filesystem)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `detect_azurehound_file_modifications_filter`
+splunk_rule_id: 1c34549e-c31b-11eb-996b-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|endswith:
+    - -azurecollection.zip
+    - -azprivroleadminrights.json
+    - -azglobaladminrights.json
+    - -azcloudappadmins.json
+    - -azapplicationadmins.json
+  condition: selection_0

@@ -1,0 +1,34 @@
+title: Cisco Isovalent - Kprobe Spike
+id: 3df0e9a8-7d5e-4b2f-bcd7-bf93e671d1f2
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: |
+  This analytic detects excessive kernel probe (kprobe) events in a Kubernetes cluster over a short period of time.
+  Kprobes are a Linux kernel debugging and instrumentation mechanism that allows dynamic monitoring and tracing of kernel functions and system calls.
+  In containerized or cloud-native environments, kprobes are occasionally used for legitimate low-level diagnostics; however, monitoring a spike in kprobe activity is important because malware or attackers may abuse this mechanism to gain insights into the kernel, attempt privilege escalation, or tamper with host processes.
+  More than 10 kprobe events within 5 minutes may indicate suspicious activity, such as an attacker probing the kernel through repeated system calls (e.g., nsenter, mount, sethostname).
+  Such abnormal volume and frequency of kprobe usage within application pods or on nodes can signal container escape attempts or low-level tampering with the host, thereby representing a potential security threat.
+references:
+- https://docs.isovalent.com/user-guide/sec-ops-visibility/process-execution/index.html
+tags:
+- attack.t1068
+date: '2026-01-05'
+original_spl: |-
+  `cisco_isovalent` process_kprobe.action!=""
+  | bin _time span=5m | rename process_kprobe.parent.pod.name as pod_name
+  | stats count as kprobe_count
+          values(process_kprobe.function_name) as functions
+          values(process_kprobe.process.binary) as binaries
+          values(process_kprobe.args{}.string_arg) as args
+    by pod_name _time
+  | where kprobe_count > 10 | `cisco_isovalent___kprobe_spike_filter`
+splunk_rule_id: 3df0e9a8-7d5e-4b2f-bcd7-bf93e671d1f2
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    process_kprobe.action: ''
+  condition: selection_0

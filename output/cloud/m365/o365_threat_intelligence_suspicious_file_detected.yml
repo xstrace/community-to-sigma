@@ -1,0 +1,36 @@
+title: O365 Threat Intelligence Suspicious File Detected
+id: 00958c7b-35db-4e7a-ad13-31550a7a7c64
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic identifies when a malicious file is detected within the Microsoft Office 365 ecosystem through the Advanced Threat Protection engine. Attackers may stage and execute
+  malicious files from within the Microsoft Office 365 ecosystem. Any detections from built-in Office 365 capabilities should be monitored and responded to appropriately. Certain premium Office 365 capabilities
+  such as Safe Attachment and Safe Links further enhance these detection and response functions.
+references:
+- https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/threat-explorer-real-time-detections-about?view=o365-worldwide
+- https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/anti-malware-protection-for-spo-odfb-teams-about?view=o365-worldwide
+tags:
+- attack.t1204.002
+date: '2024-04-07'
+original_spl: |-
+  `o365_management_activity` Workload=ThreatIntelligence Operation=AtpDetection
+    | eval dest="NA"
+    | eval src="NA"
+    | stats values(DetectionMethod) as category values(FileData.FileName) as file_name values(FileData.FilePath) as file_path values(FileData.FileSize) as file_size values(FileData.MalwareFamily) as signature count, min(_time) as firstTime, max(_time) as lastTime
+      BY Id, UserId, dest,
+         src, vendor_account, vendor_product
+    | rename Id as signature_id, UserId as user
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `o365_threat_intelligence_suspicious_file_detected_filter`
+splunk_rule_id: 00958c7b-35db-4e7a-ad13-31550a7a7c64
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: ThreatIntelligence
+  selection_1:
+    Operation: AtpDetection
+  condition: selection_0 and selection_1

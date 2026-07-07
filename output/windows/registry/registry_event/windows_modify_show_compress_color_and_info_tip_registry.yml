@@ -1,0 +1,31 @@
+title: Windows Modify Show Compress Color And Info Tip Registry
+id: b7548c2e-9a10-11ec-99e3-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic detects suspicious modifications to the Windows registry keys related to file compression color and information tips. It leverages data from the Endpoint.Registry data
+  model, specifically monitoring changes to the "ShowCompColor" and "ShowInfoTip" values under the "Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced" path. This activity is significant as it was observed
+  in the Hermetic Wiper malware, indicating potential malicious intent to alter file attributes and user interface elements. If confirmed malicious, this could signify an attempt to manipulate file visibility
+  and deceive users, potentially aiding in further malicious activities.
+references:
+- https://blog.talosintelligence.com/2022/02/threat-advisory-hermeticwiper.html
+tags:
+- attack.t1112
+date: '2022-03-02'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path = "*\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced*"
+  AND Registry.registry_value_name  IN("ShowCompColor", "ShowInfoTip")) by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name
+  Registry.registry_value_data Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | where isnotnull(registry_value_data)
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_modify_show_compress_color_and_info_tip_registry_filter`'
+splunk_rule_id: b7548c2e-9a10-11ec-99e3-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \Microsoft\Windows\CurrentVersion\Explorer\Advanced
+  selection_1:
+    Details:
+    - ShowCompColor
+    - ShowInfoTip
+  condition: selection_0 and selection_1

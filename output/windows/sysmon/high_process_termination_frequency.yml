@@ -1,0 +1,34 @@
+title: High Process Termination Frequency
+id: 17cd75b2-8666-11eb-9ab4-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras
+description: The following analytic identifies a high frequency of process termination events on a computer within a short period. It leverages Sysmon EventCode 5 logs to detect instances where 15 or more
+  processes are terminated within a 3-second window. This behavior is significant as it is commonly associated with ransomware attempting to avoid exceptions during file encryption. If confirmed malicious,
+  this activity could indicate an active ransomware attack, potentially leading to widespread file encryption and significant data loss.
+references:
+- https://www.mandiant.com/resources/fin11-email-campaigns-precursor-for-ransomware-data-theft
+- https://blog.virustotal.com/2020/11/keep-your-friends-close-keep-ransomware.html
+tags:
+- attack.t1486
+date: '2021-03-19'
+original_spl: |-
+  `sysmon` EventCode=5
+    | bin _time span=3s
+    | stats values(process) as process values(process_exec) as process_exec values(process_guid) as process_guid values(process_id) as process_id values(process_name) as process_name values(process_path) as process_path values(user_id) as user_id min(_time) as firstTime max(_time) as lastTime count
+      BY _time dest EventCode
+         ProcessID signature signature_id
+         vendor_product
+    | where count >= 15
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `high_process_termination_frequency_filter`
+splunk_rule_id: 17cd75b2-8666-11eb-9ab4-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 5
+  condition: selection_0

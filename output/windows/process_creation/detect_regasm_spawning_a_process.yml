@@ -1,0 +1,42 @@
+title: Detect Regasm Spawning a Process
+id: 72170ec5-f7d2-42f5-aefb-2b8be6aad15f
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects regasm.exe spawning a child process. This behavior is identified using data from Endpoint Detection and Response (EDR) agents, focusing on process creation events
+  where regasm.exe is the parent process. This activity is significant because regasm.exe spawning a process is rare and can indicate an attempt to bypass application control mechanisms. If confirmed malicious,
+  this could allow an attacker to execute arbitrary code, potentially leading to privilege escalation or persistent access within the environment. Immediate investigation is recommended to determine the
+  legitimacy of the spawned process and any associated activities.
+references:
+- https://attack.mitre.org/techniques/T1218/009/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218.009/T1218.009.md
+- https://lolbas-project.github.io/lolbas/Binaries/Regsvcs/
+- https://lolbas-project.github.io/lolbas/Binaries/Regasm/
+tags:
+- attack.t1218.009
+date: '2021-02-12'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name=regasm.exe NOT (Processes.process_name IN ("conhost.exe"))
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `detect_regasm_spawning_a_process_filter`
+splunk_rule_id: 72170ec5-f7d2-42f5-aefb-2b8be6aad15f
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: regasm.exe
+  filter_1:
+    Image: conhost.exe
+  condition: (selection_0) and not (filter_1)

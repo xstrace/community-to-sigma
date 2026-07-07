@@ -1,0 +1,40 @@
+title: Windows System Binary Proxy Execution Compiled HTML File Decompile
+id: 2acf0e19-4149-451c-a3f3-39cd3c77e37d
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of the decompile parameter with the HTML Help application (HH.exe). This behavior is identified through Endpoint Detection and Response (EDR) telemetry,
+  focusing on command-line executions involving the decompile parameter. This activity is significant because it is an uncommon command and has been associated with APT41 campaigns, where it was used to
+  unpack HTML help files for further malicious actions. If confirmed malicious, this technique could allow attackers to execute arbitrary commands, potentially leading to further compromise and persistence
+  within the environment.
+references:
+- https://www.ptsecurity.com/ww-en/analytics/pt-esc-threat-intelligence/higaisa-or-winnti-apt-41-backdoors-old-and-new/
+- https://redcanary.com/blog/introducing-atomictestharnesses/
+- https://attack.mitre.org/techniques/T1218/001/
+- https://docs.microsoft.com/en-us/windows/win32/api/htmlhelp/nf-htmlhelp-htmlhelpa
+tags:
+- attack.t1218.001
+date: '2022-09-01'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_hh` Processes.process=*-decompile*
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_system_binary_proxy_execution_compiled_html_file_decompile_filter`
+splunk_rule_id: 2acf0e19-4149-451c-a3f3-39cd3c77e37d
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: -decompile
+  condition: selection_0

@@ -1,0 +1,38 @@
+title: O365 Compliance Content Search Exported
+id: 2ce9f31d-ab4f-4179-b2b7-c77a9652e1d8
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies when the results of a content search within the Office 365 Security and Compliance Center are exported. It uses the SearchExported operation from the SecurityComplianceCenter
+  workload in the o365_management_activity data source. This activity is significant because exporting search results can involve sensitive or critical organizational data, potentially leading to data exfiltration.
+  If confirmed malicious, an attacker could gain access to and exfiltrate sensitive information, posing a severe risk to the organization's data security and compliance posture.
+references:
+- https://attack.mitre.org/techniques/T1114/002/
+- https://learn.microsoft.com/en-us/purview/ediscovery-content-search-overview
+- https://learn.microsoft.com/en-us/purview/ediscovery-keyword-queries-and-search-conditions
+- https://learn.microsoft.com/en-us/purview/ediscovery-search-for-activities-in-the-audit-log
+tags:
+- attack.t1114.002
+date: '2024-04-17'
+original_spl: |-
+  `o365_management_activity` Workload=SecurityComplianceCenter Operation="SearchExported"
+    | rename user_id as user
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         src vendor_account vendor_product
+         ExchangeLocations Query
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `o365_compliance_content_search_exported_filter`
+splunk_rule_id: 2ce9f31d-ab4f-4179-b2b7-c77a9652e1d8
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: SecurityComplianceCenter
+  selection_1:
+    Operation: SearchExported
+  condition: selection_0 and selection_1

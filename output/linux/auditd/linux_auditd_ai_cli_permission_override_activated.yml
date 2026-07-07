@@ -1,0 +1,37 @@
+title: Linux Auditd AI CLI Permission Override Activated
+id: 737e8baa-d44e-4fa9-8281-24056ed424c0
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  This detection identifies when an AI command-line tool is launched in an unsafe mode that bypasses normal safety checks and user approvals.
+  For instance, running claude --dangerously-skip-permissions skips all safety restrictions, allowing the tool to operate freely, while gemini --yolo automatically approves all actions without prompting the user.
+  These modes, often called permission overrides or YOLO mode, let the AI execute commands, modify files, or perform tasks without confirmation.
+  Detecting their use is important to prevent unintended or potentially harmful operations.
+references:
+- https://x.com/Mandiant/status/2031097693620081042?s=20
+tags:
+- attack.t1480
+date: '2022-01-10'
+original_spl: |-
+  `linux_auditd` (proctitle = "*gemini*" AND proctitle IN ("*--yolo*", "*-y *")) OR
+  (proctitle = "*claude*" AND proctitle= "*--dangerously-skip-permissions*")
+  | rename host as dest
+  | stats count min(_time) as firstTime max(_time) as lastTime
+    BY proctitle dest
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `linux_auditd_ai_cli_permission_override_activated_filter`
+splunk_rule_id: 737e8baa-d44e-4fa9-8281-24056ed424c0
+splunk_rule_type: Anomaly
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    proctitle|contains: '*gemini*'
+    proctitle:
+    - '*--yolo*'
+    - '*-y *'
+  selection_1:
+    proctitle|contains: '*claude*'
+  condition: selection_0 and selection_1

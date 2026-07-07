@@ -1,0 +1,48 @@
+title: Windows Service Create Kernel Mode Driver
+id: 0b4e3b06-1b2b-4885-b752-cf06d12a90cb
+status: stable
+level: medium
+author: Michael Haag, Teoderick Contreras Splunk
+description: The following analytic identifies the creation of a new kernel mode driver using the sc.exe command. This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing
+  on process execution logs that include command-line details. The activity is significant because adding a kernel driver is uncommon in regular operations and can indicate an attempt to gain low-level
+  access to the system. If confirmed malicious, this could allow an attacker to execute code with high privileges, potentially compromising the entire system and evading traditional security measures.
+references:
+- https://www.aon.com/cyber-solutions/aon_cyber_labs/yours-truly-signed-av-driver-weaponizing-an-antivirus-driver/
+- https://whiteknightlabs.com/2025/11/25/discreet-driver-loading-in-windows/
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/sc-config
+tags:
+- attack.t1068
+- attack.t1543.003
+date: '2022-05-16'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime from datamodel=Endpoint.Processes
+    where (Processes.process_name=sc.exe OR Processes.original_file_name=sc.exe) Processes.process="*create*" Processes.process IN ("*kernel*", "*filesys*") Processes.process="*type*"
+  by Processes.action Processes.dest Processes.original_file_name
+  Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+  Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+  Processes.process Processes.process_exec Processes.process_guid Processes.process_hash
+  Processes.process_id Processes.process_integrity_level Processes.process_name Processes.process_path
+  Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_service_create_kernel_mode_driver_filter`
+splunk_rule_id: 0b4e3b06-1b2b-4885-b752-cf06d12a90cb
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: sc.exe
+  selection_1:
+    OriginalFileName: sc.exe
+  selection_2:
+    CommandLine|contains: create
+  selection_3:
+    CommandLine|contains:
+    - kernel
+    - filesys
+  selection_4:
+    CommandLine|contains: type
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

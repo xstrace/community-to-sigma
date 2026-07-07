@@ -1,0 +1,44 @@
+title: Detect Renamed RClone
+id: 6dca1124-b3ec-11eb-9328-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of a renamed `rclone.exe` process, which is commonly used for data exfiltration to remote destinations. This detection leverages Endpoint Detection
+  and Response (EDR) telemetry, focusing on process names and original file names that do not match. This activity is significant because ransomware groups often use RClone to exfiltrate sensitive data.
+  If confirmed malicious, this behavior could indicate an ongoing data exfiltration attempt, potentially leading to significant data loss and further compromise of the affected systems.
+references:
+- https://redcanary.com/blog/rclone-mega-extortion/
+- https://www.mandiant.com/resources/shining-a-light-on-darkside-ransomware-operations
+- https://thedfirreport.com/2021/03/29/sodinokibi-aka-revil-ransomware/
+tags:
+- attack.t1020
+date: '2021-05-13'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.original_file_name=rclone.exe
+          AND
+          Processes.process_name!=rclone.exe
+      )
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `detect_renamed_rclone_filter`
+splunk_rule_id: 6dca1124-b3ec-11eb-9328-acde48001122
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    OriginalFileName: rclone.exe
+  selection_1:
+    Image: rclone.exe
+  condition: selection_0 and selection_1

@@ -1,0 +1,40 @@
+title: Windows Process Injection In Non-Service SearchIndexer
+id: d131673f-ede1-47f2-93a1-0108d3e7fafd
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies instances of the searchindexer.exe process that are not spawned by services.exe, indicating potential process injection. This detection leverages data from
+  Endpoint Detection and Response (EDR) agents, focusing on process names and parent processes. This activity is significant because QakBot malware often uses a fake searchindexer.exe to evade detection
+  and perform malicious actions such as data exfiltration and keystroke logging. If confirmed malicious, this activity could allow attackers to maintain persistence, steal sensitive information, and communicate
+  with command and control servers.
+references:
+- https://twitter.com/Max_Mal_/status/1736392741758611607
+- https://twitter.com/1ZRR4H/status/1735944522075386332
+tags:
+- attack.t1055
+date: '2022-02-23'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name != services.exe Processes.process_name=searchindexer.exe
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_process_injection_in_non_service_searchindexer_filter`
+splunk_rule_id: d131673f-ede1-47f2-93a1-0108d3e7fafd
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: services.exe
+  selection_1:
+    Image: searchindexer.exe
+  condition: selection_0 and selection_1

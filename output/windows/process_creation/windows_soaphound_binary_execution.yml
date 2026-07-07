@@ -1,0 +1,55 @@
+title: Windows SOAPHound Binary Execution
+id: 8e53f839-e127-4d6d-a54d-a2f67044a57f
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of the SOAPHound binary (`soaphound.exe`) with specific command-line arguments. It leverages data from Endpoint Detection and Response (EDR) agents,
+  focusing on process names, command-line arguments, and other process-related metadata. This activity is significant because SOAPHound is a known tool used for credential dumping and other malicious activities.
+  If confirmed malicious, this behavior could allow an attacker to extract sensitive information, escalate privileges, or persist within the environment, posing a severe threat to organizational security.
+references:
+- https://github.com/FalconForceTeam/SOAPHound
+tags:
+- attack.t1069.001
+- attack.t1069.002
+- attack.t1087.001
+- attack.t1087.002
+- attack.t1482
+date: '2021-06-03'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name="soaphound.exe"
+      OR
+      Processes.original_file_name="soaphound.exe"
+      AND
+      Processes.process IN ("*--buildcache *", "*--bhdump *", "*--certdump *", "*--dnsdump *", "*-c *", "*--cachefilename *", "*-o *", "*--outputdirectory *")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_soaphound_binary_execution_filter`
+splunk_rule_id: 8e53f839-e127-4d6d-a54d-a2f67044a57f
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: soaphound.exe
+  selection_1:
+    OriginalFileName: soaphound.exe
+    CommandLine:
+    - '*--buildcache *'
+    - '*--bhdump *'
+    - '*--certdump *'
+    - '*--dnsdump *'
+    - '*-c *'
+    - '*--cachefilename *'
+    - '*-o *'
+    - '*--outputdirectory *'
+  condition: selection_0 and selection_1

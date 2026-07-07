@@ -1,0 +1,37 @@
+title: Multiple Archive Files Http Post Traffic
+id: 4477f3ea-a28f-11eb-b762-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the high-frequency exfiltration of archive files via HTTP POST requests. It leverages HTTP stream logs to identify specific archive file headers within the request
+  body. This activity is significant as it often indicates data exfiltration by APTs or trojan spyware after data collection. If confirmed malicious, this behavior could lead to the unauthorized transfer
+  of sensitive data to an attacker’s command and control server, potentially resulting in severe data breaches and loss of confidential information.
+references:
+- https://attack.mitre.org/techniques/T1560/001/
+- https://www.mandiant.com/resources/apt39-iranian-cyber-espionage-group-focused-on-personal-information
+- https://www.microsoft.com/security/blog/2021/01/20/deep-dive-into-the-solorigate-second-stage-activation-from-sunburst-to-teardrop-and-raindrop/
+tags:
+- attack.t1048.003
+date: '2021-04-22'
+original_spl: |-
+  `stream_http` http_method=POST
+    | eval archive_hdr1=substr(form_data,1,2)
+    | eval archive_hdr2 = substr(form_data,1,4)
+    | stats values(form_data) as http_request_body min(_time) as firstTime max(_time) as lastTime count
+      BY src_ip dest_ip http_method
+         http_user_agent uri_path url
+         bytes_in bytes_out archive_hdr1
+         archive_hdr2
+    | where count >20 AND (archive_hdr1 = "7z" OR archive_hdr1 = "PK" OR archive_hdr2="Rar!")
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `multiple_archive_files_http_post_traffic_filter`
+splunk_rule_id: 4477f3ea-a28f-11eb-b762-acde48001122
+splunk_rule_type: TTP
+logsource:
+  product: zeek
+  service: http
+detection:
+  selection_0:
+    http_method: POST
+  condition: selection_0

@@ -1,0 +1,43 @@
+title: Detect AzureHound Command-Line Arguments
+id: 26f02e96-c300-11eb-b611-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of the `Invoke-AzureHound` command-line argument, commonly used by the AzureHound tool. It leverages data from Endpoint Detection and Response (EDR)
+  agents, focusing on process names and command-line executions. This activity is significant because AzureHound is often used for reconnaissance in Azure environments, potentially exposing sensitive information.
+  If confirmed malicious, this activity could allow an attacker to map out Azure Active Directory structures, aiding in further attacks and privilege escalation.
+references:
+- https://attack.mitre.org/software/S0521/
+- https://github.com/BloodHoundAD/BloodHound/tree/master/Collectors
+- https://posts.specterops.io/introducing-bloodhound-4-0-the-azure-update-9b2b26c5e350
+- https://github.com/BloodHoundAD/Legacy-AzureHound.ps1/blob/master/AzureHound.ps1
+tags:
+- attack.t1069.001
+- attack.t1069.002
+- attack.t1087.001
+- attack.t1087.002
+- attack.t1482
+date: '2021-06-03'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process IN ("*invoke-azurehound*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `detect_azurehound_command_line_arguments_filter`
+splunk_rule_id: 26f02e96-c300-11eb-b611-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: invoke-azurehound
+  condition: selection_0

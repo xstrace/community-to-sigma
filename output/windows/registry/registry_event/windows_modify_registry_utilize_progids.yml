@@ -1,0 +1,28 @@
+title: Windows Modify Registry Utilize ProgIDs
+id: 64fa82dd-fd11-472a-9e94-c221fffa591d
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects modifications to the Windows Registry specifically targeting Programmatic Identifier associations to bypass User Account Control (UAC) Windows OS feature. ValleyRAT
+  may create or alter registry entries to targetted progIDs like `.pwn` files with malicious processes, allowing it to execute harmful scripts or commands when these files are opened. By monitoring for
+  unusual changes in registry keys linked to ProgIDs, this detection enables security analysts to identify potential threats like ValleyRAT execution attempts. Early detection of these modifications helps
+  mitigate unauthorized execution and prevents further exploitation of the system.
+references:
+- https://www.proofpoint.com/us/blog/threat-insight/chinese-malware-appears-earnest-across-cybercrime-threat-landscape
+- https://www.fortinet.com/blog/threat-research/valleyrat-campaign-targeting-chinese-speakers
+- https://v3ded.github.io/redteam/utilizing-programmatic-identifiers-progids-for-uac-bypasses
+tags:
+- attack.t1112
+date: '2024-09-18'
+original_spl: '| tstats `security_content_summariesonly` count FROM datamodel=Endpoint.Registry WHERE Registry.registry_path= "*\\ms-settings\\CurVer\\(Default)" by Registry.action Registry.dest Registry.process_guid
+  Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user
+  Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_modify_registry_utilize_progids_filter`'
+splunk_rule_id: 64fa82dd-fd11-472a-9e94-c221fffa591d
+splunk_rule_type: Anomaly
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \ms-settings\CurVer\(Default)
+  condition: selection_0

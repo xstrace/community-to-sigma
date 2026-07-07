@@ -1,0 +1,54 @@
+title: Wermgr Process Connecting To IP Check Web Services
+id: ed313326-a0f9-11eb-a89c-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Mauricio Velazco, Splunk
+description: The following analytic detects the wermgr.exe process attempting to connect to known IP check web services. It leverages Sysmon EventCode 22 to identify DNS queries made by wermgr.exe to specific
+  IP check services. This activity is significant because wermgr.exe is typically used for Windows error reporting, and its connection to these services may indicate malicious code injection, often associated
+  with malware like Trickbot. If confirmed malicious, this behavior could allow attackers to recon the infected machine's IP address, aiding in further exploitation and evasion tactics.
+references:
+- https://labs.vipre.com/trickbot-and-its-modules/
+- https://whitehat.eu/incident-response-case-study-featuring-ryuk-and-trickbot-part-2/
+tags:
+- attack.t1590.005
+date: '2021-04-26'
+original_spl: |-
+  `sysmon` EventCode =22 process_name = wermgr.exe QueryName IN ("*wtfismyip.com", "*checkip.amazonaws.com", "*ipecho.net", "*ipinfo.io", "*api.ipify.org", "*icanhazip.com", "*ip.anysrc.com","*api.ip.sb", "ident.me", "www.myexternalip.com", "*zen.spamhaus.org", "*cbl.abuseat.org", "*b.barracudacentral.org","*dnsbl-1.uceprotect.net", "*spam.dnsbl.sorbs.net")
+    | stats  min(_time) as firstTime max(_time) as lastTime count
+      BY answer answer_count dvc
+         process_exec process_guid process_name
+         query query_count reply_code_id
+         signature signature_id src
+         user_id vendor_product QueryName
+         QueryResults QueryStatus
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `wermgr_process_connecting_to_ip_check_web_services_filter`
+splunk_rule_id: ed313326-a0f9-11eb-a89c-acde48001122
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 22
+  selection_1:
+    process_name: wermgr.exe
+  selection_2:
+    QueryName|endswith:
+    - wtfismyip.com
+    - checkip.amazonaws.com
+    - ipecho.net
+    - ipinfo.io
+    - api.ipify.org
+    - icanhazip.com
+    - ip.anysrc.com
+    - api.ip.sb
+    - ident.me
+    - www.myexternalip.com
+    - zen.spamhaus.org
+    - cbl.abuseat.org
+    - b.barracudacentral.org
+    - dnsbl-1.uceprotect.net
+    - spam.dnsbl.sorbs.net
+  condition: selection_0 and selection_1 and selection_2

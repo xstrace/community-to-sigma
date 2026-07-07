@@ -1,0 +1,41 @@
+title: MSBuild Suspicious Spawned By Script Process
+id: 213b3148-24ea-11ec-93a2-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the suspicious spawning of MSBuild.exe by Windows Script Host processes (cscript.exe or wscript.exe). This behavior is often associated with malware or adversaries
+  executing malicious MSBuild processes via scripts on compromised hosts. The detection leverages Endpoint Detection and Response (EDR) telemetry, focusing on process creation events where MSBuild is a
+  child of script hosts. This activity is significant as it may indicate an attempt to execute malicious code. If confirmed malicious, it could lead to unauthorized code execution, potentially compromising
+  the host and allowing further malicious activities.
+references:
+- https://app.any.run/tasks/dc93ee63-050c-4ff8-b07e-8277af9ab939/
+tags:
+- attack.t1127.001
+date: '2021-10-04'
+original_spl: |-
+  | tstats `security_content_summariesonly` count values(Processes.process_name) as process_name values(Processes.process) as process min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name IN ("wscript.exe", "cscript.exe")
+      AND
+      `process_msbuild`
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `msbuild_suspicious_spawned_by_script_process_filter`
+splunk_rule_id: 213b3148-24ea-11ec-93a2-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage:
+    - wscript.exe
+    - cscript.exe
+  condition: selection_0

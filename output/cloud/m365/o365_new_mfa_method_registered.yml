@@ -1,0 +1,48 @@
+title: O365 New MFA Method Registered
+id: 4e12db1f-f7c7-486d-8152-a221cad6ac2b
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the registration of a new Multi-Factor Authentication (MFA) method for a user account within Office 365. It leverages O365 audit logs to identify changes in MFA
+  configurations. This activity is significant as it may indicate an attacker's attempt to maintain persistence on a compromised account. If confirmed malicious, the attacker could bypass existing security
+  measures, solidify their access, and potentially escalate privileges or access sensitive data. Immediate verification and remediation are required to secure the affected account.
+references:
+- https://attack.mitre.org/techniques/T1098/005/
+- https://www.microsoft.com/en-us/security/blog/2023/06/08/detecting-and-mitigating-a-multi-stage-aitm-phishing-and-bec-campaign/
+- https://www.csoonline.com/article/573451/sophisticated-bec-scammers-bypass-microsoft-365-multi-factor-authentication.html
+tags:
+- attack.t1098.005
+date: '2023-12-06'
+original_spl: |-
+  `o365_management_activity`
+  Workload=AzureActiveDirectory
+  Operation="Update user."
+  | eval propertyName = mvindex('ModifiedProperties{}.Name', 0)
+  | search propertyName IN ("StrongAuthenticationMethod", "StrongAuthenticationPhoneAppDetail")
+  | eval oldvalue = mvindex('ModifiedProperties{}.OldValue',0)
+  | eval newvalue = mvindex('ModifiedProperties{}.NewValue',0)
+  | rex field=newvalue max_match=0 "(?i)(?<new_method_type>MethodType|DeviceName)"
+  | rex field=oldvalue max_match=0 "(?i)(?<old_method_type>MethodType|DeviceName)"
+  | eval count_new_method_type = coalesce(mvcount(new_method_type), 0)
+  | eval count_old_method_type = coalesce(mvcount(old_method_type), 0)
+  | where count_new_method_type > count_old_method_type
+  | fillnull
+  | stats earliest(_time) as firstTime
+          latest(_time) as lastTime
+          values(propertyName) as propertyName
+    by user newvalue oldvalue vendor_account
+       vendor_product dest signature src
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `o365_new_mfa_method_registered_filter`
+splunk_rule_id: 4e12db1f-f7c7-486d-8152-a221cad6ac2b
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: Update user.
+  condition: selection_0 and selection_1

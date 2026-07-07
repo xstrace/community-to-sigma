@@ -1,0 +1,29 @@
+title: Hide User Account From Sign-In Screen
+id: 834ba832-ad89-11eb-937d-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic detects a suspicious registry modification that hides a user account from the Windows Login screen. It leverages data from the Endpoint.Registry data model, specifically
+  monitoring changes to the registry path "*\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\Userlist*" with a value of "0x00000000". This activity is significant as it may indicate an adversary
+  attempting to create a hidden admin account to avoid detection and maintain persistence on the compromised machine. If confirmed malicious, this could allow the attacker to maintain undetected access
+  and control over the system, posing a severe security risk.
+references:
+- https://thedfirreport.com/2020/04/20/sqlserver-or-the-miner-in-the-basement/
+tags:
+- attack.t1685
+date: '2021-05-07'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path="*\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\Userlist*"
+  AND Registry.registry_value_data = "0x00000000") by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | where isnotnull(registry_value_data) | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `hide_user_account_from_sign_in_screen_filter`'
+splunk_rule_id: 834ba832-ad89-11eb-937d-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \Windows NT\CurrentVersion\Winlogon\SpecialAccounts\Userlist
+  selection_1:
+    Details: '0x00000000'
+  condition: selection_0 and selection_1

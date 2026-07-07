@@ -1,0 +1,43 @@
+title: Windows DiskCryptor Usage
+id: d56fe0c8-4650-11ec-a8fa-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of DiskCryptor, identified by the process names "dcrypt.exe" or "dcinst.exe". This detection leverages data from Endpoint Detection and Response
+  (EDR) agents, focusing on process names and original file names. DiskCryptor is significant because adversaries use it to manually encrypt disks during an operation, potentially leading to data inaccessibility.
+  If confirmed malicious, this activity could result in complete disk encryption, causing data loss and operational disruption. Immediate investigation is required to mitigate potential ransomware attacks.
+references:
+- https://thedfirreport.com/2021/11/15/exchange-exploit-leads-to-domain-wide-ransomware/
+- https://github.com/DavidXanatos/DiskCryptor
+tags:
+- attack.t1486
+date: '2021-11-15'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name="dcrypt.exe"
+          OR
+          Processes.original_file_name=dcinst.exe
+      )
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_diskcryptor_usage_filter`
+splunk_rule_id: d56fe0c8-4650-11ec-a8fa-acde48001122
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: dcrypt.exe
+  selection_1:
+    OriginalFileName: dcinst.exe
+  condition: selection_0 and selection_1

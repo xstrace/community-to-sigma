@@ -1,0 +1,46 @@
+title: Linux Gem Privilege Escalation
+id: 0115482a-5dcb-4bb0-bcca-5d095d224236
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Splunk
+description: The following analytic detects the execution of the RubyGems utility with elevated privileges, specifically when it is used to run system commands as root. This detection leverages data from
+  Endpoint Detection and Response (EDR) agents, focusing on command-line executions that include "gem open -e" and "sudo". This activity is significant because it indicates a potential privilege escalation
+  attempt, allowing a user to execute commands as the root user. If confirmed malicious, this could lead to full system compromise, enabling the attacker to gain root access and execute arbitrary commands
+  with elevated privileges.
+references:
+- https://gtfobins.github.io/gtfobins/gem/
+- https://en.wikipedia.org/wiki/RubyGems
+tags:
+- attack.t1548.003
+date: '2022-08-10'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process="*gem*open*-e*"
+      AND
+      Processes.process="*-c*"
+      AND
+      Processes.process="*sudo*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_gem_privilege_escalation_filter`
+splunk_rule_id: 0115482a-5dcb-4bb0-bcca-5d095d224236
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: gem*open*-e
+  selection_1:
+    CommandLine|contains: -c
+  selection_2:
+    CommandLine|contains: sudo
+  condition: selection_0 and selection_1 and selection_2

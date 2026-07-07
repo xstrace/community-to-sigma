@@ -1,0 +1,54 @@
+title: Linux Puppet Privilege Escalation
+id: 1d19037f-466e-4d56-8d87-36fafd9aa3ce
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Splunk
+description: The following analytic detects the execution of Puppet commands with elevated privileges, specifically when Puppet is used to apply configurations with sudo rights. This detection leverages
+  data from Endpoint Detection and Response (EDR) agents, focusing on process execution logs that include command-line details. This activity is significant because it indicates a potential privilege escalation
+  attempt, where a user could gain root access and execute system commands as the root user. If confirmed malicious, this could allow an attacker to fully compromise the system, execute arbitrary commands,
+  and maintain persistent control.
+references:
+- https://gtfobins.github.io/gtfobins/puppet/
+- https://en.wikipedia.org/wiki/Puppet_(software)
+tags:
+- attack.t1548.003
+date: '2022-08-10'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process="*puppet*"
+      AND
+      Processes.process="*apply*"
+      AND
+      Processes.process="*-e*"
+      AND
+      Processes.process="*exec*"
+      AND
+      Processes.process="*sudo*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_puppet_privilege_escalation_filter`
+splunk_rule_id: 1d19037f-466e-4d56-8d87-36fafd9aa3ce
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: puppet
+  selection_1:
+    CommandLine|contains: apply
+  selection_2:
+    CommandLine|contains: -e
+  selection_3:
+    CommandLine|contains: exec
+  selection_4:
+    CommandLine|contains: sudo
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

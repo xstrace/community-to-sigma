@@ -1,0 +1,52 @@
+title: HTTP Scripting Tool User Agent
+id: 04430b4e-5ca8-4e88-98b5-d6bcf54f8393
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: This Splunk query analyzes web access logs to identify and categorize non-browser user agents, detecting various types of security tools, scripting languages, automation frameworks, and suspicious
+  patterns. This activity can signify malicious actors attempting to interact with web endpoints in non-standard ways.
+references:
+- https://portswigger.net/web-security/request-smuggling#what-is-http-request-smuggling
+- https://portswigger.net/research/http1-must-die
+- https://www.vaadata.com/blog/what-is-http-request-smuggling-exploitations-and-security-best-practices/
+- https://www.securityweek.com/new-http-request-smuggling-attacks-impacted-cdns-major-orgs-millions-of-websites/
+- https://github.com/SigmaHQ/sigma/blob/master/rules/web/proxy_generic/proxy_ua_hacktool.yml
+- https://help.aikido.dev/zen-firewall/miscellaneous/bot-protection-details
+tags:
+- attack.t1071.001
+date: '2025-10-21'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime
+  from datamodel=Web where
+  Web.http_user_agent =*
+  NOT Web.http_user_agent IN (
+      "-",
+      "unknown"
+  )
+  by Web.http_user_agent Web.dest Web.src Web.status
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `drop_dm_object_name(Web)`
+  | eval http_user_agent = lower(http_user_agent)
+  | lookup scripting_tools_user_agents tool_user_agent AS http_user_agent OUTPUT tool
+  | where isnotnull(tool)
+  | stats count
+      min(firstTime) as first_seen
+      max(lastTime) as last_seen
+      values(tool) as tool
+  by http_user_agent dest src status
+  | `security_content_ctime(first_seen)`
+  | `security_content_ctime(last_seen)`
+  | `http_scripting_tool_user_agent_filter`
+splunk_rule_id: 04430b4e-5ca8-4e88-98b5-d6bcf54f8393
+splunk_rule_type: Anomaly
+logsource:
+  category: webserver
+detection:
+  selection_0:
+    cs-user-agent|contains: ''
+  filter_1:
+    cs-user-agent:
+    - '-'
+    - unknown
+  condition: (selection_0) and not (filter_1)

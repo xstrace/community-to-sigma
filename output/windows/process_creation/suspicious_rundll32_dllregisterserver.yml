@@ -1,0 +1,42 @@
+title: Suspicious Rundll32 dllregisterserver
+id: 8c00a385-9b86-4ac0-8932-c9ec3713b159
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of rundll32.exe with the DllRegisterServer command to load a DLL. It leverages data from Endpoint Detection and Response (EDR) agents, focusing
+  on command-line executions and process details. This activity is significant as it may indicate an attempt to register a malicious DLL, which can be a method for code execution or persistence. If confirmed
+  malicious, an attacker could gain unauthorized code execution, escalate privileges, or maintain persistence within the environment, posing a severe security risk.
+references:
+- https://attack.mitre.org/techniques/T1218/011/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218.011/T1218.011.md
+- https://lolbas-project.github.io/lolbas/Binaries/Rundll32/
+- https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/seedworm-apt-iran-middle-east
+- https://github.com/pan-unit42/tweets/blob/master/2020-12-10-IOCs-from-Ursnif-infection-with-Delf-variant.txt
+- https://www.crowdstrike.com/blog/duck-hunting-with-falcon-complete-qakbot-zip-based-campaign/
+- https://docs.microsoft.com/en-us/windows/win32/api/olectl/nf-olectl-dllregisterserver?redirectedfrom=MSDN
+tags:
+- attack.t1218.011
+date: '2021-02-09'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_rundll32` Processes.process=*dllregisterserver*
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `suspicious_rundll32_dllregisterserver_filter`
+splunk_rule_id: 8c00a385-9b86-4ac0-8932-c9ec3713b159
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: dllregisterserver
+  condition: selection_0

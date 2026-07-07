@@ -1,0 +1,39 @@
+title: DNS Kerberos Coercion
+id: 8551252d-b5b6-4b6e-8a82-51460aeb29a3
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: Detects DNS-based Kerberos coercion attacks where adversaries inject marshaled credential structures into DNS records to spoof SPNs and redirect authentication such as in CVE-2025-33073. This
+  detection leverages suricata looking for specific CREDENTIAL_TARGET_INFORMATION structures in DNS queries.
+references:
+- https://web.archive.org/web/20250617122747/https://www.synacktiv.com/publications/ntlm-reflection-is-dead-long-live-ntlm-reflection-an-in-depth-analysis-of-cve-2025
+- https://www.synacktiv.com/publications/relaying-kerberos-over-smb-using-krbrelayx
+- https://www.guidepointsecurity.com/blog/the-birth-and-death-of-loopyticket/
+tags:
+- attack.t1557.001
+- attack.t1187
+- attack.t1071.004
+date: '2025-11-18'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime values(DNS.src) as src values(DNS.dest) as dest FROM datamodel=Network_Resolution
+    WHERE DNS.query="*1UWhRC*" DNS.query="*AAAAA*" DNS.query="*YBAAAA*"
+    BY DNS.answer DNS.answer_count DNS.query
+       DNS.query_count DNS.reply_code_id DNS.src
+       DNS.vendor_product
+  | `drop_dm_object_name(DNS)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | table firstTime lastTime query count src dest
+  | `dns_kerberos_coercion_filter`
+splunk_rule_id: 8551252d-b5b6-4b6e-8a82-51460aeb29a3
+splunk_rule_type: TTP
+logsource:
+  category: dns
+detection:
+  selection_0:
+    QueryName|contains: 1UWhRC
+  selection_1:
+    QueryName|contains: AAAAA
+  selection_2:
+    QueryName|contains: YBAAAA
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,45 @@
+title: Linux Malformed Auth Entry
+id: 962602e9-08ae-47ff-af89-a1e83f461a26
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  The following analytic detects when su runs from a page-cache-corrupted binary.
+  When this happens a partial corruption of its runtime state can prevent it from resolving the identity of the calling user.
+  Under normal conditions, su logs both the target account and the invoking user.
+  When exploitation has occurred via this path, the invoking username field is absent.
+  This activity is significant because it indicates a possible privilege escalation attempt, allowing a user to gain root access.
+  If confirmed malicious, an attacker could achieve full control over the system, execute arbitrary commands, and compromise the entire environment.
+references:
+- https://xint.io/blog/copy-fail-linux-distributions
+- https://github.com/theori-io/copy-fail-CVE-2026-31431
+- https://github.com/Neo23x0/auditd/blob/master/audit.rules
+tags:
+- attack.t1068
+date: '2026-05-06'
+original_spl: |-
+  sourcetype=linux_secure process=su
+  | rex "su:\s+\(to\s+(?<target_user>\S+)\)(?<source_user>\s{2,})on\s+(?<terminal>\S+)"
+  | where len(ltrim(source_user)) == 0
+  | stats
+      count                        as total_attempts,
+      min(_time)                   as firstTime,
+      max(_time)                   as lastTime,
+      values(target_user)          as target_users,
+      values(host)                 as dest
+      by process
+
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_malformed_auth_entry_filter`
+splunk_rule_id: 962602e9-08ae-47ff-af89-a1e83f461a26
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    sourcetype: linux_secure
+  selection_1:
+    process: su
+  condition: selection_0 and selection_1

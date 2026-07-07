@@ -1,0 +1,55 @@
+title: Detect Certify Command Line Arguments
+id: e6d2dc61-a8b9-4b03-906c-da0ca75d71b8
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic detects the use of Certify or Certipy tools to enumerate Active Directory Certificate Services (AD CS) environments. It leverages Endpoint Detection and Response (EDR)
+  data, focusing on specific command-line arguments associated with these tools. This activity is significant because it indicates potential reconnaissance or exploitation attempts targeting AD CS, which
+  could lead to unauthorized access or privilege escalation. If confirmed malicious, attackers could gain insights into the AD CS infrastructure, potentially compromising sensitive certificates and escalating
+  their privileges within the network.
+references:
+- https://github.com/GhostPack/Certify
+- https://github.com/ly4k/Certipy
+- https://specterops.io/wp-content/uploads/sites/3/2022/06/Certified_Pre-Owned.pdf
+tags:
+- attack.t1649
+- attack.t1105
+date: '2023-07-28'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process IN ("* find *","* auth *","* request *","* req *","* download *",)
+      AND
+      Processes.process IN ("* /vulnerable*","* /enrolleeSuppliesSubject *","* /json /outfile*","* /ca*", "* -username *","* -u *")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `detect_certify_command_line_arguments_filter`
+splunk_rule_id: e6d2dc61-a8b9-4b03-906c-da0ca75d71b8
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - ' find '
+    - ' auth '
+    - ' request '
+    - ' req '
+    - ' download '
+  selection_1:
+    CommandLine|contains:
+    - ' /vulnerable'
+    - ' /enrolleeSuppliesSubject '
+    - ' /json /outfile'
+    - ' /ca'
+    - ' -username '
+    - ' -u '
+  condition: selection_0 and selection_1

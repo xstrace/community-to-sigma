@@ -1,0 +1,43 @@
+title: Recursive Delete of Directory In Batch CMD
+id: ba570b3a-d356-11eb-8358-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of a batch command designed to recursively delete files or directories, a technique often used by ransomware like Reddot to delete files in the
+  recycle bin and prevent recovery. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on command-line executions that include specific flags for recursive and quiet deletions.
+  This activity is significant as it indicates potential ransomware behavior aimed at data destruction. If confirmed malicious, it could lead to significant data loss and hinder recovery efforts, severely
+  impacting business operations.
+references:
+- https://app.any.run/tasks/c0f98850-af65-4352-9746-fbebadee4f05/
+tags:
+- attack.t1070.004
+date: '2021-06-23'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_cmd` Processes.process=*/c*  Processes.process="* rd *" Processes.process="*/s*" Processes.process="*/q*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `recursive_delete_of_directory_in_batch_cmd_filter`
+splunk_rule_id: ba570b3a-d356-11eb-8358-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: /c
+  selection_1:
+    CommandLine|contains: ' rd '
+  selection_2:
+    CommandLine|contains: /s
+  selection_3:
+    CommandLine|contains: /q
+  condition: selection_0 and selection_1 and selection_2 and selection_3

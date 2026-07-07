@@ -1,0 +1,39 @@
+title: Suspicious SQLite3 LSQuarantine Behavior
+id: e1997b2e-655f-4561-82fd-aeba8e1c1a86
+status: experimental
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies the use of SQLite3 querying the MacOS preferences to determine the original URL from which a package was downloaded. This detection leverages data from Endpoint
+  Detection and Response (EDR) agents, focusing on process names and command-line executions involving LSQuarantine. This activity is significant as it is commonly associated with MacOS adware and other
+  malicious software. If confirmed malicious, this behavior could indicate an attempt to track or manipulate downloaded packages, potentially leading to further system compromise or persistent adware infections.
+references:
+- https://redcanary.com/blog/clipping-silver-sparrows-wings/
+- https://www.marcosantadev.com/manage-plist-files-plistbuddy/
+tags:
+- attack.t1074
+date: '2021-03-01'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=sqlite3 Processes.process=*LSQuarantine*
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `suspicious_sqlite3_lsquarantine_behavior_filter`
+splunk_rule_id: e1997b2e-655f-4561-82fd-aeba8e1c1a86
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: sqlite3
+  selection_1:
+    CommandLine|contains: LSQuarantine
+  condition: selection_0 and selection_1

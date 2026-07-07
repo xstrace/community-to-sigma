@@ -1,0 +1,54 @@
+title: Cisco Configuration Archive Logging Analysis
+id: f52d5c0b-d45d-4304-b300-a4f6a1130dec
+status: stable
+level: medium
+author: Bhavin Patel, Michael Haag, Splunk
+description: This analytic provides comprehensive monitoring of configuration changes on Cisco devices by analyzing archive logs. Configuration archive logging captures all changes made to a device's configuration,
+  providing a detailed audit trail that can be used to identify suspicious or malicious activities. This detection is particularly valuable for identifying patterns of malicious configuration changes that
+  might indicate an attacker's presence, such as the creation of backdoor accounts, SNMP community string modifications, and TFTP server configurations for data exfiltration. By analyzing these logs, security
+  teams can gain a holistic view of configuration changes across sessions and users, helping to detect sophisticated attack campaigns like those conducted by threat actors such as Static Tundra.
+references:
+- https://blog.talosintelligence.com/static-tundra/
+- https://tools.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-20180328-smi2
+- https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/config-mgmt/configuration/15-mt/config-mgmt-15-mt-book/cm-config-logger.html
+tags:
+- attack.t1685
+- attack.t1098
+- attack.t1505.003
+date: '2025-08-21'
+original_spl: |-
+  | tstats `security_content_summariesonly` count values(All_Changes.command) as commands min(_time) as firstTime max(_time) as lastTime FROM datamodel=Change.All_Changes
+    WHERE (
+          (All_Changes.command="*username*privilege 15*")
+          OR
+          (All_Changes.command="*username*password*")
+          OR
+          (All_Changes.command="*USER TABLE MODIFIED*")
+          OR
+          (All_Changes.command="*tftp-server*")
+          OR
+          (All_Changes.command="*snmp-server community*")
+      )
+    BY All_Changes.dvc All_Changes.user
+  | `drop_dm_object_name("All_Changes")`
+  | rename dvc as dest
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_configuration_archive_logging_analysis_filter`
+splunk_rule_id: f52d5c0b-d45d-4304-b300-a4f6a1130dec
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: cisco
+detection:
+  selection_0:
+    CommandLine|contains: username*privilege 15
+  selection_1:
+    CommandLine|contains: username*password
+  selection_2:
+    CommandLine|contains: USER TABLE MODIFIED
+  selection_3:
+    CommandLine|contains: tftp-server
+  selection_4:
+    CommandLine|contains: snmp-server community
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

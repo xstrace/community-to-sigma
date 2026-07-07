@@ -1,0 +1,48 @@
+title: Windows Powershell Import Applocker Policy
+id: 102af98d-0ca3-4aa4-98d6-7ab2b98b955a
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |-
+  The following analytic detects the import of Windows PowerShell Applocker cmdlets, specifically identifying the use of "Import-Module Applocker" and "Set-AppLockerPolicy" with an XML policy.
+  It leverages PowerShell Script Block Logging (EventCode 4104) to capture and analyze script block text.
+  This activity is significant as it may indicate an attempt to enforce restrictive Applocker policies, potentially used by malware like Azorult to disable antivirus products.
+  If confirmed malicious, this could allow an attacker to bypass security controls, leading to further system compromise and persistence.
+references:
+- https://app.any.run/tasks/a6f2ffe2-e6e2-4396-ae2e-04ea0143f2d8/
+tags:
+- attack.t1059.001
+- attack.t1685
+date: '2022-06-30'
+original_spl: |-
+  `powershell`
+  EventCode=4104
+  ScriptBlockText="*Import-Module Applocker*"
+  ScriptBlockText="*Set-AppLockerPolicy*"
+  ScriptBlockText="* -XMLPolicy *"
+  | fillnull
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+    by dest signature signature_id
+       user_id vendor_product EventID
+       Guid Opcode Name
+       Path ProcessID ScriptBlockId
+       ScriptBlockText
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_powershell_import_applocker_policy_filter`
+splunk_rule_id: 102af98d-0ca3-4aa4-98d6-7ab2b98b955a
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: Import-Module Applocker
+  selection_2:
+    ScriptBlockText|contains: Set-AppLockerPolicy
+  selection_3:
+    ScriptBlockText|contains: ' -XMLPolicy '
+  condition: selection_0 and selection_1 and selection_2 and selection_3

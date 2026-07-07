@@ -1,0 +1,39 @@
+title: WordPress Bricks Builder plugin RCE
+id: 56a8771a-3fda-4959-b81d-2f266e2f679f
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies potential exploitation of the WordPress Bricks Builder plugin RCE vulnerability. It detects HTTP POST requests to the URL path "/wp-json/bricks/v1/render_element"
+  with a status code of 200, leveraging the Web datamodel. This activity is significant as it indicates an attempt to exploit CVE-2024-25600, a known vulnerability that allows remote code execution. If
+  confirmed malicious, an attacker could execute arbitrary commands on the target server, leading to potential full system compromise and unauthorized access to sensitive data.
+references:
+- https://attack.mitre.org/techniques/T1190
+- https://github.com/Tornad0007/CVE-2024-25600-Bricks-Builder-plugin-for-WordPress/blob/main/exploit.py
+- https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-25600
+- https://op-c.net/blog/cve-2024-25600-wordpresss-bricks-builder-rce-flaw-under-active-exploitation/
+- https://thehackernews.com/2024/02/wordpress-bricks-theme-under-active.html
+tags:
+- attack.t1190
+date: '2024-02-22'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Web
+    WHERE Web.url IN ("*/wp-json/bricks/v1/render_element") Web.status=200 Web.http_method=POST
+    BY Web.src, Web.dest, Web.http_user_agent,
+       Web.url, Web.uri_path, Web.status,
+       Web.http_method, sourcetype, source
+  | `drop_dm_object_name("Web")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `wordpress_bricks_builder_plugin_rce_filter`
+splunk_rule_id: 56a8771a-3fda-4959-b81d-2f266e2f679f
+splunk_rule_type: TTP
+logsource:
+  category: webserver
+detection:
+  selection_0:
+    cs-uri|endswith: /wp-json/bricks/v1/render_element
+  selection_1:
+    sc-status: 200
+  selection_2:
+    cs-method: POST
+  condition: selection_0 and selection_1 and selection_2

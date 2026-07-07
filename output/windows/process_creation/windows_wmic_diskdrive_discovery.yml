@@ -1,0 +1,37 @@
+title: Windows Wmic DiskDrive Discovery
+id: 85e88c80-e4ee-4c65-b02e-3c54d94c7a51
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the use of Windows Management Instrumentation Command-line (WMIC) for disk drive discovery activities on a Windows system. This process involves monitoring commands
+  such as “wmic diskdrive” which are often used by administrators for inventory and diagnostics but can also be leveraged by attackers to enumerate hardware details for malicious purposes. Detecting these
+  commands is essential for identifying potentially unauthorized asset reconnaissance or pre-attack mapping behaviors. By capturing and analyzing WMIC disk drive queries, security teams can gain visibility
+  into suspicious activities, enabling them to respond promptly and strengthen the organization’s security posture against insider threats or lateral movement attempts.
+references:
+- https://cert.gov.ua/article/6284730
+tags:
+- attack.t1082
+date: '2021-05-07'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_wmic` (Processes.process="* diskdrive*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_wmic_diskdrive_discovery_filter`
+splunk_rule_id: 85e88c80-e4ee-4c65-b02e-3c54d94c7a51
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: ' diskdrive'
+  condition: selection_0

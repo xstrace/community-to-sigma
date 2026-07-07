@@ -1,0 +1,41 @@
+title: Windows Data Destruction Recursive Exec Files Deletion
+id: 3596a799-6320-4a2f-8772-a9e98ddb2960
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic identifies a suspicious process that is recursively deleting executable files on a compromised host. It leverages Sysmon Event Codes 23 and 26 to detect this activity
+  by monitoring for a high volume of deletions or overwrites of files with extensions like .exe, .sys, and .dll. This behavior is significant as it is commonly associated with destructive malware such as
+  CaddyWiper, DoubleZero, and SwiftSlicer, which aim to make file recovery impossible. If confirmed malicious, this activity could lead to significant data loss and system instability, severely impacting
+  business operations.
+references:
+- https://www.welivesecurity.com/2023/01/27/swiftslicer-new-destructive-wiper-malware-ukraine/
+tags:
+- attack.t1485
+date: '2023-02-03'
+original_spl: |-
+  `sysmon` EventCode IN ("23","26") TargetFilename IN ("*.exe", "*.sys", "*.dll")
+    | bin _time span=2m
+    | stats count min(_time) as firstTime, max(_time) as lastTime values(file_path) as file_path values(file_hash) as file_hash values(file_name) as file_name values(file_modify_time) as file_modify_time values(process_name) as process_name values(process_path) as process_path values(process_guid) as process_guid values(process_id) as process_id values(process_exec) as process_exec
+      BY action dest dvc
+         signature signature_id user
+         user_id vendor_product
+    | where count >=100
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_data_destruction_recursive_exec_files_deletion_filter`
+splunk_rule_id: 3596a799-6320-4a2f-8772-a9e98ddb2960
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID:
+    - '23'
+    - '26'
+  selection_1:
+    TargetFilename|endswith:
+    - .exe
+    - .sys
+    - .dll
+  condition: selection_0 and selection_1

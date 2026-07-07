@@ -1,0 +1,36 @@
+title: O365 Mail Permissioned Application Consent Granted by User
+id: fddad083-cdf5-419d-83c6-baa85e329595
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies instances where a user grants consent to an application requesting mail-related permissions within the Office 365 environment. It leverages O365 audit logs,
+  specifically focusing on events related to application permissions and user consent actions. This activity is significant as it can indicate potential security risks, such as data exfiltration or spear
+  phishing, if malicious applications gain access. If confirmed malicious, this could lead to unauthorized data access, email forwarding, or sending malicious emails from the compromised account. Validating
+  the legitimacy of the application and consent context is crucial to prevent data breaches.
+references:
+- https://attack.mitre.org/techniques/T1528/
+- https://www.microsoft.com/en-us/security/blog/2022/09/22/malicious-oauth-applications-used-to-compromise-email-servers-and-spread-spam/
+- https://learn.microsoft.com/en-us/azure/active-directory/manage-apps/protect-against-consent-phishing
+- https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
+- https://www.alteredsecurity.com/post/introduction-to-365-stealer
+- https://github.com/AlteredSecurity/365-Stealer
+tags:
+- attack.t1528
+date: '2023-12-06'
+original_spl: '`o365_management_activity` Workload=AzureActiveDirectory Operation="Consent to application." ResultStatus=Success | eval admin_consent =mvindex(''ModifiedProperties{}.NewValue'',0) | search
+  admin_consent=False | eval permissions =mvindex(''ModifiedProperties{}.NewValue'',4) | rex field=permissions "Scope:(?<Scope>[^,]+)" | makemv delim=" " Scope | search Scope IN ("Mail.Read", "Mail.ReadBasic",
+  "Mail.ReadWrite", "Mail.Read.Shared", "Mail.ReadWrite.Shared", "Mail.Send", "Mail.Send.Shared") | fillnull | stats count min(_time) as firstTime max(_time) as lastTime values(Scope) as Scope by signature
+  dest user src vendor_account vendor_product object ObjectId | `security_content_ctime(lastTime)` | `o365_mail_permissioned_application_consent_granted_by_user_filter`'
+splunk_rule_id: fddad083-cdf5-419d-83c6-baa85e329595
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: Consent to application.
+  selection_2:
+    ResultStatus: Success
+  condition: selection_0 and selection_1 and selection_2

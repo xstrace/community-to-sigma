@@ -1,0 +1,44 @@
+title: Windows SubInAcl Execution
+id: 12491419-1a6f-4af4-afc3-4e2052f0610e
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Michael Haag, Splunk
+description: The following analytic detects the execution of the SubInAcl utility. SubInAcl is a legacy Windows Resource Kit tool from the Windows 2003 era, used to manipulate security descriptors of securable
+  objects. It leverages data from Endpoint Detection and Response (EDR) agents, specifically searching for any process execution involving "SubInAcl.exe" binary. This activity can be significant because
+  the utility should be rarely found on modern Windows machines, which mean any execution could potentially be considered suspicious. If confirmed malicious, this could allow an attacker to blind defenses
+  by tampering with EventLog ACLs or modifying the access to a previously denied resource.
+references:
+- https://www.pwc.com/gx/en/issues/cybersecurity/cyber-threat-intelligence/cyber-year-in-retrospect/yir-cyber-threats-report-download.pdf
+- https://attack.mitre.org/techniques/T1222/001/
+tags:
+- attack.t1222.001
+date: '2020-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly` values(Processes.process) as process min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name=subinacl.exe
+          OR
+          Processes.original_file_name=SubInAcl.exe
+      )
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_subinacl_execution_filter`
+splunk_rule_id: 12491419-1a6f-4af4-afc3-4e2052f0610e
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: subinacl.exe
+  selection_1:
+    OriginalFileName: SubInAcl.exe
+  condition: selection_0 and selection_1

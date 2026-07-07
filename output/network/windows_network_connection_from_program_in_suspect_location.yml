@@ -1,0 +1,60 @@
+title: Windows Network Connection From Program In Suspect Location
+id: 90fd571b-78d4-409e-a2de-0f0a80c75a84
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  The following analytic detects network connections from processes running out of suspicious Windows directories such as Recycle Bin, Public, PerfLogs, systemprofile, Fonts, IME, and Addins paths.
+  This activity is significant because malware often executes from writable or unusual directories while communicating with external infrastructure.
+  If confirmed malicious, the process may represent command-and-control, staging, or data exfiltration activity from a compromised endpoint.
+references:
+- https://github.com/Neo23x0/sigma/blob/master/rules/windows/sysmon/sysmon_susp_prog_location_network_connection.yml
+tags:
+- attack.t1011
+date: '2026-05-05'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  from datamodel=Network_Traffic.All_Traffic where
+
+  All_Traffic.app IN (
+      "*\\$Recycle.Bin\\*",
+      "*\\Config\\SystemProfile\\*",
+      "*\\PerfLogs\\*",
+      "*\\Users\\All Users\\*",
+      "*\\Users\\Default\\*",
+      "*\\Users\\Public\\*",
+      "*\\Windows\\addins\\*",
+      "*\\Windows\\Fonts\\*",
+      "*\\Windows\\IME\\*"
+  )
+
+  by All_Traffic.dest All_Traffic.dest_ip All_Traffic.dest_port All_Traffic.src
+     All_Traffic.src_ip All_Traffic.src_port All_Traffic.transport All_Traffic.protocol
+     All_Traffic.protocol_version All_Traffic.direction All_Traffic.action All_Traffic.app
+     All_Traffic.dvc All_Traffic.user All_Traffic.vendor_product
+
+  | `drop_dm_object_name(All_Traffic)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_network_connection_from_program_in_suspect_location_filter`
+splunk_rule_id: 90fd571b-78d4-409e-a2de-0f0a80c75a84
+splunk_rule_type: Anomaly
+logsource:
+  category: all_traffic
+  product: windows
+detection:
+  selection_0:
+    All_Traffic.app|contains:
+    - \$Recycle.Bin\
+    - \Config\SystemProfile\
+    - \PerfLogs\
+    - \Users\All Users\
+    - \Users\Default\
+    - \Users\Public\
+    - \Windows\addins\
+    - \Windows\Fonts\
+    - \Windows\IME\
+  condition: selection_0

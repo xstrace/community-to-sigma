@@ -1,0 +1,27 @@
+title: Screensaver Event Trigger Execution
+id: 58cea3ec-1f6d-11ec-8560-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects modifications to the SCRNSAVE.EXE registry entry, indicating potential event trigger execution via screensaver settings for persistence or privilege escalation.
+  It leverages registry activity data from the Endpoint data model to identify changes to the specified registry path. This activity is significant as it is a known technique used by APT groups and malware
+  to maintain persistence or escalate privileges. If confirmed malicious, this could allow an attacker to execute arbitrary code with elevated privileges, leading to further system compromise and persistent
+  access.
+references:
+- https://attack.mitre.org/techniques/T1546/002/
+- https://dmcxblue.gitbook.io/red-team-notes-2-0/red-team-techniques/privilege-escalation/untitled-3/screensaver
+tags:
+- attack.t1546.002
+date: '2021-09-28'
+original_spl: '| tstats `security_content_summariesonly` count  min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry where (Registry.registry_path="*\\Control Panel\\Desktop\\SCRNSAVE.EXE*")
+  by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name
+  Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `security_content_ctime(lastTime)` | `security_content_ctime(firstTime)` | `drop_dm_object_name(Registry)` | `screensaver_event_trigger_execution_filter`'
+splunk_rule_id: 58cea3ec-1f6d-11ec-8560-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \Control Panel\Desktop\SCRNSAVE.EXE
+  condition: selection_0

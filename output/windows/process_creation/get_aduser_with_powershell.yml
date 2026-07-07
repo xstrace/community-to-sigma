@@ -1,0 +1,50 @@
+title: Get ADUser with PowerShell
+id: 0b6ee3f4-04e3-11ec-a87d-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Mauricio Velazco, Splunk
+description: The following analytic detects the execution of `powershell.exe` with command-line arguments used to enumerate domain users via the `Get-ADUser` cmdlet. It leverages data from Endpoint Detection
+  and Response (EDR) agents, focusing on process names and command-line executions. This activity is significant as it may indicate an attempt by adversaries to gather information about domain users for
+  situational awareness and Active Directory discovery. If confirmed malicious, this behavior could lead to further reconnaissance, enabling attackers to identify high-value targets and plan subsequent
+  attacks.
+references:
+- https://www.blackhillsinfosec.com/red-blue-purple/
+- https://attack.mitre.org/techniques/T1087/002/
+- https://docs.microsoft.com/en-us/powershell/module/activedirectory/get-aduser?view=windowsserver2019-ps
+tags:
+- attack.t1087.002
+date: '2021-08-25'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name="cmd.exe"
+          OR
+          Processes.process_name="powershell*"
+      )
+      AND Processes.process = "*Get-ADUser*" AND Processes.process = "*-filter*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `get_aduser_with_powershell_filter`
+splunk_rule_id: 0b6ee3f4-04e3-11ec-a87d-acde48001122
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: cmd.exe
+  selection_1:
+    Image|startswith: powershell
+  selection_2:
+    CommandLine|contains: Get-ADUser
+  selection_3:
+    CommandLine|contains: -filter
+  condition: selection_0 and selection_1 and selection_2 and selection_3

@@ -1,0 +1,42 @@
+title: Windows System Script Proxy Execution Syncappvpublishingserver
+id: 8dd73f89-682d-444c-8b41-8e679966ad3c
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of Syncappvpublishingserver.vbs via wscript.exe or cscript.exe, which may indicate an attempt to download remote files or perform privilege escalation.
+  This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line executions. Monitoring this activity is crucial as it can signify malicious
+  use of a native Windows script for unauthorized actions. If confirmed malicious, this behavior could lead to unauthorized file downloads or elevated privileges, posing a significant security risk.
+references:
+- https://lolbas-project.github.io/lolbas/Scripts/Syncappvpublishingserver/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1216/T1216.md#atomic-test-1---syncappvpublishingserver-signed-script-powershell-command-execution
+tags:
+- attack.t1216
+- attack.t1218
+date: '2022-06-17'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name IN ("wscript.exe","cscript.exe") Processes.process="*syncappvpublishingserver.vbs*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_system_script_proxy_execution_syncappvpublishingserver_filter`
+splunk_rule_id: 8dd73f89-682d-444c-8b41-8e679966ad3c
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image:
+    - wscript.exe
+    - cscript.exe
+  selection_1:
+    CommandLine|contains: syncappvpublishingserver.vbs
+  condition: selection_0 and selection_1

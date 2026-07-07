@@ -1,0 +1,50 @@
+title: Detect SharpHound File Modifications
+id: 42b4b438-beed-11eb-ba1d-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the creation of files typically associated with SharpHound, a reconnaissance tool used for gathering domain and trust data. It leverages file modification events
+  from the Endpoint.Filesystem data model, focusing on default file naming patterns like `*_BloodHound.zip` and various JSON files. This activity is significant as it indicates potential domain enumeration,
+  which is a precursor to more targeted attacks. If confirmed malicious, an attacker could gain detailed insights into the domain structure, facilitating lateral movement and privilege escalation.
+references:
+- https://attack.mitre.org/software/S0521/
+- https://thedfirreport.com/?s=bloodhound
+- https://github.com/BloodHoundAD/BloodHound/tree/master/Collectors
+- https://github.com/BloodHoundAD/SharpHound3
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1059.001/T1059.001.md#atomic-test-2---run-bloodhound-from-local-disk
+tags:
+- attack.t1069.001
+- attack.t1069.002
+- attack.t1087.001
+- attack.t1087.002
+- attack.t1482
+date: '2021-06-03'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Filesystem
+    WHERE Filesystem.file_name IN ("*bloodhound.zip", "*_computers.json", "*_gpos.json", "*_domains.json", "*_users.json", "*_groups.json", "*_ous.json", "*_containers.json")
+    BY Filesystem.action Filesystem.dest Filesystem.file_access_time
+       Filesystem.file_create_time Filesystem.file_hash Filesystem.file_modify_time
+       Filesystem.file_name Filesystem.file_path Filesystem.file_acl
+       Filesystem.file_size Filesystem.process_guid Filesystem.process_id
+       Filesystem.user Filesystem.vendor_product
+  | `drop_dm_object_name(Filesystem)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `detect_sharphound_file_modifications_filter`
+splunk_rule_id: 42b4b438-beed-11eb-ba1d-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|endswith:
+    - bloodhound.zip
+    - _computers.json
+    - _gpos.json
+    - _domains.json
+    - _users.json
+    - _groups.json
+    - _ous.json
+    - _containers.json
+  condition: selection_0

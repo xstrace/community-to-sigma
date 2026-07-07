@@ -1,0 +1,38 @@
+title: Windows Developer-Signed MSIX Package Installation
+id: 2c0427aa-982c-4e97-bc33-bddeda4fd095
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: This detection identifies the installation of developer-signed MSIX packages that lack Microsoft Store signatures. All malicious MSIX packages observed in recent threat campaigns (including
+  those from FIN7, Zloader/Storm-0569, and FakeBat/Storm-1113) were developer-signed rather than Microsoft Store signed. Microsoft Store apps have specific publisher IDs containing '8wekyb3d8bbwe' or 'cw5n1h2txyewy',
+  while developer-signed packages lack these identifiers. This detection focuses on EventID 855 from the Microsoft-Windows-AppXDeployment-Server/Operational logs, which indicates a completed package installation.
+references:
+- https://redcanary.com/blog/threat-intelligence/msix-installers/
+- https://learn.microsoft.com/en-us/windows/win32/appxpkg/troubleshooting
+- https://www.advancedinstaller.com/msix-installation-or-launching-errors-and-fixes.html
+- https://redcanary.com/blog/threat-detection/code-signing-certificates/
+tags:
+- attack.t1553.005
+- attack.t1204.002
+date: '2025-08-18'
+original_spl: |-
+  `wineventlog_appxdeploymentserver` EventCode=855 NOT PackageMoniker IN ("*8wekyb3d8bbwe*","*cw5n1h2txyewy*")
+    | stats count min(_time) as firstTime max(_time) as lastTime values(PackageMoniker) as PackageMoniker
+      BY dvc EventCode user_id
+    | rename dvc as dest
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_developer_signed_msix_package_installation_filter`
+splunk_rule_id: 2c0427aa-982c-4e97-bc33-bddeda4fd095
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    EventID: 855
+  filter_1:
+    PackageMoniker:
+    - '*8wekyb3d8bbwe*'
+    - '*cw5n1h2txyewy*'
+  condition: (selection_0) and not (filter_1)

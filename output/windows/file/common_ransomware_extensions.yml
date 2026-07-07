@@ -1,0 +1,118 @@
+title: Common Ransomware Extensions
+id: a9e5c5db-db11-43ca-86a8-c852d1b2c0ec
+status: stable
+level: medium
+author: David Dorsey, Michael Haag, Splunk, Steven Dick
+description: The following analytic detects modifications to files with extensions commonly associated with ransomware. It leverages the Endpoint.Filesystem data model to identify changes in file extensions
+  that match known ransomware patterns. This activity is significant because it suggests an attacker is attempting to encrypt or alter files, potentially leading to severe data loss and operational disruption.
+  If confirmed malicious, this activity could result in the encryption of critical data, rendering it inaccessible and causing significant damage to the organization's data integrity and availability.
+references:
+- https://github.com/splunk/security_content/issues/2448
+tags:
+- attack.t1485
+date: '2019-10-16'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    min(_time) as firstTime
+    max(_time) as lastTime
+    count latest(Filesystem.user) as user
+          values(Filesystem.file_path) as file_path
+    from datamodel=Endpoint.Filesystem
+    where NOT Filesystem.file_name IN (
+      "*.bat",
+      "*.cmd",
+      "*.com",
+      "*.cpl",
+      "*.dll",
+      "*.doc",
+      "*.docx",
+      "*.exe",
+      "*.gif",
+      "*.jar",
+      "*.jpeg",
+      "*.jpg",
+      "*.js",
+      "*.lnk",
+      "*.pif",
+      "*.png",
+      "*.ppt",
+      "*.pptx",
+      "*.ps1",
+      "*.psm1",
+      "*.scr",
+      "*.sys",
+      "*.txt",
+      "*.vbs",
+      "*.wsf",
+      "*.xls",
+      "*.xlsx"
+    )
+    by Filesystem.action Filesystem.dest
+       Filesystem.file_access_time Filesystem.file_create_time
+       Filesystem.file_hash Filesystem.file_modify_time
+       Filesystem.file_name Filesystem.file_path
+       Filesystem.file_acl Filesystem.file_size
+       Filesystem.process_guid Filesystem.process_id
+       Filesystem.user Filesystem.vendor_product
+  | `drop_dm_object_name(Filesystem)`
+  | rex field=file_name "(?<file_extension>(\.[^\.]+){1,2})$"
+  | lookup update=true ransomware_extensions_lookup Extensions AS file_extension OUTPUT Extensions Name
+  | search Name !=False
+  | stats min(firstTime) as firstTime
+          max(lastTime) as lastTime
+          dc(file_path) as path_count
+          dc(file_name) as file_count
+          values(action) as action
+          values(file_access_time) as file_access_time
+          values(file_create_time) as file_create_time
+          values(file_hash) as file_hash
+          values(file_modify_time) as file_modify_time
+          values(file_acl) as file_acl
+          values(file_size) as file_size
+          values(file_path) as file_path
+          values(process_guid) as process_guid
+          values(process_id) as process_id
+          values(user) as user
+          values(vendor_product) as vendor_product
+          values(file_name) as file_name
+          values(file_extension) as file_extension
+          values(Name) as Name
+    by dest
+  | where path_count > 1 OR file_count > 20
+  | `common_ransomware_extensions_filter`
+splunk_rule_id: a9e5c5db-db11-43ca-86a8-c852d1b2c0ec
+splunk_rule_type: TTP
+logsource:
+  category: file_event
+  product: windows
+detection:
+  filter_0:
+    Image:
+    - '*.bat'
+    - '*.cmd'
+    - '*.com'
+    - '*.cpl'
+    - '*.dll'
+    - '*.doc'
+    - '*.docx'
+    - '*.exe'
+    - '*.gif'
+    - '*.jar'
+    - '*.jpeg'
+    - '*.jpg'
+    - '*.js'
+    - '*.lnk'
+    - '*.pif'
+    - '*.png'
+    - '*.ppt'
+    - '*.pptx'
+    - '*.ps1'
+    - '*.psm1'
+    - '*.scr'
+    - '*.sys'
+    - '*.txt'
+    - '*.vbs'
+    - '*.wsf'
+    - '*.xls'
+    - '*.xlsx'
+  condition: filter_0

@@ -1,0 +1,49 @@
+title: Windows PowerShell ScheduleTask
+id: ddf82fcb-e9ee-40e3-8712-a50b5bf323fc
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects potential malicious activities involving PowerShell's task scheduling cmdlets. It leverages PowerShell Script Block Logging (EventCode 4104) to identify unusual
+  or suspicious use of cmdlets like 'New-ScheduledTask' and 'Set-ScheduledTask'. This activity is significant as attackers often use these cmdlets for persistence and remote execution of malicious code.
+  If confirmed malicious, this could allow attackers to maintain access, deliver additional payloads, or execute ransomware, leading to data theft or other severe impacts. Immediate investigation and mitigation
+  are crucial to prevent further compromise.
+references:
+- https://learn.microsoft.com/en-us/powershell/module/scheduledtasks/?view=windowsserver2022-ps
+- https://thedfirreport.com/2023/06/12/a-truly-graceful-wipe-out/
+tags:
+- attack.t1053.005
+- attack.t1059.001
+date: '2023-06-12'
+original_spl: |-
+  `powershell` EventCode=4104 ScriptBlockText IN ("*New-ScheduledTask*", "*New-ScheduledTaskAction*", "*New-ScheduledTaskSettingsSet*", "*New-ScheduledTaskTrigger*", "*Register-ClusteredScheduledTask*", "*Register-ScheduledTask*", "*Set-ClusteredScheduledTask*", "*Set-ScheduledTask*", "*Start-ScheduledTask*", "*Enable-ScheduledTask*")
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest signature signature_id
+         user_id vendor_product EventID
+         Guid Opcode Name
+         Path ProcessID ScriptBlockId
+         ScriptBlockText
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_powershell_scheduletask_filter`
+splunk_rule_id: ddf82fcb-e9ee-40e3-8712-a50b5bf323fc
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains:
+    - New-ScheduledTask
+    - New-ScheduledTaskAction
+    - New-ScheduledTaskSettingsSet
+    - New-ScheduledTaskTrigger
+    - Register-ClusteredScheduledTask
+    - Register-ScheduledTask
+    - Set-ClusteredScheduledTask
+    - Set-ScheduledTask
+    - Start-ScheduledTask
+    - Enable-ScheduledTask
+  condition: selection_0 and selection_1

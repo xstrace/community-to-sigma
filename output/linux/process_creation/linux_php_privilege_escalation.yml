@@ -1,0 +1,46 @@
+title: Linux PHP Privilege Escalation
+id: 4fc4c031-e5be-4cc0-8cf9-49f9f507bcb5
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Splunk
+description: The following analytic detects the execution of PHP commands with elevated privileges on a Linux system. It identifies instances where PHP is used in conjunction with 'sudo' and 'system' commands,
+  indicating an attempt to run system commands as the root user. This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on process command-line arguments. This activity
+  is significant because it can indicate an attempt to escalate privileges, potentially leading to full root access. If confirmed malicious, this could allow an attacker to execute arbitrary commands with
+  root privileges, compromising the entire system.
+references:
+- https://gtfobins.github.io/gtfobins/php/
+- https://en.wikipedia.org/wiki/PHP
+tags:
+- attack.t1548.003
+date: '2022-08-10'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process="*php*-r*"
+      AND
+      Processes.process="*system*"
+      AND
+      Processes.process="*sudo*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_php_privilege_escalation_filter`
+splunk_rule_id: 4fc4c031-e5be-4cc0-8cf9-49f9f507bcb5
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: php*-r
+  selection_1:
+    CommandLine|contains: system
+  selection_2:
+    CommandLine|contains: sudo
+  condition: selection_0 and selection_1 and selection_2

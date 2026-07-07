@@ -1,0 +1,34 @@
+title: Windows Audit Policy Auditing Option Modified - Registry
+id: 27914692-9c62-44ea-9129-ceb429b61bd0
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Bhavin Patel, Splunk
+description: The following analytic detects potentially suspicious modifications to the Audit Policy auditing options registry values. It leverages data from the Endpoint.Registry data model, focusing on
+  changes to one of the following auditing option values "CrashOnAuditFail", "FullPrivilegeAuditing", "AuditBaseObjects" and "AuditBaseDirectories" within the "HKLM\\System\\CurrentControlSet\\Control\\Lsa\\"
+  registry key. This activity is significant as it could be a sign of a threat actor trying to tamper with the audit policy configuration, and disabling SACLs configuration. If confirmed malicious, this
+  behavior could allow attackers to bypass defenses, and plan further attacks, potentially leading to full machine compromise or lateral movement.
+references:
+- https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-gpac/262a2bed-93d4-4c04-abec-cf06e9ec72fd
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/auditpol-set
+tags:
+- attack.t1547.014
+date: '2025-02-19'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE Registry.registry_path="*\\Control\\Lsa*" Registry.registry_value_name
+  IN ("CrashOnAuditFail", "FullPrivilegeAuditing", "AuditBaseObjects", "AuditBaseDirectories") by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path
+  Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)`
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_audit_policy_auditing_option_modified___registry_filter`'
+splunk_rule_id: 27914692-9c62-44ea-9129-ceb429b61bd0
+splunk_rule_type: Anomaly
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \Control\Lsa
+  selection_1:
+    Details:
+    - CrashOnAuditFail
+    - FullPrivilegeAuditing
+    - AuditBaseObjects
+    - AuditBaseDirectories
+  condition: selection_0 and selection_1

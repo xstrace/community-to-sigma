@@ -1,0 +1,42 @@
+title: Windows AppLocker Privilege Escalation via Unauthorized Bypass
+id: bca48629-7fa2-40d3-9e5d-807564504e28
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic utilizes Windows AppLocker event logs to identify attempts to bypass application restrictions. AppLocker is a feature that allows administrators to specify which applications
+  are permitted to run on a system. This analytic is designed to identify attempts to bypass these restrictions, which could be indicative of an attacker attempting to escalate privileges. The analytic
+  uses EventCodes 8007, 8004, 8022, 8025, 8029, and 8040 to identify these attempts. The analytic will identify the host, full file path, and target user associated with the bypass attempt. These EventCodes
+  are related to block events and focus on 5 attempts or more.
+references:
+- https://learn.microsoft.com/en-us/windows/security/application-security/application-control/windows-defender-application-control/operations/querying-application-control-events-centrally-using-advanced-hunting
+- https://learn.microsoft.com/en-us/windows/security/application-security/application-control/windows-defender-application-control/applocker/using-event-viewer-with-applocker
+tags:
+- attack.t1218
+date: '2024-04-17'
+original_spl: |-
+  `applocker` EventCode IN (8007, 8004, 8022, 8025, 8029, 8040)
+    | spath input=UserData_Xml
+    | rename RuleAndFileData.* as *, Computer as dest, TargetUser AS user
+    | stats count AS attempt_count min(_time) as firstTime max(_time) as lastTime
+      BY dest, PolicyName, RuleId,
+         user, TargetProcessId, FilePath,
+         FullFilePath, EventCode
+    | where attempt_count > 5
+    | sort - attempt_count
+    | lookup applockereventcodes EventCode OUTPUT Description
+    | `windows_applocker_privilege_escalation_via_unauthorized_bypass_filter`
+splunk_rule_id: bca48629-7fa2-40d3-9e5d-807564504e28
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: applocker
+detection:
+  selection_0:
+    EventID:
+    - 8007
+    - 8004
+    - 8022
+    - 8025
+    - 8029
+    - 8040
+  condition: selection_0

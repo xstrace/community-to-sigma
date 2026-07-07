@@ -1,0 +1,27 @@
+title: Windows SQL Server Startup Procedure
+id: 7bec7c5c-2262-4adb-ba56-c8028512bc58
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: This detection identifies when a startup procedure is registered or executed in SQL Server. Startup procedures automatically execute when SQL Server starts, making them an attractive persistence
+  mechanism for attackers. The detection monitors for suspicious stored procedure names and patterns that may indicate malicious activity, such as attempts to execute operating system commands or gain elevated
+  privileges.
+references:
+- https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-procoption-transact-sql
+- https://www.netspi.com/blog/technical-blog/network-penetration-testing/sql-server-persistence-part-1-startup-stored-procedures/
+- https://attack.mitre.org/techniques/T1505/001/
+tags:
+- attack.t1505.001
+date: '2025-02-13'
+original_spl: '`wineventlog_application` EventCode=17135 | rex field=EventData_Xml "<Data>(?<startup_procedure>[^<]+)</Data>" | rename host as dest | eval risk_score=case( match(lower(startup_procedure),
+  "xp_|sp_|cmdshell|shell|exec"), 90, true(), 70 ) | eval risk_message="SQL Server startup procedure ''".startup_procedure."'' was launched on host ".dest | stats count min(_time) as firstTime max(_time)
+  as lastTime by dest EventCode startup_procedure risk_message risk_score | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_sql_server_startup_procedure_filter`'
+splunk_rule_id: 7bec7c5c-2262-4adb-ba56-c8028512bc58
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: application
+detection:
+  selection_0:
+    EventID: 17135
+  condition: selection_0

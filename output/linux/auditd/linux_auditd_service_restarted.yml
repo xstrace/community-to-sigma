@@ -1,0 +1,37 @@
+title: Linux Auditd Service Restarted
+id: 8eb3e858-18d3-44a4-a514-52cfa39f154a
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the restarting or re-enabling of services on Linux systems using the `systemctl` or `service` commands. It leverages data from Linux Auditd, focusing on process
+  and command-line execution logs. This activity is significant as adversaries may use it to maintain persistence or execute unauthorized actions. If confirmed malicious, this behavior could lead to repeated
+  execution of malicious payloads, unauthorized access, or data destruction. Security analysts should investigate these events to mitigate risks and prevent further compromise.
+references:
+- https://attack.mitre.org/techniques/T1543/003/
+tags:
+- attack.t1053.006
+date: '2024-08-12'
+original_spl: |-
+  `linux_auditd`  proctitle IN ("*systemctl *", "*service *") AND proctitle IN ("*restart*", "*reenable*", "*reload*")
+    | rename host as dest
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY proctitle dest
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `linux_auditd_service_restarted_filter`
+splunk_rule_id: 8eb3e858-18d3-44a4-a514-52cfa39f154a
+splunk_rule_type: Anomaly
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    proctitle|contains:
+    - 'systemctl '
+    - 'service '
+  selection_1:
+    proctitle|contains:
+    - restart
+    - reenable
+    - reload
+  condition: selection_0 and selection_1

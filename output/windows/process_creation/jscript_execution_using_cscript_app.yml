@@ -1,0 +1,46 @@
+title: Jscript Execution Using Cscript App
+id: 002f1e24-146e-11ec-a470-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of JScript using the cscript.exe process. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process and command-line
+  telemetry. This behavior is significant because JScript files are typically executed by wscript.exe, making cscript.exe execution unusual and potentially indicative of malicious activity, such as the
+  FIN7 group's tactics. If confirmed malicious, this activity could allow attackers to execute arbitrary scripts, leading to code execution, data exfiltration, or further system compromise.
+references:
+- https://www.mandiant.com/resources/fin7-pursuing-an-enigmatic-and-evasive-global-criminal-operation
+- https://attack.mitre.org/groups/G0046/
+tags:
+- attack.t1059.007
+date: '2021-09-14'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.parent_process_name = "cscript.exe"
+          AND
+          Processes.parent_process = "*//e:jscript*"
+      )
+      OR (Processes.process_name = "cscript.exe" AND Processes.process = "*//e:jscript*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `jscript_execution_using_cscript_app_filter`
+splunk_rule_id: 002f1e24-146e-11ec-a470-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: cscript.exe
+    ParentCommandLine|contains: '*//e:jscript*'
+  selection_1:
+    Image: cscript.exe
+    CommandLine|contains: '*//e:jscript*'
+  condition: selection_0 and selection_1

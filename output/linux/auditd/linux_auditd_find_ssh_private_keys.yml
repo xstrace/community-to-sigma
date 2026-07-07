@@ -1,0 +1,42 @@
+title: Linux Auditd Find Ssh Private Keys
+id: e2d2bd10-dcd1-4b2f-8a76-0198eab32ba5
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects suspicious attempts to find SSH private keys, which may indicate an attacker's effort to compromise secure access to systems. SSH private keys are essential for
+  secure authentication, and unauthorized access to these keys can enable attackers to gain unauthorized access to servers and other critical infrastructure. By monitoring for unusual or unauthorized searches
+  for SSH private keys, this analytic helps identify potential threats to network security, allowing security teams to quickly respond and safeguard against unauthorized access and potential breaches.
+references:
+- https://www.splunk.com/en_us/blog/security/deep-dive-on-persistence-privilege-escalation-technique-and-detection-in-linux-platform.html
+- https://github.com/peass-ng/PEASS-ng/tree/master/linPEAS
+tags:
+- attack.t1552.004
+date: '2024-08-12'
+original_spl: |-
+  `linux_auditd` execve_command IN ("*find*", "*grep*") AND execve_command IN ("*id_rsa*", "*id_dsa*", "*.key*", "*ssh_key*", "*authorized_keys*")
+    | rename host as dest
+    | rename comm as process_name
+    | rename exe as process
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY argc execve_command dest
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `linux_auditd_find_ssh_private_keys_filter`
+splunk_rule_id: e2d2bd10-dcd1-4b2f-8a76-0198eab32ba5
+splunk_rule_type: Anomaly
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    execve_command|contains:
+    - find
+    - grep
+  selection_1:
+    execve_command|contains:
+    - id_rsa
+    - id_dsa
+    - .key
+    - ssh_key
+    - authorized_keys
+  condition: selection_0 and selection_1

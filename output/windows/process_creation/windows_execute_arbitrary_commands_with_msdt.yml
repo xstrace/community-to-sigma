@@ -1,0 +1,59 @@
+title: Windows Execute Arbitrary Commands with MSDT
+id: e1d5145f-38fe-42b9-a5d5-457796715f97
+status: stable
+level: medium
+author: Michael Haag, Teoderick Contreras, Splunk
+description: The following analytic detects arbitrary command execution using Windows msdt.exe, a Diagnostics Troubleshooting Wizard. It leverages Endpoint Detection and Response (EDR) data to identify
+  instances where msdt.exe is invoked via the ms-msdt:/ protocol handler to retrieve a remote payload. This activity is significant as it can indicate an exploitation attempt leveraging msdt.exe to execute
+  arbitrary commands, potentially leading to unauthorized code execution. If confirmed malicious, this could allow an attacker to execute arbitrary code, escalate privileges, or persist within the environment,
+  posing a severe security risk.
+references:
+- https://isc.sans.edu/diary/rss/28694
+- https://doublepulsar.com/follina-a-microsoft-office-code-execution-vulnerability-1a47fce5629e
+- https://twitter.com/nao_sec/status/1530196847679401984?s=20&t=ZiXYI4dQuA-0_dzQzSUb3A
+- https://app.any.run/tasks/713f05d2-fe78-4b9d-a744-f7c133e3fafb/
+- https://www.virustotal.com/gui/file/4a24048f81afbe9fb62e7a6a49adbd1faf41f266b5f9feecdceb567aec096784/detection
+- https://strontic.github.io/xcyclopedia/library/msdt.exe-152D4C9F63EFB332CCB134C6953C0104.html
+tags:
+- attack.t1218
+date: '2022-05-30'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=msdt.exe Processes.process IN ("*msdt*","*ms-msdt:*","*ms-msdt:/id*","*ms-msdt:-id*","*/id*")
+      AND
+      (Processes.process="*IT_BrowseForFile=*"
+      OR
+      Processes.process="*IT_RebrowseForFile=*"
+      OR
+      Processes.process="*.xml*")
+      AND
+      Processes.process="*PCWDiagnostic*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_execute_arbitrary_commands_with_msdt_filter`
+splunk_rule_id: e1d5145f-38fe-42b9-a5d5-457796715f97
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: msdt.exe
+  selection_1:
+    CommandLine|contains:
+    - msdt
+    - 'ms-msdt:'
+    - ms-msdt:/id
+    - ms-msdt:-id
+    - /id
+  selection_2:
+    CommandLine|contains: PCWDiagnostic
+  condition: selection_0 and selection_1 and selection_2

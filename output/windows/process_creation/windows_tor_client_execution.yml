@@ -1,0 +1,50 @@
+title: Windows TOR Client Execution
+id: f164bc6f-ecbe-45e0-aaa6-f5c4d8c84b9a
+status: stable
+level: medium
+author: Vignesh Subramanian, Splunk
+description: |
+  The following analytic detects the execution of the TOR Browser and related TOR components on Windows endpoints by monitoring process creation activity.
+  Adversaries and insider threats leverage TOR to anonymize command-and-control traffic, facilitate data exfiltration, and evade network monitoring and policy enforcement.
+  While TOR can be used for legitimate research and privacy purposes, its presence on enterprise endpoints is often unusual and should be investigated to determine intent, scope, and any associated malicious behavior.
+references:
+- https://unit42.paloaltonetworks.com/tor-traffic-enterprise-networks/
+- https://attack.mitre.org/software/S0183/
+- https://attack.mitre.org/techniques/T1090/003/
+tags:
+- attack.t1090.003
+date: '2026-02-02'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime
+    from datamodel=Endpoint.Processes where
+    (
+      Processes.process_name = "tor.exe"
+      OR
+      (
+        Processes.process_path = "*\\BraveSoftware\\Brave-Browser*"
+        Processes.process_path = "*\\tor-*"
+      )
+    )
+    by Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec
+       Processes.parent_process_guid Processes.parent_process_id
+       Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_tor_client_execution_filter`
+splunk_rule_id: f164bc6f-ecbe-45e0-aaa6-f5c4d8c84b9a
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: tor.exe
+  selection_1:
+    Image|contains: '*\BraveSoftware\Brave-Browser*'
+  condition: selection_0 and selection_1

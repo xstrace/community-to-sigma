@@ -1,0 +1,43 @@
+title: Windows Office Product Spawned MSDT
+id: a3148fad-3734-4b7f-9a71-62f08d39fab1
+status: stable
+level: medium
+author: Michael Haag, Teoderick Contreras, Splunk
+description: The following analytic detects a Microsoft Office product spawning the Windows msdt.exe process. This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on
+  process creation events where Office applications are the parent process. This activity is significant as it may indicate an attempt to exploit protocol handlers to bypass security controls, even if macros
+  are disabled. If confirmed malicious, this behavior could allow an attacker to execute arbitrary code, potentially leading to system compromise, data exfiltration, or further lateral movement within the
+  network.
+references:
+- https://isc.sans.edu/diary/rss/28694
+- https://doublepulsar.com/follina-a-microsoft-office-code-execution-vulnerability-1a47fce5629e
+- https://twitter.com/nao_sec/status/1530196847679401984?s=20&t=ZiXYI4dQuA-0_dzQzSUb3A
+- https://app.any.run/tasks/713f05d2-fe78-4b9d-a744-f7c133e3fafb/
+- https://www.virustotal.com/gui/file/4a24048f81afbe9fb62e7a6a49adbd1faf41f266b5f9feecdceb567aec096784/detection
+- https://strontic.github.io/xcyclopedia/library/msdt.exe-152D4C9F63EFB332CCB134C6953C0104.html
+- https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog/trojanized-onenote-document-leads-to-formbook-malware/
+tags:
+- attack.t1566.001
+date: '2022-05-30'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_office_products_parent` Processes.process_name=msdt.exe
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_office_product_spawned_msdt_filter`
+splunk_rule_id: a3148fad-3734-4b7f-9a71-62f08d39fab1
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: msdt.exe
+  condition: selection_0

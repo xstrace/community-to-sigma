@@ -1,0 +1,38 @@
+title: Linux Stdout Redirection To Dev Null File
+id: de62b809-a04d-46b5-9a15-8298d330f0c8
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects command-line activities that redirect stdout or stderr to the /dev/null file. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on
+  process execution logs. This behavior is significant as it can indicate attempts to hide command outputs, a technique observed in the CyclopsBlink malware to conceal modifications to iptables firewall
+  settings. If confirmed malicious, this activity could allow an attacker to stealthily alter system configurations, potentially leading to unauthorized access or persistent control over the compromised
+  machine.
+references:
+- https://www.ncsc.gov.uk/files/Cyclops-Blink-Malware-Analysis-Report.pdf
+- https://www.trendmicro.com/en_us/research/22/c/cyclops-blink-sets-sights-on-asus-routers--.html
+tags:
+- attack.t1686
+date: '2022-04-07'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process = "*&>/dev/null*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_stdout_redirection_to_dev_null_file_filter`
+splunk_rule_id: de62b809-a04d-46b5-9a15-8298d330f0c8
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: '&>/dev/null'
+  condition: selection_0

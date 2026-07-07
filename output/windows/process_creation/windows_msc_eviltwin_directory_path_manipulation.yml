@@ -1,0 +1,31 @@
+title: Windows MSC EvilTwin Directory Path Manipulation
+id: 7f6b8a95-3fb7-429a-8c53-e5d4f8d92a10
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects potential MSC EvilTwin loader exploitation, which manipulates directory paths with spaces to bypass security controls. The technique, described as CVE-2025-26633,
+  involves crafting malicious MSC files that leverage MUIPath parameter manipulation. This detection focuses on suspicious MSC file execution patterns with unconventional command-line parameters, particularly
+  those containing unusual spaces in Windows System32 paths or suspicious additional parameters after the MSC file. If confirmed malicious, this behavior could allow an attacker to execute arbitrary code
+  with elevated privileges through DLL side-loading or path traversal techniques.
+references:
+- https://securityintelligence.com/posts/new-threat-actor-water-gamayun-targets-telecom-finance/
+- https://www.ncsc.gov.uk/report/weekly-threat-report-12th-april-2024
+tags:
+- attack.t1218
+- attack.t1036.005
+- attack.t1203
+date: '2025-04-17'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime from datamodel=Endpoint.Processes where Processes.process_name="mmc.exe" by Processes.dest Processes.user
+  Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_id Processes.process_name Processes.process_path Processes.action Processes.original_file_name Processes.parent_process_exec
+  Processes.parent_process_guid Processes.parent_process_id Processes.process_exec Processes.process_guid Processes.process_hash Processes.process_integrity_level Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)` | regex process="(?i).*mmc\.exe.*((Windows\s+\\\\System32)|(Windows\s+System32)|(\\\\Windows\s+\\\\System32)|(Program\s+Files\s+\\\\)|(Program\s+Files\s+\(\\w+\)\s+\\\\)|(Progra~1\s+\\\\))"
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_msc_eviltwin_directory_path_manipulation_filter`'
+splunk_rule_id: 7f6b8a95-3fb7-429a-8c53-e5d4f8d92a10
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: mmc.exe
+  condition: selection_0

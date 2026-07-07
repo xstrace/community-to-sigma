@@ -1,0 +1,41 @@
+title: Linux Auditd Virtual Disk File And Directory Discovery
+id: eec78cef-d4c8-4b35-8f5b-6922102a4a41
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects suspicious discovery of virtual disk files and directories, which may indicate an attacker's attempt to locate and access virtualized storage environments. Virtual
+  disks can contain sensitive data or critical system configurations, and unauthorized discovery attempts could signify preparatory actions for data exfiltration or further compromise. By monitoring for
+  unusual or unauthorized searches for virtual disk files and directories, this analytic helps identify potential reconnaissance activities, enabling security teams to respond promptly and safeguard against
+  unauthorized access and data breaches.
+references:
+- https://www.splunk.com/en_us/blog/security/deep-dive-on-persistence-privilege-escalation-technique-and-detection-in-linux-platform.html
+- https://github.com/peass-ng/PEASS-ng/tree/master/linPEAS
+tags:
+- attack.t1083
+date: '2024-08-12'
+original_spl: |-
+  `linux_auditd` execve_command IN ("*find*", "*grep*")  AND execve_command IN ("*.vhd*", "*.vhdx*", "*.vmdk*")
+    | rename host as dest
+    | rename comm as process_name
+    | rename exe as process
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY argc execve_command dest
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `linux_auditd_virtual_disk_file_and_directory_discovery_filter`
+splunk_rule_id: eec78cef-d4c8-4b35-8f5b-6922102a4a41
+splunk_rule_type: Anomaly
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    execve_command|contains:
+    - find
+    - grep
+  selection_1:
+    execve_command|contains:
+    - .vhd
+    - .vhdx
+    - .vmdk
+  condition: selection_0 and selection_1

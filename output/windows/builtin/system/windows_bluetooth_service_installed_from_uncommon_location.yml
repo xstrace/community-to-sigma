@@ -1,0 +1,57 @@
+title: Windows Bluetooth Service Installed From Uncommon Location
+id: f12b81e6-2fa2-48e0-95cd-f5f7e4d9ac89
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: |
+  Identifies the creation of a Windows service named "BluetoothService" with a binary path in user-writable directories, particularly %AppData%\Bluetooth.
+  This technique was observed in the Lotus Blossom Chrysalis backdoor campaign, where attackers created a service named "BluetoothService" pointing to a malicious binary (renamed Bitdefender Submission Wizard) in a hidden AppData directory.
+  While legitimate Bluetooth services exist in Windows, they are system services with binaries in System32.
+  Any BluetoothService created with a binary path in user directories (AppData, Temp, Downloads) is highly suspicious and indicates potential malware persistence.
+references:
+- https://attack.mitre.org/techniques/T1543/003/
+- https://attack.mitre.org/techniques/T1036/
+- https://www.rapid7.com/blog/post/tr-chrysalis-backdoor-dive-into-lotus-blossoms-toolkit/
+tags:
+- attack.t1543.003
+- attack.t1036
+date: '2026-03-16'
+original_spl: |-
+  `wineventlog_system`
+  EventCode=7045
+  ServiceName IN (
+      "BluetoothService",
+      "Bluetooth Service"
+  )
+  ImagePath IN (
+      "*\\AppData\\*",
+      "*\\ProgramData\\*",
+      "*\\Temp\\*",
+      "*\\Users\\*\\Bluetooth\\*"
+  )
+  | stats count min(_time) as firstTime max(_time) as lastTime
+    by Computer ServiceName ImagePath ServiceType StartType UserID
+  | rename Computer as dest
+           UserID as user_id
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_bluetooth_service_installed_from_uncommon_location_filter`
+splunk_rule_id: f12b81e6-2fa2-48e0-95cd-f5f7e4d9ac89
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: system
+detection:
+  selection_0:
+    EventID: 7045
+  selection_1:
+    ServiceName:
+    - BluetoothService
+    - Bluetooth Service
+  selection_2:
+    ImagePath|contains:
+    - \AppData\
+    - \ProgramData\
+    - \Temp\
+    - \Users\*\Bluetooth\
+  condition: selection_0 and selection_1 and selection_2

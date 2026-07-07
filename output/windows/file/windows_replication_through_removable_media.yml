@@ -1,0 +1,40 @@
+title: Windows Replication Through Removable Media
+id: 60df805d-4605-41c8-bbba-57baa6a4eb97
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the creation or dropping of executable or script files in the root directory of a removable drive. It leverages data from the Endpoint.Filesystem datamodel, focusing
+  on specific file types and their creation paths. This activity is significant as it may indicate an attempt to spread malware, such as ransomware, via removable media. If confirmed malicious, this behavior
+  could lead to unauthorized code execution, lateral movement, or persistence within the network, potentially compromising sensitive data and systems.
+references:
+- https://attack.mitre.org/techniques/T1204/002/
+- https://www.fortinet.com/blog/threat-research/chaos-ransomware-variant-sides-with-russia
+tags:
+- attack.t1091
+date: '2023-01-18'
+original_spl: '|tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime from datamodel=Endpoint.Filesystem where Filesystem.file_name IN ("*.exe", "*.dll", "*.sys",
+  "*.com", "*.vbs", "*.vbe", "*.js", "*.bat", "*.cmd", "*.pif", "*.lnk", "*.url") by Filesystem.action Filesystem.dest Filesystem.file_access_time Filesystem.file_create_time Filesystem.file_hash Filesystem.file_modify_time
+  Filesystem.file_name Filesystem.file_path Filesystem.file_acl Filesystem.file_size Filesystem.process_guid Filesystem.process_id Filesystem.user Filesystem.vendor_product | `drop_dm_object_name(Filesystem)`
+  | eval dropped_file_path = split(file_path, "\\") | eval dropped_file_path_split_count = mvcount(dropped_file_path) | eval root_drive = mvindex(dropped_file_path,0) | where LIKE(root_drive, "%:") AND
+  dropped_file_path_split_count = 2  AND root_drive!= "C:" | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_replication_through_removable_media_filter`'
+splunk_rule_id: 60df805d-4605-41c8-bbba-57baa6a4eb97
+splunk_rule_type: TTP
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|endswith:
+    - .exe
+    - .dll
+    - .sys
+    - .com
+    - .vbs
+    - .vbe
+    - .js
+    - .bat
+    - .cmd
+    - .pif
+    - .lnk
+    - .url
+  condition: selection_0

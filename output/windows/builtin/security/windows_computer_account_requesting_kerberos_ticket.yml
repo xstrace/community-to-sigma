@@ -1,0 +1,35 @@
+title: Windows Computer Account Requesting Kerberos Ticket
+id: fb3b2bb3-75a4-4279-848a-165b42624770
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects a computer account requesting a Kerberos ticket, which is unusual as typically user accounts request these tickets. This detection leverages Windows Security
+  Event Logs, specifically EventCode 4768, to identify instances where the TargetUserName ends with a dollar sign ($), indicating a computer account. This activity is significant because it may indicate
+  the use of tools like KrbUpRelay or other Kerberos-based attacks. If confirmed malicious, this could allow attackers to impersonate computer accounts, potentially leading to unauthorized access and lateral
+  movement within the network.
+references:
+- https://github.com/Dec0ne/KrbRelayUp
+tags:
+- attack.t1558
+date: '2022-04-28'
+original_spl: |-
+  `wineventlog_security`  EventCode=4768 TargetUserName="*$"  src_ip!="::1"
+    | stats  count min(_time) as firstTime max(_time) as lastTime
+      BY dest, subject, action,
+         user, TargetUserName, src_ip
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_computer_account_requesting_kerberos_ticket_filter`
+splunk_rule_id: fb3b2bb3-75a4-4279-848a-165b42624770
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4768
+  selection_1:
+    TargetUserName|endswith: $
+  selection_2:
+    src_ip: ::1
+  condition: selection_0 and selection_1 and selection_2

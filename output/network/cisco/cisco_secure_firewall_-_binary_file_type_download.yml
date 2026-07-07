@@ -1,0 +1,55 @@
+title: Cisco Secure Firewall - Binary File Type Download
+id: 24b2c2e3-2ff7-4a23-b814-87f8a62028cd
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects file downloads involving executable, archive, or scripting-related file types that are commonly used in malware delivery.
+  These file types include formats like PE executables, shell scripts, autorun files, installers, and known testing samples such as EICAR.
+  This detection leverages Cisco Secure Firewall Threat Defense logs and enriches the results using a filetype lookup to provide context.
+  If confirmed malicious, these downloads could indicate the initial infection vector, malware staging, or scripting abuse.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/firepower/741/api/FQE/secure_firewall_estreamer_fqe_guide_740.pdf
+tags:
+- attack.t1203
+- attack.t1059
+date: '2025-04-09'
+original_spl: |-
+  `cisco_secure_firewall` EventType=FileEvent FileDirection="Download"
+  FileType IN ("ISHIELD_MSI", "BINHEX", "BINARY_DATA", "ELF", "MACHO", "JARPACK", "TORRENT", "AUTORUN", "EICAR", "LNK", "SCR", "UNIX_SCRIPT")
+  | lookup cisco_secure_firewall_filetype_lookup Name as FileType OUTPUT Description
+  | stats count min(_time) as firstTime max(_time) as lastTime
+          values(uri) as uri
+          values(ClientApplication) as ClientApplication
+          values(file_hash) as file_hash
+          values(SHA_Disposition) as SHA_Disposition
+          by FileDirection FileType src dest app file_name ThreatName dest_port Description
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | table firstTime lastTime src dest dest_port FileDirection FileType Description uri file_name file_hash app ClientApplication SHA_Disposition ThreatName
+  | `cisco_secure_firewall___binary_file_type_download_filter`
+splunk_rule_id: 24b2c2e3-2ff7-4a23-b814-87f8a62028cd
+splunk_rule_type: Anomaly
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: FileEvent
+  selection_1:
+    FileDirection: Download
+  selection_2:
+    FileType:
+    - ISHIELD_MSI
+    - BINHEX
+    - BINARY_DATA
+    - ELF
+    - MACHO
+    - JARPACK
+    - TORRENT
+    - AUTORUN
+    - EICAR
+    - LNK
+    - SCR
+    - UNIX_SCRIPT
+  condition: selection_0 and selection_1 and selection_2

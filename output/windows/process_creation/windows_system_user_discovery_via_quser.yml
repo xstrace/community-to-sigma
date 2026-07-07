@@ -1,0 +1,42 @@
+title: Windows System User Discovery Via Quser
+id: 0c3f3e09-e47a-410e-856f-a02a5c5fafb0
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of the Windows OS tool quser.exe, commonly used to gather information about user sessions on a Remote Desktop Session Host server. This detection
+  leverages data from Endpoint Detection and Response (EDR) agents, focusing on process execution logs. Monitoring this activity is crucial as quser.exe is often abused by post-exploitation tools like winpeas,
+  used in ransomware attacks to enumerate user sessions. If confirmed malicious, attackers could leverage this information to further compromise the system, maintain persistence, or escalate privileges.
+references:
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/quser
+- https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS
+- https://www.microsoft.com/en-us/security/blog/2022/10/14/new-prestige-ransomware-impacts-organizations-in-ukraine-and-poland/
+tags:
+- attack.t1033
+date: '2022-12-13'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name="quser.exe"
+      OR
+      Processes.original_file_name = "quser.exe"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_system_user_discovery_via_quser_filter`
+splunk_rule_id: 0c3f3e09-e47a-410e-856f-a02a5c5fafb0
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: quser.exe
+  selection_1:
+    OriginalFileName: quser.exe
+  condition: selection_0 and selection_1

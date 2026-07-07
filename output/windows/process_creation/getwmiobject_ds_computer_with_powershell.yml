@@ -1,0 +1,65 @@
+title: GetWmiObject Ds Computer with PowerShell
+id: 7141122c-3bc2-4aaa-ab3b-7a85a0bbefc3
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: |-
+  The following analytic detects the execution of `powershell.exe` with command-line arguments that utilize the `Get-WmiObject` cmdlet to discover remote systems, specifically targeting the `DS_Computer` parameter.
+  This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line executions.
+  This activity is significant as it indicates potential reconnaissance efforts by adversaries to enumerate domain computers and gather situational awareness within Active Directory.
+  If confirmed malicious, this behavior could allow attackers to map the network, identify critical systems, and plan further attacks, potentially leading to unauthorized access and data exfiltration.
+references:
+- https://attack.mitre.org/techniques/T1018/
+tags:
+- attack.t1018
+date: '2021-09-01'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  from datamodel=Endpoint.Processes where
+
+  (
+      `process_powershell`
+      OR
+      `process_cmd`
+  )
+  AND
+  Processes.process = "*Get-WmiObject*"
+  Processes.process = "*namespace *"
+  Processes.process = "*root\\directory\\ldap*"
+  Processes.process = "*class *"
+  Processes.process = "* ds_computer*"
+
+  by Processes.action Processes.dest Processes.original_file_name
+     Processes.parent_process Processes.parent_process_exec
+     Processes.parent_process_guid Processes.parent_process_id
+     Processes.parent_process_name Processes.parent_process_path
+     Processes.process Processes.process_exec Processes.process_guid
+     Processes.process_hash Processes.process_id
+     Processes.process_integrity_level Processes.process_name
+     Processes.process_path Processes.user
+     Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `getwmiobject_ds_computer_with_powershell_filter`
+splunk_rule_id: 7141122c-3bc2-4aaa-ab3b-7a85a0bbefc3
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: Get-WmiObject
+  selection_1:
+    CommandLine|contains: 'namespace '
+  selection_2:
+    CommandLine|contains: root\directory\ldap
+  selection_3:
+    CommandLine|contains: 'class '
+  selection_4:
+    CommandLine|contains: ' ds_computer'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

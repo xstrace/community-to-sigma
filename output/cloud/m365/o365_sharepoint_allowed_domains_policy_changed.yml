@@ -1,0 +1,32 @@
+title: O365 SharePoint Allowed Domains Policy Changed
+id: b0cc6fa8-39b1-49ac-a4fe-f2f2a668e06c
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic identifies when the allowed domain settings for O365 SharePoint have been changed. With Azure AD B2B collaboration, users and administrators can invite external users
+  to collaborate with internal users. External guest account invitations may also need access to OneDrive/SharePoint resources. These changed should be monitored by security teams as they could potentially
+  lead to unauthorized access.
+references:
+- https://learn.microsoft.com/en-us/sharepoint/external-sharing-overview
+tags:
+- attack.t1136.003
+date: '2024-04-07'
+original_spl: '`o365_management_activity` Workload=SharePoint Operation=SharingPolicyChanged "ModifiedProperties{}.Name"=AllowDomainList | eval signature_id = CorrelationId, signature=Operation, src = ClientIP,
+  user = UserId, object_name=''ModifiedProperties{}.Name'', object_attrs_new = split(replace(''ModifiedProperties{}.NewValue'',"\.\.\.",""),","), object_attrs_old = split(replace(''ModifiedProperties{}.OldValue'',"\.\.\.",""),",")
+  | fillnull | stats values(object_attrs_new) as object_attrs_new, values(object_attrs_old) as object_attrs_old, values(src) as src, count, min(_time) as firstTime, max(_time) as lastTime by user,signature,signature_id,object_name,dest,action,vendor_account,vendor_product
+  | eval diff_add=mvmap(object_attrs_new,if(isnull(mvfind(object_attrs_old,object_attrs_new)),object_attrs_new,null)) | eval diff_remove=mvmap(object_attrs_old,if(isnull(mvfind(object_attrs_new,object_attrs_old)),object_attrs_old,null))
+  | eval result = case(isnotnull(diff_add),"Added ".mvjoin(diff_add,","),isnotnull(diff_remove),"Removed ".mvjoin(diff_remove,",")), action = case(isnotnull(diff_add),"created",isnotnull(diff_remove),"deleted")
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `o365_sharepoint_allowed_domains_policy_changed_filter`'
+splunk_rule_id: b0cc6fa8-39b1-49ac-a4fe-f2f2a668e06c
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: SharePoint
+  selection_1:
+    Operation: SharingPolicyChanged
+  selection_2:
+    '"ModifiedProperties{}.Name"': AllowDomainList
+  condition: selection_0 and selection_1 and selection_2

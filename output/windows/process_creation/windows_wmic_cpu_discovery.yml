@@ -1,0 +1,37 @@
+title: Windows Wmic CPU Discovery
+id: 6fc46cae-a8c0-4296-b07a-8e52d4322587
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the use of WMIC (Windows Management Instrumentation Command-line) for CPU discovery, often executed with commands such as “wmic cpu get name” This behavior is
+  commonly associated with reconnaissance, where adversaries seek to gather details about system hardware, assess processing power, or determine if the environment is virtualized. While WMIC is a legitimate
+  administrative tool, its use for CPU queries outside of normal inventory or management scripts can indicate malicious intent. Monitoring command-line executions of WMIC with CPU-related arguments and
+  correlating with other discovery activity can help identify attacker reconnaissance.
+references:
+- https://cert.gov.ua/article/6284730
+tags:
+- attack.t1082
+date: '2021-05-07'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_wmic` (Processes.process="* cpu*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_wmic_cpu_discovery_filter`
+splunk_rule_id: 6fc46cae-a8c0-4296-b07a-8e52d4322587
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: ' cpu'
+  condition: selection_0

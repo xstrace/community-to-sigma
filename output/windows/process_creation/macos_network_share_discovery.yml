@@ -1,0 +1,45 @@
+title: MacOS Network Share Discovery
+id: a5f5fe52-8e50-4fb0-ad1b-780be6c0d857
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: Identifies execution of network share enumeration commands (smbutil, showmount) that can be leveraged by adversaries to discover accessible SMB and NFS resources, supporting internal reconnaissance
+  and potential lateral movement.
+references:
+- https://osquery.readthedocs.io/en/stable/deployment/process-auditing/
+- https://leopard-adc.pepas.com/documentation/Darwin/Reference/ManPages/man8/showmount.8.html
+- https://www.unix.com/man_page/osx/1/smbutil/
+tags:
+- attack.t1135
+date: '2026-04-14'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  from datamodel=Endpoint.Processes where
+
+  Processes.process IN ("*showmount *", "*smbutil *")
+
+  by Processes.dest Processes.original_file_name Processes.parent_process_id
+     Processes.process Processes.process_exec Processes.process_guid
+     Processes.process_hash Processes.process_id
+     Processes.process_current_directory Processes.process_name
+     Processes.process_path Processes.user
+     Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `macos_network_share_discovery_filter`
+splunk_rule_id: a5f5fe52-8e50-4fb0-ad1b-780be6c0d857
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - 'showmount '
+    - 'smbutil '
+  condition: selection_0

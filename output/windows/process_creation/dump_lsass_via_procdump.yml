@@ -1,0 +1,90 @@
+title: Dump LSASS via procdump
+id: 3742ebfe-64c2-11eb-ae93-0242ac130002
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: |
+  The following analytic detects the use of procdump.exe to dump the LSASS
+  process, specifically looking for the -mm and -ma command-line arguments. It leverages
+  data from Endpoint Detection and Response (EDR) agents, focusing on process names,
+  command-line executions, and parent processes. This activity is significant because
+  dumping LSASS can expose sensitive credentials, posing a severe security risk. If
+  confirmed malicious, an attacker could obtain credentials, escalate privileges,
+  and move laterally within the network, leading to potential data breaches and further
+  compromise of the environment.
+references:
+- https://attack.mitre.org/techniques/T1003/001/
+- https://docs.microsoft.com/en-us/sysinternals/downloads/procdump
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1003.001/T1003.001.md#atomic-test-2---dump-lsassexe-memory-using-procdump
+- https://thedfirreport.com/2022/08/08/bumblebee-roasts-its-way-to-domain-admin/
+- https://x.com/wietze/status/1958302556033065292?s=12
+tags:
+- attack.t1003.001
+date: '2021-02-01'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  from datamodel=Endpoint.Processes where
+
+  (
+    Processes.process_name IN (
+      "procdump.exe",
+      "procdump64.exe",
+      "procdump64a.exe"
+    )
+    OR
+    Processes.original_file_name=procdump
+  )
+  Processes.process IN (
+      "*-ma*",
+      "*-mm*",
+      "*-mp*",
+      "*/ma*",
+      "*/mm*",
+      "*/mp*"
+  )
+  Processes.process IN (
+      "* keyiso*",
+      "* ls*",
+      "* samss*"
+  )
+
+  by Processes.action Processes.dest Processes.original_file_name Processes.parent_process
+     Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id
+     Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec
+     Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level
+     Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `dump_lsass_via_procdump_filter`
+splunk_rule_id: 3742ebfe-64c2-11eb-ae93-0242ac130002
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image:
+    - procdump.exe
+    - procdump64.exe
+    - procdump64a.exe
+  selection_1:
+    OriginalFileName: procdump
+  selection_2:
+    CommandLine|contains:
+    - -ma
+    - -mm
+    - -mp
+    - /ma
+    - /mm
+    - /mp
+  selection_3:
+    CommandLine|contains:
+    - ' keyiso'
+    - ' ls'
+    - ' samss'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

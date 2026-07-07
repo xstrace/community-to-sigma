@@ -1,0 +1,43 @@
+title: Cisco Secure Firewall - Wget or Curl Download
+id: 173a1cb9-1814-4128-a9dc-f29dade89957
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects outbound connections initiated by command-line tools such as curl or wget. It leverages Cisco Secure Firewall Threat Defense logs and identifies allowed connections (action=Allow) where either the EVE_Process or ClientApplication fields indicate use of these utilities. While curl and wget are legitimate tools commonly used for software updates and scripting, adversaries often abuse them to download payloads, retrieve additional tools, or establish staging infrastructure from compromised systems. If confirmed malicious, this behavior may indicate the download phase of an attack chain or a command-and-control utility retrieval.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/firepower/741/api/FQE/secure_firewall_estreamer_fqe_guide_740.pdf
+tags:
+- attack.t1053.003
+- attack.t1059
+- attack.t1071.001
+- attack.t1105
+date: '2025-04-03'
+original_spl: |-
+  `cisco_secure_firewall` EventType=ConnectionEvent action IN ("Trust", "Allow", "allowed") AND
+  ( EVE_Process IN ("*curl*", "*wget*") OR ClientApplication IN ("cURL", "Wget") )
+  | stats count min(_time) as firstTime max(_time) as lastTime
+      Values(rule) as rule
+      Values(url) as url
+      Values(dest_port) as dest_port
+      Values(ClientApplicationVersion) as ClientApplicationVersion
+      Values(src_port) as src_port
+      by src, dest, transport, EVE_Process, ClientApplication, action
+  | table src src_port dest dest_port transport url EVE_Process ClientApplication ClientApplicationVersion rule firstTime lastTime
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_secure_firewall___wget_or_curl_download_filter`
+splunk_rule_id: 173a1cb9-1814-4128-a9dc-f29dade89957
+splunk_rule_type: Anomaly
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: ConnectionEvent
+  selection_1:
+    action:
+    - Trust
+    - Allow
+    - allowed
+  condition: selection_0 and selection_1

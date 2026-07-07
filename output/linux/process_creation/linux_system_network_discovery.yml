@@ -1,0 +1,78 @@
+title: Linux System Network Discovery
+id: 535cb214-8b47-11ec-a2c7-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |-
+  The following analytic identifies potential enumeration of local network configuration on Linux systems.
+  It detects this activity by monitoring processes such as "arp," "ifconfig," "ip," "netstat," "firewall-cmd," "ufw," "iptables," "ss," and "route" within a 30-minute window.
+  This behavior is significant as it often indicates reconnaissance efforts by adversaries to gather network information for subsequent attacks.
+  If confirmed malicious, this activity could enable attackers to map the network, identify vulnerabilities, and plan further exploitation or lateral movement within the environment.
+references:
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1016/T1016.md
+tags:
+- attack.t1016
+date: '2022-02-14'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+          values(Processes.action) as action
+          values(Processes.original_file_name) as original_file_name
+          values(Processes.parent_process_exec) as parent_process_exec
+          values(Processes.parent_process_guid) as parent_process_guid
+          values(Processes.parent_process_id) as parent_process_id
+          values(Processes.parent_process_name) as parent_process_name
+          values(Processes.parent_process_path) as parent_process_path
+          values(Processes.parent_process) as parent_process
+          values(Processes.process_exec) as process_exec
+          values(Processes.process_guid) as process_guid
+          values(Processes.process_hash) as process_hash
+          values(Processes.process_id) as process_id
+          values(Processes.process_integrity_level) as process_integrity_level
+          values(Processes.process_name) as process_name
+          values(Processes.process_path) as process_path
+          values(Processes.process) as process
+          values(Processes.user_id) as user_id
+          values(Processes.vendor_product) as vendor_product
+          dc(Processes.process_name) as process_name_count
+  FROM datamodel=Endpoint.Processes WHERE
+
+  Processes.process_name IN (
+      "arp",
+      "firewall-cmd",
+      "ifconfig",
+      "ip",
+      "iptables",
+      "netstat",
+      "route",
+      "ss",
+      "ufw"
+  )
+
+  BY _time span=30m Processes.dest Processes.user
+
+  | where process_name_count>=4
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_system_network_discovery_filter`
+splunk_rule_id: 535cb214-8b47-11ec-a2c7-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image:
+    - arp
+    - firewall-cmd
+    - ifconfig
+    - ip
+    - iptables
+    - netstat
+    - route
+    - ss
+    - ufw
+  condition: selection_0

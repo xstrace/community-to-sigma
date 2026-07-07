@@ -1,0 +1,31 @@
+title: Microsoft Intune DeviceManagementConfigurationPolicies
+id: 3c49e5ed-625c-408c-a2c7-8e2b524efb2c
+status: stable
+level: medium
+author: Dean Luxton
+description: Microsoft Intune device management configuration policies are a tool administrators can use to remotely manage policies and settings on intune managed devices. This functionality can also be
+  abused to disable defences & evade detection. This detection identifies when a new device management configuration policy has been created.
+references:
+- https://posts.specterops.io/death-from-above-lateral-movement-from-azure-to-on-prem-ad-d18cb3959d4d
+- https://securityintelligence.com/x-force/detecting-intune-lateral-movement/
+- https://posts.specterops.io/maestro-9ed71d38d546
+tags:
+- attack.t1072
+- attack.t1484
+- attack.t1021.007
+- attack.t1685
+- attack.t1686
+date: '2025-01-06'
+original_spl: '`azure_monitor_activity` operationName="* DeviceManagementConfigurationPolicy*" | rename identity as user, properties.TargetObjectIds{} as TargetObjectId, properties.TargetDisplayNames{}
+  as TargetDisplayName, properties.Actor.IsDelegatedAdmin as user_isDelegatedAdmin | eval details=mvzip(''properties.Targets{}.ModifiedProperties{}.Name'',''properties.Targets{}.ModifiedProperties{}.New'',":
+  ") | rex field="operationName" "^(?P<action>\w+)\s" | replace "Patch" with "updated", "Create" with "created", "Delete", with "deleted", "assign", with "assigned" IN action | eval action=if(match(operationName
+  ,"Assignment$"),"assigned",''action'') | table _time operationName action user user_type user_isDelegatedAdmin TargetDisplayName TargetObjectId details status tenantId correlationId | `microsoft_intune_devicemanagementconfigurationpolicies_filter`'
+splunk_rule_id: 3c49e5ed-625c-408c-a2c7-8e2b524efb2c
+splunk_rule_type: Hunting
+logsource:
+  product: azure
+  service: activity
+detection:
+  selection_0:
+    operationName|contains: ' DeviceManagementConfigurationPolicy'
+  condition: selection_0

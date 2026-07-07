@@ -1,0 +1,74 @@
+title: Cisco Secure Firewall - Lumma Stealer Activity
+id: 96bce783-c22e-4e48-8cf1-3eb2794c5083
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk, Talos NTDR
+description: |
+  This analytic detects Lumma Stealer activity using Cisco Secure Firewall Intrusion Events.
+  It leverages Cisco Secure Firewall Threat Defense IntrusionEvent logs to identify cases where four of the following Snort signature IDs 64793, 64794, 64797, 64798, 64799, 64800, 64801, 62709, 64167, 64168, 64169, 64796, 62710, 62711, 62712, 62713, 62714, 62715, 62716, 62717, 64812, 64810, 64811 occurs in the span of 15 minutes from the same host.
+  If confirmed malicious, this behavior is highly indicative of a successful infection of Lumma Stealer.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.lumma
+tags:
+- attack.t1190
+- attack.t1210
+- attack.t1027
+- attack.t1204
+date: '2025-04-16'
+original_spl: |-
+  `cisco_secure_firewall` EventType=IntrusionEvent signature_id IN (64793, 64794, 64797, 64798, 64799, 64800, 64801, 62709, 64167, 64168, 64169, 64796, 62710, 62711, 62712, 62713, 62714, 62715, 62716, 62717, 64812, 64810, 64811)
+  | bin _time span=15m
+  | fillnull
+  | stats dc(signature_id) as unique_signature_count
+          values(signature_id) as signature_id
+          values(signature) as signature
+          values(class_desc) as class_desc
+          values(MitreAttackGroups) as MitreAttackGroups
+          values(InlineResult) as InlineResult
+          values(InlineResultReason) as InlineResultReason
+          values(dest) as dest
+          values(dest_port) as dest_port
+          values(rule) as rule
+          values(transport) as transport
+          values(app) as app
+          min(_time) as firstTime
+          max(_time) as lastTime
+          by src
+  | where unique_signature_count >= 3
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_secure_firewall___lumma_stealer_activity_filter`
+splunk_rule_id: 96bce783-c22e-4e48-8cf1-3eb2794c5083
+splunk_rule_type: TTP
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: IntrusionEvent
+  selection_1:
+    signature_id:
+    - 64793
+    - 64794
+    - 64797
+    - 64798
+    - 64799
+    - 64800
+    - 64801
+    - 62709
+    - 64167
+    - 64168
+    - 64169
+    - 64796
+    - 62710
+    - 62711
+    - 62712
+    - 62713
+    - 62714
+    - 62715
+    - 62716
+    - 62717
+    - 64812
+    - 64810
+    - 64811
+  condition: selection_0 and selection_1

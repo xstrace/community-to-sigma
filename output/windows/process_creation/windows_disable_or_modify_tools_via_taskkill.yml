@@ -1,0 +1,44 @@
+title: Windows Disable or Modify Tools Via Taskkill
+id: a43ae66f-c410-4b3d-8741-9ce1ad17ddb0
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies the use of taskkill.exe to forcibly terminate processes. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on command-line executions
+  that include specific taskkill parameters. This activity is significant because it can indicate attempts to disable security tools or disrupt legitimate applications, a common tactic in malware operations.
+  If confirmed malicious, this behavior could allow attackers to evade detection, disrupt system stability, and potentially gain further control over the compromised system.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.njrat
+tags:
+- attack.t1685
+date: '2023-09-19'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name = "taskkill.exe" Processes.process IN ("* /f*", "* /t*") Processes.process IN ("* /im*", "* /pid*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name("Processes")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_disable_or_modify_tools_via_taskkill_filter`
+splunk_rule_id: a43ae66f-c410-4b3d-8741-9ce1ad17ddb0
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: taskkill.exe
+  selection_1:
+    CommandLine|contains:
+    - ' /f'
+    - ' /t'
+  selection_2:
+    CommandLine|contains:
+    - ' /im'
+    - ' /pid'
+  condition: selection_0 and selection_1 and selection_2

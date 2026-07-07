@@ -1,0 +1,43 @@
+title: Dump LSASS via comsvcs DLL
+id: 8943b567-f14d-4ee8-a0bb-2121d4ce3184
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects the behavior of dumping credentials from memory by exploiting the Local Security Authority Subsystem Service (LSASS) using the comsvcs.dll and MiniDump via rundll32.
+  This detection leverages process information from Endpoint Detection and Response (EDR) logs, focusing on specific command-line executions. This activity is significant because it indicates potential
+  credential theft, which can lead to broader system compromise, persistence, lateral movement, and privilege escalation. If confirmed malicious, attackers could gain unauthorized access to sensitive information,
+  leading to data theft, ransomware attacks, or other damaging outcomes.
+references:
+- https://modexp.wordpress.com/2019/08/30/minidumpwritedump-via-com-services-dll/
+- https://twitter.com/SBousseaden/status/1167417096374050817
+- https://www.microsoft.com/en-us/security/blog/2023/05/24/volt-typhoon-targets-us-critical-infrastructure-with-living-off-the-land-techniques/
+tags:
+- attack.t1003.001
+date: '2019-10-16'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_rundll32` Processes.process=*comsvcs.dll* Processes.process IN ("*MiniDump*", "*#24*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `dump_lsass_via_comsvcs_dll_filter`
+splunk_rule_id: 8943b567-f14d-4ee8-a0bb-2121d4ce3184
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: comsvcs.dll
+  selection_1:
+    CommandLine|contains:
+    - MiniDump
+    - '#24'
+  condition: selection_0 and selection_1

@@ -1,0 +1,46 @@
+title: Detect Renamed PSExec
+id: 683e6196-b8e8-11eb-9a79-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk, Alex Oberkircher, Github Community
+description: The following analytic identifies instances where `PsExec.exe` has been renamed and executed on an endpoint. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on
+  process names and original file names. This activity is significant because renaming `PsExec.exe` is a common tactic to evade detection. If confirmed malicious, this could allow an attacker to execute
+  commands remotely, potentially leading to unauthorized access, lateral movement, or further compromise of the network.
+references:
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1569.002/T1569.002.yaml
+- https://redcanary.com/blog/threat-hunting-psexec-lateral-movement/
+tags:
+- attack.t1569.002
+date: '2021-06-03'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name!=psexec.exe
+          AND
+          Processes.process_name!=psexec64.exe
+      )
+      AND Processes.original_file_name=psexec.c
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `detect_renamed_psexec_filter`
+splunk_rule_id: 683e6196-b8e8-11eb-9a79-acde48001122
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: psexec.exe
+  selection_1:
+    Image: psexec64.exe
+  selection_2:
+    OriginalFileName: psexec.c
+  condition: selection_0 and selection_1 and selection_2

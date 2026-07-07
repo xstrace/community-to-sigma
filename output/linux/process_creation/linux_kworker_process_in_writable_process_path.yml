@@ -1,0 +1,45 @@
+title: Linux Kworker Process In Writable Process Path
+id: 1cefb270-74a5-4e27-aa0c-2b6fa7c5b4ed
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of a kworker process with a command line in writable directories such as /home/, /var/log, and /tmp on a Linux machine. It leverages data from Endpoint
+  Detection and Response (EDR) agents, focusing on process and parent process paths. This activity is significant as kworker processes are typically kernel threads, and their presence in writable directories
+  is unusual and indicative of potential malware, such as CyclopsBlink. If confirmed malicious, this could allow attackers to blend malicious processes with legitimate ones, leading to persistent access
+  and further system compromise.
+references:
+- https://www.ncsc.gov.uk/files/Cyclops-Blink-Malware-Analysis-Report.pdf
+- https://www.trendmicro.com/en_us/research/22/c/cyclops-blink-sets-sights-on-asus-routers--.html
+tags:
+- attack.t1036.004
+date: '2022-04-07'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process = "*[kworker/*" Processes.parent_process_path IN ("/home/*", "/tmp/*", "/var/log/*") Processes.process="*iptables*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_kworker_process_in_writable_process_path_filter`
+splunk_rule_id: 1cefb270-74a5-4e27-aa0c-2b6fa7c5b4ed
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    ParentCommandLine|contains: '[kworker/'
+  selection_1:
+    ParentImage|startswith:
+    - /home/
+    - /tmp/
+    - /var/log/
+  selection_2:
+    CommandLine|contains: iptables
+  condition: selection_0 and selection_1 and selection_2

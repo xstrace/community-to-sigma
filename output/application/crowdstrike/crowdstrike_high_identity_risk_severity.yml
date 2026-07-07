@@ -1,0 +1,34 @@
+title: Crowdstrike High Identity Risk Severity
+id: 0df524ad-6d78-4883-9987-d29418928103
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects CrowdStrike alerts for High Identity Risk Severity with a risk score of 70 or higher. These alerts indicate significant vulnerabilities in user identities, such
+  as suspicious behavior or compromised credentials. Promptly investigating and addressing these alerts is crucial to prevent potential security breaches and ensure the integrity and protection of sensitive
+  information and systems.
+references:
+- https://www.crowdstrike.com/wp-content/uploads/2022/12/CrowdStrike-Falcon-Event-Streams-Add-on-Guide-v3.pdf
+tags:
+- attack.t1110
+date: '2024-07-31'
+original_spl: |-
+  `crowdstrike_identities` riskScoreSeverity="HIGH" OR riskScore >= 0.70
+    | rename riskFactors{}.severity as severity, riskFactors{}.type as risk_type, roles{}.type as role_type, accounts{}.domain as domain, accounts{}.dn as dn, accounts{}.samAccountName as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY domain dn primaryDisplayName
+         risk_type severity riskScore
+         riskScoreSeverity user role_type
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `crowdstrike_high_identity_risk_severity_filter`
+splunk_rule_id: 0df524ad-6d78-4883-9987-d29418928103
+splunk_rule_type: TTP
+logsource:
+  product: crowdstrike
+  service: crowdstrike
+detection:
+  selection_0:
+    riskScoreSeverity: HIGH
+  selection_1:
+    riskScore: 0.7
+  condition: selection_0 and selection_1

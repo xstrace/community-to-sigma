@@ -1,0 +1,38 @@
+title: Cisco Secure Firewall - Possibly Compromised Host
+id: 244a77bb-3b2a-46f1-bf2c-b4f7cd29276d
+status: experimental
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic highlights high-impact intrusion events assigned by Cisco Secure Firewall.
+  This detection leverages Cisco Secure Firewall Threat Defense logs and specifically the IntrusionEvent event type and `Impact` field assigned by Cisco Secure Firewall looking for an impact score of 1 or 2. If confirmed malicious this may indicate a potential compromised host.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/firepower/741/api/FQE/secure_firewall_estreamer_fqe_guide_740.pdf
+tags:
+- attack.t1203
+- attack.t1059
+- attack.t1587.001
+date: '2025-04-16'
+original_spl: |-
+  `cisco_secure_firewall` EventType=IntrusionEvent Impact IN (1,2)
+  | stats count as TotalDetections values(signature_id) as signature_id
+          values(signature) as signature
+          values(rule) as rule
+          min(_time) as firstTime max(_time) as lastTime
+          by src dest dest_port transport Impact app impact_desc class_desc MitreAttackGroups InlineResult InlineResultReason
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_secure_firewall___possibly_compromised_host_filter`
+splunk_rule_id: 244a77bb-3b2a-46f1-bf2c-b4f7cd29276d
+splunk_rule_type: Anomaly
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: IntrusionEvent
+  selection_1:
+    Impact:
+    - 1
+    - 2
+  condition: selection_0 and selection_1

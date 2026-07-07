@@ -1,0 +1,71 @@
+title: Windows Application Whitelisting Bypass Attempt via Rundll32
+id: 1ef5dab0-e1f1-495d-a272-d134583c10b1
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: |
+  The following analytic detects the execution of rundll32.exe calling one of the following DLLs:
+
+  - Advpack.dll
+  - Ieadvpack.dll
+  - Syssetup.dll
+  - Setupapi.dll
+
+  with one of the following functions: "LaunchINFSection", "InstallHinfSection", "SetupInfObjectInstallAction".
+  This method is identified through Endpoint Detection and Response (EDR) telemetry,
+  focusing on command-line executions and process details.
+  This activity is significant as it indicates a potential application
+  control or whitelisting bypass, allowing script code execution from a file.
+  If confirmed malicious, an attacker could execute arbitrary code, potentially leading to privilege escalation,
+  persistence, or further network compromise.
+  Investigate the script content, network connections, and any spawned child processes for further context.
+references:
+- https://attack.mitre.org/techniques/T1218/011/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218.011/T1218.011.md
+- https://lolbas-project.github.io/lolbas/Binaries/Rundll32/
+- https://bohops.com/2018/02/26/leveraging-inf-sct-fetch-execute-techniques-for-bypass-evasion-persistence/
+- https://lolbas-project.github.io/lolbas/Libraries/Advpack/
+- https://lolbas-project.github.io/lolbas/Libraries/Ieadvpack/
+- https://lolbas-project.github.io/lolbas/Libraries/Setupapi/
+- https://lolbas-project.github.io/lolbas/Libraries/Syssetup/
+tags:
+- attack.t1218.011
+date: '2021-02-05'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+    max(_time) as lastTime
+  from datamodel=Endpoint.Processes where
+  `process_rundll32`
+  Processes.process IN ("*syssetup*", "*advpack*", "*setupapi*")
+  Processes.process IN ("*LaunchINFSection*", "*InstallHinfSection*", "*SetupInfObjectInstallAction*")
+  NOT (Processes.parent_process_name="msiexec.exe" Processes.process="* C:\\Program Files (x86)\\Netskope\\EPDLP Deployment\\*")
+  by Processes.action Processes.dest Processes.original_file_name Processes.parent_process
+     Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id
+     Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec
+     Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level
+     Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_application_whitelisting_bypass_attempt_via_rundll32_filter`
+splunk_rule_id: 1ef5dab0-e1f1-495d-a272-d134583c10b1
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - syssetup
+    - advpack
+    - setupapi
+  selection_1:
+    CommandLine|contains:
+    - LaunchINFSection
+    - InstallHinfSection
+    - SetupInfObjectInstallAction
+  filter_2:
+    ParentImage: msiexec.exe
+    CommandLine|contains: '* C:\Program Files (x86)\Netskope\EPDLP Deployment\*'
+  condition: (selection_0 and selection_1) and not (filter_2)

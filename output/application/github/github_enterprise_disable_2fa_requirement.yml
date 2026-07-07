@@ -1,0 +1,39 @@
+title: GitHub Enterprise Disable 2FA Requirement
+id: 5a773226-ebd7-480c-a819-fccacfeddcd9
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects when two-factor authentication (2FA) requirements are disabled in GitHub Enterprise. The detection monitors GitHub Enterprise audit logs for 2FA requirement changes
+  by tracking actor details, organization information, and associated metadata. For a SOC, identifying disabled 2FA requirements is critical as it could indicate attempts to weaken account security controls.
+  Two-factor authentication is a fundamental security control that helps prevent unauthorized access even if passwords are compromised. Disabling 2FA requirements could allow attackers to more easily compromise
+  accounts through password-based attacks. The impact of disabled 2FA includes increased risk of account takeover, potential access to sensitive code and intellectual property, and compromise of the software
+  supply chain. This activity could be part of a larger attack chain where an adversary first disables security controls before attempting broader account compromises.
+references:
+- https://www.googlecloudcommunity.com/gc/Community-Blog/Monitoring-for-Suspicious-GitHub-Activity-with-Google-Security/ba-p/763610
+- https://docs.github.com/en/enterprise-cloud@latest/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/streaming-the-audit-log-for-your-enterprise#setting-up-streaming-to-splunk
+tags:
+- attack.t1685
+- attack.t1195
+date: '2025-01-15'
+original_spl: |-
+  `github_enterprise` action=org.disable_two_factor_requirement OR action=business.disable_two_factor_requirement
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor, actor_id, actor_is_bot,
+         actor_location.country_code, business, business_id,
+         user_agent, action
+    | eval user=actor
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `github_enterprise_disable_2fa_requirement_filter`
+splunk_rule_id: 5a773226-ebd7-480c-a819-fccacfeddcd9
+splunk_rule_type: Anomaly
+logsource:
+  product: github
+  service: enterprise
+detection:
+  selection_0:
+    action: org.disable_two_factor_requirement
+  selection_1:
+    action: business.disable_two_factor_requirement
+  condition: selection_0 and selection_1

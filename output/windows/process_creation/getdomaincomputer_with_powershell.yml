@@ -1,0 +1,42 @@
+title: GetDomainComputer with PowerShell
+id: ed550c19-712e-43f6-bd19-6f58f61b3a5e
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of `powershell.exe` with command-line arguments that utilize `Get-DomainComputer` to discover remote systems. This detection leverages data from
+  Endpoint Detection and Response (EDR) agents, focusing on process names and command-line executions. This activity is significant as `Get-DomainComputer` is part of PowerView, a tool often used by adversaries
+  for domain enumeration and situational awareness. If confirmed malicious, this activity could allow attackers to map out the network, identify critical systems, and plan further attacks, potentially leading
+  to unauthorized access and data exfiltration.
+references:
+- https://attack.mitre.org/techniques/T1018/
+tags:
+- attack.t1018
+date: '2021-09-01'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name="powershell.exe"
+      )
+      (Processes.process=*Get-DomainComputer*)
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `getdomaincomputer_with_powershell_filter`
+splunk_rule_id: ed550c19-712e-43f6-bd19-6f58f61b3a5e
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: powershell.exe
+  selection_1:
+    CommandLine|contains: Get-DomainComputer
+  condition: selection_0 and selection_1

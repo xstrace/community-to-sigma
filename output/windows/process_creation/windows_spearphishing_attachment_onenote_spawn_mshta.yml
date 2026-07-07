@@ -1,0 +1,40 @@
+title: Windows Spearphishing Attachment Onenote Spawn Mshta
+id: 35aeb0e7-7de5-444a-ac45-24d6788796ec
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects OneNote spawning `mshta.exe`, a behavior often associated with spearphishing attacks. It leverages data from Endpoint Detection and Response (EDR) agents, focusing
+  on process creation events where OneNote is the parent process. This activity is significant as it is commonly used by malware families like TA551, AsyncRat, Redline, and DCRAT to execute malicious scripts.
+  If confirmed malicious, this could allow attackers to execute arbitrary code, potentially leading to data exfiltration, system compromise, or further malware deployment. Immediate investigation and containment
+  are recommended.
+references:
+- https://www.bleepingcomputer.com/news/security/hackers-now-use-microsoft-onenote-attachments-to-spread-malware/
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.asyncrat
+tags:
+- attack.t1566.001
+date: '2021-04-27'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name IN ("onenote.exe", "onenotem.exe") `process_mshta`
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_spearphishing_attachment_onenote_spawn_mshta_filter`
+splunk_rule_id: 35aeb0e7-7de5-444a-ac45-24d6788796ec
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage:
+    - onenote.exe
+    - onenotem.exe
+  condition: selection_0

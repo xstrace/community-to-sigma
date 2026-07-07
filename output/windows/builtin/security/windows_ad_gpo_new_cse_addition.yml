@@ -1,0 +1,53 @@
+title: Windows AD GPO New CSE Addition
+id: 700c11d1-da09-47b2-81aa-358c143c7986
+status: stable
+level: medium
+author: Dean Luxton
+description: This detection identifies when a a new client side extension is added to an Active Directory Group Policy using the Group Policy Management Console.
+references:
+- https://wald0.com/?p=179
+- https://learn.microsoft.com/en-gb/archive/blogs/mempson/group-policy-client-side-extension-list
+- https://lantern.splunk.com/Security/Product_Tips/Enterprise_Security/Enabling_an_audit_trail_from_Active_Directory
+- https://github.com/FSecureLABS/SharpGPOAbuse
+tags:
+- attack.t1222.001
+- attack.t1484.001
+date: '2024-07-01'
+original_spl: |-
+  `wineventlog_security` EventCode=5136 ObjectClass=groupPolicyContainer AttributeLDAPDisplayName=gPCMachineExtensionNames
+    | stats min(_time) as _time values(eval(if(OperationType=="%%14675",AttributeValue,null))) as old_value values(eval(if(OperationType=="%%14674",AttributeValue,null))) as new_value values(OperationType) as OperationType values(dest) as dest
+      BY ObjectClass ObjectDN OpCorrelationID
+         src_user SubjectLogonId
+    | rex field=old_value max_match=10000 "(?P<old_values>\{.*?\})"
+    | rex field=new_value max_match=10000 "(?P<new_values>\{.*?\})"
+    | rex field=ObjectDN max_match=10000 "CN=(?P<policy_guid>\{.*?\})"
+    | mvexpand new_values
+    | where NOT new_values IN (old_values,"{00000000-0000-0000-0000-000000000000}",policy_guid) AND match(new_values, "^\{[A-Z
+    | \d]+\-[A-Z
+    | \d]+\-[A-Z
+    | \d]+\-[A-Z
+    | \d]+\-[A-Z
+    | \d]+\}")
+    | lookup msad_guid_lookup guid as new_values OUTPUTNEW displayName as policyType
+    | eval newPolicy=if(policyType like "%",policyType,new_values)
+    | join ObjectDN  [
+    | search `admon` objectCategory="CN=Group-Policy-Container*" admonEventType=Update
+    | stats latest(displayName) as displayName
+      BY distinguishedName
+    | eval ObjectDN=upper(distinguishedName)]
+    | stats values(OpCorrelationID) as OpCorrelationID values(src_user) as src_user values(SubjectLogonId) as SubjectLogonId values(newPolicy) as newPolicy values(displayName) as policyName
+      BY ObjectDN
+    | `windows_ad_gpo_new_cse_addition_filter`
+splunk_rule_id: 700c11d1-da09-47b2-81aa-358c143c7986
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5136
+  selection_1:
+    ObjectClass: groupPolicyContainer
+  selection_2:
+    AttributeLDAPDisplayName: gPCMachineExtensionNames
+  condition: selection_0 and selection_1 and selection_2

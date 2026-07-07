@@ -1,0 +1,43 @@
+title: Clop Common Exec Parameter
+id: 5a8a2a72-8322-11eb-9ee9-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies the execution of CLOP ransomware variants using specific arguments ("runrun" or "temp.dat") to trigger their malicious activities. This detection leverages
+  data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line arguments. Monitoring this activity is crucial as it indicates potential ransomware behavior, which can
+  lead to file encryption on network shares or local machines. If confirmed malicious, this activity could result in significant data loss and operational disruption due to encrypted files, highlighting
+  the need for immediate investigation and response.
+references:
+- https://www.mandiant.com/resources/fin11-email-campaigns-precursor-for-ransomware-data-theft
+- https://blog.virustotal.com/2020/11/keep-your-friends-close-keep-ransomware.html
+tags:
+- attack.t1204
+date: '2021-03-17'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name != "*temp.dat*" Processes.process = "*runrun*"
+      OR
+      Processes.process = "*temp.dat*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `clop_common_exec_parameter_filter`
+splunk_rule_id: 5a8a2a72-8322-11eb-9ee9-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image|contains: '*temp.dat*'
+    CommandLine|contains: '*runrun*'
+  selection_1:
+    CommandLine|contains: temp.dat
+  condition: selection_0 and selection_1

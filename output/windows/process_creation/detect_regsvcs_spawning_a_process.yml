@@ -1,0 +1,39 @@
+title: Detect Regsvcs Spawning a Process
+id: bc477b57-5c21-4ab6-9c33-668772e7f114
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies regsvcs.exe spawning a child process. This behavior is detected using Endpoint Detection and Response (EDR) telemetry, focusing on process creation events
+  where the parent process is regsvcs.exe. This activity is significant because regsvcs.exe rarely spawns child processes, and such behavior can indicate an attempt to bypass application control mechanisms.
+  If confirmed malicious, this could allow an attacker to execute arbitrary code, potentially leading to privilege escalation or persistent access within the environment. Immediate investigation is recommended
+  to determine the legitimacy of the spawned process and any associated suspicious activities.
+references:
+- https://attack.mitre.org/techniques/T1218/009/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218.009/T1218.009.md
+- https://lolbas-project.github.io/lolbas/Binaries/Regsvcs/
+tags:
+- attack.t1218.009
+date: '2021-02-12'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name=regsvcs.exe
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `detect_regsvcs_spawning_a_process_filter`
+splunk_rule_id: bc477b57-5c21-4ab6-9c33-668772e7f114
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: regsvcs.exe
+  condition: selection_0

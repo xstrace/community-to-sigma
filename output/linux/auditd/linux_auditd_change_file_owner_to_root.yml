@@ -1,0 +1,31 @@
+title: Linux Auditd Change File Owner To Root
+id: 7b87c556-0ca4-47e0-b84c-6cd62a0a3e90
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the use of the 'chown' command to change a file owner to 'root' on a Linux system. It leverages Linux Auditd telemetry, specifically monitoring command-line executions
+  and process details. This activity is significant as it may indicate an attempt to escalate privileges by adversaries, malware, or red teamers. If confirmed malicious, this action could allow an attacker
+  to gain root-level access, leading to full control over the compromised host and potential persistence within the environment.
+references:
+- https://unix.stackexchange.com/questions/101073/how-to-change-permissions-from-root-user-to-all-users
+- https://askubuntu.com/questions/617850/changing-from-user-to-superuser
+tags:
+- attack.t1222.002
+date: '2022-01-05'
+original_spl: |-
+  `linux_auditd` proctitle = "*chown *root*"
+    | rename host as dest
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY proctitle dest
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `linux_auditd_change_file_owner_to_root_filter`
+splunk_rule_id: 7b87c556-0ca4-47e0-b84c-6cd62a0a3e90
+splunk_rule_type: Anomaly
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    proctitle|contains: chown *root
+  condition: selection_0

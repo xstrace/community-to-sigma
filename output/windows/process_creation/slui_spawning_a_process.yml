@@ -1,0 +1,41 @@
+title: SLUI Spawning a Process
+id: 879c4330-b3e0-11eb-b1b1-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the Microsoft Software Licensing User Interface Tool (`slui.exe`) spawning a child process. This behavior is identified using Endpoint Detection and Response
+  (EDR) telemetry, focusing on process creation events where `slui.exe` is the parent process. This activity is significant because `slui.exe` should not typically spawn child processes, and doing so may
+  indicate a UAC bypass attempt, leading to elevated privileges. If confirmed malicious, an attacker could leverage this to execute code with elevated privileges, potentially compromising the system's security
+  and gaining unauthorized access.
+references:
+- https://www.exploit-db.com/exploits/46998
+- https://www.rapid7.com/db/modules/exploit/windows/local/bypassuac_sluihijack/
+- https://www.mandiant.com/resources/shining-a-light-on-darkside-ransomware-operations
+tags:
+- attack.t1548.002
+date: '2021-05-13'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name=slui.exe AND NOT Processes.process_name=slui.exe
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `slui_spawning_a_process_filter`
+splunk_rule_id: 879c4330-b3e0-11eb-b1b1-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: slui.exe
+  filter_1:
+    Image: slui.exe
+  condition: (selection_0) and not (filter_1)

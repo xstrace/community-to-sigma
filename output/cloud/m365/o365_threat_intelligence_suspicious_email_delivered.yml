@@ -1,0 +1,38 @@
+title: O365 Threat Intelligence Suspicious Email Delivered
+id: 605cc93a-70e4-4ee3-9a3d-1a62e8c9b6c2
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic identifies when a suspicious email is detected within the Microsoft Office 365 ecosystem through the Advanced Threat Protection engine and delivered to an end user. Attackers
+  may execute several attacks through email, any detections from built-in Office 365 capabilities should be monitored and responded to appropriately. Certain premium Office 365 capabilities such as Safe
+  Attachment and Safe Links further enhance these detection and response functions.
+references:
+- https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/anti-malware-protection-for-spo-odfb-teams-about?view=o365-worldwide
+- https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/office-365-ti?view=o365-worldwide
+tags:
+- attack.t1566.001
+- attack.t1566.002
+date: '2024-04-07'
+original_spl: |-
+  `o365_management_activity` Workload=ThreatIntelligence Operation=TIMailData DeliveryAction!=Blocked Directionality=InBound
+    | rename P2Sender as src_user, P1Sender as sender, Recipients{} as user, DeliveryAction as action
+    | stats values(SenderIp) as src, values(Subject) as subject, values(user) as user, values(action) as action, values(SystemOverrides{}.Details) as reason, values(LatestDeliveryLocation) as result, values(ThreatsAndDetectionTech{}) as category, values(AttachmentData{}.FileName) as file_name, values(AttachmentData{}.FileType) as file_type, values(AttachmentData{}.SHA256) as file_hash values(DetectionMethod) as signature, min(_time) as firstTime max(_time) as lastTime, count
+      BY src_user,sender,dest,vendor_account,vendor_product
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `o365_threat_intelligence_suspicious_email_delivered_filter`
+splunk_rule_id: 605cc93a-70e4-4ee3-9a3d-1a62e8c9b6c2
+splunk_rule_type: Anomaly
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: ThreatIntelligence
+  selection_1:
+    Operation: TIMailData
+  selection_2:
+    DeliveryAction: Blocked
+  selection_3:
+    Directionality: InBound
+  condition: selection_0 and selection_1 and selection_2 and selection_3

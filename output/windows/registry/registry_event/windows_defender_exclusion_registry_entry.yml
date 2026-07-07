@@ -1,0 +1,28 @@
+title: Windows Defender Exclusion Registry Entry
+id: 13395a44-4dd9-11ec-9df7-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic detects modifications to the Windows Defender exclusion registry entries. It leverages endpoint registry data to identify changes in the registry path "*\\SOFTWARE\\Policies\\Microsoft\\Windows
+  Defender\\Exclusions\\*". This activity is significant because adversaries often modify these entries to bypass Windows Defender, allowing malicious code to execute without detection. If confirmed malicious,
+  this behavior could enable attackers to evade antivirus defenses, maintain persistence, and execute further malicious activities undetected.
+references:
+- https://tccontre.blogspot.com/2020/01/remcos-rat-evading-windows-defender-av.html
+- https://app.any.run/tasks/cf1245de-06a7-4366-8209-8e3006f2bfe5/
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+tags:
+- attack.t1685
+date: '2021-11-25'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path = "*\\SOFTWARE\\Policies\\Microsoft\\Windows
+  Defender\\Exclusions\\*") by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | where isnotnull(registry_value_data) | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `windows_defender_exclusion_registry_entry_filter`'
+splunk_rule_id: 13395a44-4dd9-11ec-9df7-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \SOFTWARE\Policies\Microsoft\Windows Defender\Exclusions\
+  condition: selection_0

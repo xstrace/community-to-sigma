@@ -1,0 +1,38 @@
+title: Windows Delete or Modify System Firewall
+id: b188d11a-eba7-419d-b8b6-cc265b4f2c4f
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies 'netsh' processes that delete or modify firewall configurations. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on command-line
+  executions containing specific keywords. This activity is significant because it can indicate malware, such as NJRAT, attempting to alter firewall settings to evade detection or remove traces. If confirmed
+  malicious, this behavior could allow an attacker to disable security measures, facilitating further compromise and persistence within the network.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.njrat
+tags:
+- attack.t1686
+date: '2023-09-19'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_netsh` Processes.process = "* firewall *" Processes.process = "* del*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name("Processes")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_delete_or_modify_system_firewall_filter`
+splunk_rule_id: b188d11a-eba7-419d-b8b6-cc265b4f2c4f
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: ' firewall '
+  selection_1:
+    CommandLine|contains: ' del'
+  condition: selection_0 and selection_1

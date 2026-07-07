@@ -1,0 +1,26 @@
+title: Windows Query Registry UnInstall Program List
+id: 535fd4fc-7151-4062-9d7e-e896bea77bf6
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects an access request on the uninstall registry key. It leverages Windows Security Event logs, specifically event code 4663. This activity is significant because
+  adversaries or malware can exploit this key to gather information about installed applications, aiding in further attacks. If confirmed malicious, this behavior could allow attackers to map out installed
+  software, potentially identifying vulnerabilities or software to exploit, leading to further system compromise.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.redline_stealer
+tags:
+- attack.t1012
+date: '2023-05-02'
+original_spl: '`wineventlog_security` EventCode=4663 object_file_path="*\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*" | stats count min(_time) as firstTime max(_time) as lastTime by object_file_name
+  object_file_path process_name process_path  process_id EventCode dest | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_query_registry_uninstall_program_list_filter`'
+splunk_rule_id: 535fd4fc-7151-4062-9d7e-e896bea77bf6
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4663
+  selection_1:
+    object_file_path|contains: \Microsoft\Windows\CurrentVersion\Uninstall\
+  condition: selection_0 and selection_1

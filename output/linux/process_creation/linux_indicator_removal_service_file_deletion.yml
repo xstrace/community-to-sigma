@@ -1,0 +1,45 @@
+title: Linux Indicator Removal Service File Deletion
+id: 6c077f81-2a83-4537-afbc-0e62e3215d55
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the deletion of Linux service unit configuration files by suspicious processes. It leverages Endpoint Detection and Response (EDR) telemetry, focusing on processes
+  executing the 'rm' command targeting '.service' files. This activity is significant as it may indicate malware attempting to disable critical services or security products, a common defense evasion tactic.
+  If confirmed malicious, this behavior could lead to service disruption, security tool incapacitation, or complete system compromise, severely impacting the integrity and availability of the affected Linux
+  host.
+references:
+- https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog/overview-of-the-cyber-weapons-used-in-the-ukraine-russia-war/
+- https://cert.gov.ua/article/3718487
+tags:
+- attack.t1070.004
+date: '2023-02-08'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name = "rm"
+      AND
+      Processes.process = "*rm *"
+      AND
+      Processes.process = "*.service"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `linux_indicator_removal_service_file_deletion_filter`
+splunk_rule_id: 6c077f81-2a83-4537-afbc-0e62e3215d55
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image: rm
+  selection_1:
+    CommandLine|contains: 'rm '
+  selection_2:
+    CommandLine|endswith: .service
+  condition: selection_0 and selection_1 and selection_2

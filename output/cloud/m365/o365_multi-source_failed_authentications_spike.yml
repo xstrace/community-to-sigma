@@ -1,0 +1,43 @@
+title: O365 Multi-Source Failed Authentications Spike
+id: ea4e2c41-dbfb-4f5f-a7b6-9ac1b7f104aa
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies a spike in failed authentication attempts within an Office 365 environment, indicative of a potential distributed password spraying attack. It leverages UserLoginFailed
+  events from O365 Management Activity logs, focusing on ErrorNumber 50126. This detection is significant as it highlights attempts to bypass security controls using multiple IP addresses and user agents.
+  If confirmed malicious, this activity could lead to unauthorized access, data breaches, privilege escalation, and lateral movement within the organization. Early detection is crucial to prevent account
+  takeovers and mitigate subsequent threats.
+references:
+- https://attack.mitre.org/techniques/T1110/003/
+- https://docs.microsoft.com/en-us/security/compass/incident-response-playbook-password-spray
+- https://www.cisa.gov/uscert/ncas/alerts/aa21-008a
+- https://docs.microsoft.com/azure/active-directory/reports-monitoring/reference-sign-ins-error-codes
+tags:
+- attack.t1110.003
+- attack.t1110.004
+- attack.t1586.003
+date: '2023-12-06'
+original_spl: |-
+  `o365_management_activity` Workload=AzureActiveDirectory Operation=UserLoginFailed ErrorNumber=50126
+    | bucket span=5m _time
+    | eval uniqueIPUserCombo = src_ip . "-" . user
+    | fillnull
+    | stats earliest(_time) as firstTime max(_time) as lastTime dc(uniqueIPUserCombo) as uniqueIpUserCombinations, dc(user) as uniqueUsers, dc(src_ip) as uniqueIPs, values(user) as user, values(src_ip) as ips, values(user_agent) as user_agents values(signature) as signature values(src) as src values(dest) as dest
+      BY _time vendor_account vendor_product
+    | where uniqueIpUserCombinations > 20 AND uniqueUsers > 20 AND uniqueIPs > 20
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `o365_multi_source_failed_authentications_spike_filter`
+splunk_rule_id: ea4e2c41-dbfb-4f5f-a7b6-9ac1b7f104aa
+splunk_rule_type: Hunting
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: UserLoginFailed
+  selection_2:
+    ErrorNumber: 50126
+  condition: selection_0 and selection_1 and selection_2

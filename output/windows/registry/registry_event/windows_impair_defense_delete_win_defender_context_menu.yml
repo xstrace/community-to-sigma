@@ -1,0 +1,29 @@
+title: Windows Impair Defense Delete Win Defender Context Menu
+id: 395ed5fe-ad13-4366-9405-a228427bdd91
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the deletion of the Windows Defender context menu entry from the registry. It leverages data from the Endpoint datamodel, specifically monitoring registry actions
+  where the path includes "*\\shellex\\ContextMenuHandlers\\EPP" and the action is 'deleted'. This activity is significant as it is commonly associated with Remote Access Trojan (RAT) malware attempting
+  to disable security features. If confirmed malicious, this could allow an attacker to impair defenses, facilitating further malicious activities such as unauthorized access, persistence, and data exfiltration.
+references:
+- https://blog.malwarebytes.com/malwarebytes-news/2021/02/lazyscripter-from-empire-to-double-rat/
+- https://app.any.run/tasks/45f5d114-91ea-486c-ab01-41c4093d2861/
+tags:
+- attack.t1685
+date: '2020-11-06'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime from datamodel=Endpoint.Registry where Registry.registry_path = "*\\shellex\\ContextMenuHandlers\\EPP"
+  Registry.action = deleted by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_impair_defense_delete_win_defender_context_menu_filter`'
+splunk_rule_id: 395ed5fe-ad13-4366-9405-a228427bdd91
+splunk_rule_type: Hunting
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \shellex\ContextMenuHandlers\EPP
+  selection_1:
+    Registry.action: deleted
+  condition: selection_0 and selection_1

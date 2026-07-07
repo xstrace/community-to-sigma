@@ -1,0 +1,80 @@
+title: Cisco Secure Firewall - Oracle E-Business Suite Correlation
+id: 9e995d21-6870-43de-acd9-76f372bcf323
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk, Talos NTDR
+description: |
+  This correlation rule identifies potential exploitation attempts of Oracle E-Business Suite vulnerabilities (CVE-2025-61882 and CVE-2025-61884) by correlating multiple intrusion signatures from Cisco Secure Firewall Threat Defense logs.
+  The detection looks for specific signatures that indicate attempts to exploit the TemplatePreview functionality and vulnerable SyncServlet endpoints as well as post compromise activity involving Cl0p.
+  By correlating these signatures, the analytic aims to identify coordinated exploitation attempts that may indicate an attacker is targeting Oracle E-Business Suite installations.
+  Security teams should investigate any instances of these correlated signatures, especially if they are found in conjunction with other suspicious network activity or on systems that should not be exposed to such threats.
+references:
+- https://www.oracle.com/security-alerts/alert-cve-2025-61882.html
+- https://www.oracle.com/security-alerts/alert-cve-2025-61884.html
+- https://labs.watchtowr.com/well-well-well-its-another-day-oracle-e-business-suite-pre-auth-rce-chain-cve-2025-61882well-well-well-its-another-day-oracle-e-business-suite-pre-auth-rce-chain-cve-2025-61882/
+- https://cloud.google.com/blog/topics/threat-intelligence/oracle-ebusiness-suite-zero-day-exploitation
+tags:
+- attack.t1190
+date: '2025-04-16'
+original_spl: |-
+  `cisco_secure_firewall` EventType=IntrusionEvent signature_id IN (65454, 65455, 65377, 65378, 65413, 65414, 65415, 65456)
+  | bin _time span=5m
+  | fillnull
+  | stats dc(signature_id) as unique_signature_count
+          values(signature_id) as signature_id
+          values(signature) as signature
+          values(class_desc) as class_desc
+          values(MitreAttackGroups) as MitreAttackGroups
+          values(InlineResult) as InlineResult
+          values(InlineResultReason) as InlineResultReason
+          values(dest_port) as dest_port
+          values(rule) as rule
+          values(transport) as transport
+          values(app) as app
+          min(_time) as firstTime
+          max(_time) as lastTime
+          sum(eval(signature_id==65454)) as sig_template_preview
+          sum(eval(signature_id==65455)) as sig_sync_servlet
+          sum(eval(signature_id IN (65377,65378,65413,65414,65415,65456))) as sig_exploit_activity
+    by src dest
+  | where (
+            (
+              sig_exploit_activity >= 1
+              AND
+              (
+                sig_template_preview >= 1
+                OR
+                sig_sync_servlet >= 1
+              )
+            )
+          OR
+            (
+              sig_template_preview >= 1
+              AND
+              sig_sync_servlet >= 1
+            )
+          OR
+            unique_signature_count >= 2
+          )
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_secure_firewall___oracle_e_business_suite_correlation_filter`
+splunk_rule_id: 9e995d21-6870-43de-acd9-76f372bcf323
+splunk_rule_type: TTP
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: IntrusionEvent
+  selection_1:
+    signature_id:
+    - 65454
+    - 65455
+    - 65377
+    - 65378
+    - 65413
+    - 65414
+    - 65415
+    - 65456
+  condition: selection_0 and selection_1

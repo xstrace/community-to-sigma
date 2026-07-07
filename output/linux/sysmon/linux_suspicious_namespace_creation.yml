@@ -1,0 +1,82 @@
+title: Linux Suspicious Namespace Creation
+id: 039dbee4-39d8-4ad0-a43a-df4db3a41990
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: The following analytic detects an unprivileged user invoking the unshare syscall with user namespace flags followed within 120 seconds by a root-owned shell or interpreter spawning under the
+  same parent process, correlating auditd syscall telemetry with Sysmon process creation events to identify the two-step sequence characteristic of user-namespace-based Linux kernel privilege escalation
+  exploits such as DirtyFrag.
+references:
+- https://www.elastic.co/security-labs/copy-fail-dirtyfrag-linux-page-bugs-in-the-wild
+tags:
+- attack.t1068
+date: '2026-05-12'
+original_spl: |-
+  type=SYSCALL SYSCALL=unshare
+  | where uid != "0" AND uid != "4294967295"
+  | where a0 IN ("10000000","50000000","70000000","10020000","50020000","70020000")
+  | eval unshare_time=_time,
+        unshare_pid=pid,
+        unshare_ppid=ppid,
+        trigger_uid=uid,
+        trigger_auid=auid,
+        trigger_exe=exe,
+        ns_flags=a0
+  | table host, unshare_time, comm, syscall, unshare_pid, unshare_ppid,
+          trigger_uid, trigger_auid, trigger_exe, ns_flags
+  | join type=inner host unshare_ppid [
+      search `sysmon` EventID=1 User=root
+      | where match(Image, "/(su|sudo|pkexec|passwd|chsh|newgrp|doas|run0|sg|dash|sh|bash|zsh|fish|ksh|csh|tcsh|ash|mksh|busybox|tmux|screen|node|python[^/]*|perl[^/]*|ruby[^/]*|php[^/]*|lua[^/]*)$")
+      | eval root_spawn_time=_time, root_pid=ProcessId,
+            root_exe=Image, root_cmdline=CommandLine, root_parent=ParentProcessId
+      | rename ParentProcessId AS unshare_ppid
+      | table host, unshare_ppid, root_spawn_time, root_pid,
+              root_exe, root_cmdline, root_parent, unshare_time,
+              action, original_file_name, parent_process, parent_process_exec,
+              parent_process_guid, parent_process_id, parent_process_name,
+              parent_process_path, process, process_exec, process_guid,
+              process_hash, process_id, process_integrity_level,
+              process_name, process_path, user, user_id, vendor_product
+  ]
+  | where (root_spawn_time - unshare_time) >= 0
+  | where (root_spawn_time - unshare_time) <= 120
+  | eval elapsed_sec=round(root_spawn_time - unshare_time, 2)
+  | eval ioc_match=case(
+      ns_flags="50000000", "dirtyfrag (CLONE_NEWUSER|CLONE_NEWNET)",
+      ns_flags="10000000", "CLONE_NEWUSER only",
+      ns_flags="70000000", "CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWPID",
+      1=1, "namespace flags="+ns_flags
+    )
+  | rename host as dest
+  | stats
+      count                              AS count,
+      min(unshare_time)                  AS firstTime,
+      max(unshare_time)                  AS lastTime,
+      values(trigger_uid)                AS trigger_uid,
+      values(trigger_auid)               AS trigger_auid,
+      values(trigger_exe)                AS trigger_exe,
+      values(ns_flags)                   AS ns_flags,
+      values(ioc_match)                  AS ioc_match,
+      values(unshare_pid)                AS unshare_pid,
+      values(unshare_ppid)               AS unshare_ppid,
+      values(root_exe)                   AS root_exe,
+      values(root_cmdline)               AS root_cmdline,
+      values(root_pid)                   AS root_pid,
+      values(elapsed_sec)                AS elapsed_sec,
+      values(process_hash)               AS process_hash,
+      values(vendor_product)             AS vendor_product
+      by dest, comm, syscall
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_suspicious_namespace_creation_filter`
+splunk_rule_id: 039dbee4-39d8-4ad0-a43a-df4db3a41990
+splunk_rule_type: TTP
+logsource:
+  product: linux
+  service: sysmon
+detection:
+  selection_0:
+    type: SYSCALL
+  selection_1:
+    SYSCALL: unshare
+  condition: selection_0 and selection_1

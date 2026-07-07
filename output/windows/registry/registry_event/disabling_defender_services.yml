@@ -1,0 +1,31 @@
+title: Disabling Defender Services
+id: 911eacdc-317f-11ec-ad30-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic detects the disabling of Windows Defender services by monitoring registry modifications. It leverages registry event data to identify changes to specific registry paths
+  associated with Defender services, where the 'Start' value is set to '0x00000004'. This activity is significant because disabling Defender services can indicate an attempt by an adversary to evade detection
+  and maintain persistence on the endpoint. If confirmed malicious, this action could allow attackers to execute further malicious activities undetected, leading to potential data breaches or system compromise.
+references:
+- https://thedfirreport.com/2021/10/18/icedid-to-xinglocker-ransomware-in-24-hours/
+tags:
+- attack.t1685
+date: '2021-10-18'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path = "*\\System\\CurrentControlSet\\Services\\*"
+  AND (Registry.registry_path IN("*WdBoot*", "*WdFilter*", "*WdNisDrv*", "*WdNisSvc*","*WinDefend*", "*SecurityHealthService*")) AND Registry.registry_value_name = Start Registry.registry_value_data = 0x00000004)
+  by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name
+  Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)`| where isnotnull(registry_value_data) | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `disabling_defender_services_filter`'
+splunk_rule_id: 911eacdc-317f-11ec-ad30-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \System\CurrentControlSet\Services\
+  selection_1:
+    Details: Start
+  selection_2:
+    Details: '0x00000004'
+  condition: selection_0 and selection_1 and selection_2

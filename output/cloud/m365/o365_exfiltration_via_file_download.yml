@@ -1,0 +1,34 @@
+title: O365 Exfiltration via File Download
+id: 06b23921-bfe2-4576-89dd-616f06e129da
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic detects when an excessive number of files are downloaded from o365 by the same user over a short period of time. O365 may bundle these files together as a ZIP file, however
+  each file will have it's own download event. This behavior may indicate an attacker staging data for exfiltration or an insider threat removing organizational data. Additional attention should be taken
+  with any Azure Guest (#EXT#) accounts.
+references:
+- https://attack.mitre.org/techniques/T1567/exfil
+- https://www.varonis.com/blog/sidestepping-detection-while-exfiltrating-sharepoint-data
+- https://thedfirjournal.com/posts/m365-data-exfiltration-rclone/
+tags:
+- attack.t1567
+- attack.t1530
+date: '2025-01-28'
+original_spl: |-
+  `o365_management_activity` Operation IN ("filedownloaded")
+  | eval user = replace(mvindex(split(lower(UserId),"#ext#"),0),"_","@"), user_flat = replace(UserId, "[^A-Za-z0-9]","_")
+  | stats values(user) as user, latest(ClientIP) as src values(ZipFileName) as file_name, values(Operation) as signature, values(UserAgent) as http_user_agent, dc(SourceFileName) as count, min(_time) as firstTime, max(_time) as lastTime by Workload,UserId,SiteUrl
+  | rename SiteUrl as file_path,Workload as app
+  | where count > 50
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `o365_exfiltration_via_file_download_filter`
+splunk_rule_id: 06b23921-bfe2-4576-89dd-616f06e129da
+splunk_rule_type: Anomaly
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Operation: filedownloaded
+  condition: selection_0

@@ -1,0 +1,42 @@
+title: Get-ForestTrust with PowerShell
+id: 584f4884-0bf1-11ec-a5ec-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of the Get-ForestTrust command via PowerShell, commonly used by adversaries to gather domain trust information. This detection leverages data from
+  Endpoint Detection and Response (EDR) agents, focusing on process names and command-line executions. Identifying this activity is crucial as it indicates potential reconnaissance efforts to map out domain
+  trusts, which can inform further attacks. If confirmed malicious, this activity could allow attackers to understand domain relationships, aiding in lateral movement and privilege escalation within the
+  network.
+references:
+- https://powersploit.readthedocs.io/en/latest/Recon/Get-ForestTrust/
+tags:
+- attack.t1482
+date: '2021-09-02'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=powershell.exe
+      OR
+      Processes.process_name=cmd.exe Processes.process=*get-foresttrust*
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `get_foresttrust_with_powershell_filter`
+splunk_rule_id: 584f4884-0bf1-11ec-a5ec-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: powershell.exe
+  selection_1:
+    Image: cmd.exe
+    CommandLine|contains: '*get-foresttrust*'
+  condition: selection_0 and selection_1

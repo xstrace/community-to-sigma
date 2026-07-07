@@ -1,0 +1,44 @@
+title: Windows Rasautou DLL Execution
+id: 6f42b8be-8e96-11ec-ad5a-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of an arbitrary DLL by the Windows Remote Auto Dialer (rasautou.exe). This behavior is identified by analyzing process creation events where rasautou.exe
+  is executed with specific command-line arguments. This activity is significant because it leverages a Living Off The Land Binary (LOLBin) to execute potentially malicious code, bypassing traditional security
+  controls. If confirmed malicious, this technique could allow an attacker to execute arbitrary code, potentially leading to system compromise, privilege escalation, or persistent access within the environment.
+references:
+- https://github.com/mandiant/DueDLLigence
+- https://github.com/MHaggis/notes/blob/master/utilities/Invoke-SPLDLLigence.ps1
+- https://gist.github.com/NickTyrer/c6043e4b302d5424f701f15baf136513
+- https://www.mandiant.com/resources/staying-hidden-on-the-endpoint-evading-detection-with-shellcode
+tags:
+- attack.t1055.001
+- attack.t1218
+date: '2022-02-09'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=rasautou.exe Processes.process="* -d *"AND Processes.process="* -p *"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_rasautou_dll_execution_filter`
+splunk_rule_id: 6f42b8be-8e96-11ec-ad5a-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: rasautou.exe
+  selection_1:
+    CommandLine|contains: ' -d '
+  selection_2:
+    CommandLine|contains: ' -p '
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,46 @@
+title: Linux Possible Append Cronjob Entry on Existing Cronjob File
+id: b5b91200-5f27-11ec-bb4e-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects potential tampering with cronjob files on a Linux system by identifying 'echo' commands that append code to existing cronjob files. It leverages logs from Endpoint
+  Detection and Response (EDR) agents, focusing on process names, parent processes, and command-line executions. This activity is significant because adversaries often use it for persistence or privilege
+  escalation. If confirmed malicious, this could allow attackers to execute unauthorized code automatically, leading to system compromises and unauthorized data access, thereby impacting business operations
+  and data integrity.
+references:
+- https://attack.mitre.org/techniques/T1053/003/
+- https://blog.aquasec.com/threat-alert-kinsing-malware-container-vulnerability
+- https://www.intezer.com/blog/research/kaiji-new-chinese-linux-malware-turning-to-golang/
+tags:
+- attack.t1053.003
+date: '2021-12-21'
+original_spl: |-
+  | tstats `security_content_summariesonly` count FROM datamodel=Endpoint.Processes
+    WHERE Processes.process = "*echo*"
+      AND
+      Processes.process IN("*/etc/cron*", "*/var/spool/cron/*", "*/etc/anacrontab*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_possible_append_cronjob_entry_on_existing_cronjob_file_filter`
+splunk_rule_id: b5b91200-5f27-11ec-bb4e-acde48001122
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: echo
+  selection_1:
+    CommandLine|contains:
+    - /etc/cron
+    - /var/spool/cron/
+    - /etc/anacrontab
+  condition: selection_0 and selection_1

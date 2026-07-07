@@ -1,0 +1,46 @@
+title: Windows Detect Network Scanner Behavior
+id: 78e678d2-bf64-4fe6-aa52-2f7b11dddee7
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic detects when an application is used to connect a large number of unique ports/targets within a short time frame. Network enumeration may be used by adversaries as a method
+  of discovery, lateral movement, or remote execution. This analytic may require significant tuning depending on the organization and applications being actively used, highly recommended to pre-populate
+  the filter macro prior to activation.
+references:
+- https://attack.mitre.org/techniques/T1595
+tags:
+- attack.t1595.001
+- attack.t1595.002
+date: '2024-12-26'
+original_spl: '| tstats `security_content_summariesonly` count values(All_Traffic.action) as action values(All_Traffic.dest) as dest values(All_Traffic.dest_port) as dest_port values(All_Traffic.dest_ip)
+  as dest_ip values(All_Traffic.dvc) as dvc values(All_Traffic.direction) as direction values(All_Traffic.protocol) as protocol values(All_Traffic.protocol_version) as protocol_version values(All_Traffic.src_port)
+  as src_port values(All_Traffic.transport) as transport dc(All_Traffic.dest_port) as port_count dc(All_Traffic.dest) as dest_count min(_time) as firstTime max(_time) as lastTime values(All_Traffic.process_id)
+  as process_id from datamodel=Network_Traffic.All_Traffic where sourcetype=XmlWinEventLog All_Traffic.app = "*\\*" All_Traffic.dest_port < 32000 NOT All_Traffic.dest_port IN (8443,8080,5353,3268,443,389,88,80,53,25)
+  by All_Traffic.app All_Traffic.src All_Traffic.src_ip All_Traffic.user All_Traffic.vendor_product _time span=5m | `drop_dm_object_name(All_Traffic)` | rex field=app ".*\\\(?<process_name>.*)$" | where
+  port_count > 10 OR dest_count > 10 | stats latest(src) as src, latest(src_ip) as src_ip, max(dest_count) as dest_count, max(port_count) as port_count, latest(dest_port) as dest_port, min(firstTime) as
+  firstTime, max(lastTime) as lastTime, max(count) as count by user,app,process_name | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_detect_network_scanner_behavior_filter`'
+splunk_rule_id: 78e678d2-bf64-4fe6-aa52-2f7b11dddee7
+splunk_rule_type: Anomaly
+logsource:
+  category: all_traffic
+  product: windows
+detection:
+  selection_0:
+    sourcetype: XmlWinEventLog
+  selection_1:
+    All_Traffic.app|contains: \
+  selection_2:
+    All_Traffic.dest_port: 32000
+  filter_3:
+    All_Traffic.dest_port:
+    - 8443
+    - 8080
+    - 5353
+    - 3268
+    - 443
+    - 389
+    - 88
+    - 80
+    - 53
+    - 25
+  condition: (selection_0 and selection_1 and selection_2) and not (filter_3)

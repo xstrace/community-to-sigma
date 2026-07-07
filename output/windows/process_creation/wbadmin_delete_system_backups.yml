@@ -1,0 +1,53 @@
+title: WBAdmin Delete System Backups
+id: cd5aed7e-5cea-11eb-ae93-0242ac130002
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of wbadmin.exe with flags that delete backup files, specifically targeting catalog or system state backups. It leverages data from Endpoint Detection
+  and Response (EDR) agents, focusing on process names and command-line arguments. This activity is significant because it is commonly used by ransomware to prevent recovery by deleting system backups.
+  If confirmed malicious, this action could severely hinder recovery efforts, leading to prolonged downtime and potential data loss.
+references:
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1490/T1490.md
+- https://thedfirreport.com/2020/10/08/ryuks-return/
+- https://attack.mitre.org/techniques/T1490/
+- https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/wbadmin
+- https://www.welivesecurity.com/2019/04/30/buhtrap-backdoor-ransomware-advertising-platform/
+tags:
+- attack.t1490
+date: '2021-01-11'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name=wbadmin.exe
+          OR
+          Processes.original_file_name=WBADMIN.EXE
+      )
+      Processes.process="*delete*" ( Processes.process="*catalog*" OR Processes.process="*backup*" )
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `wbadmin_delete_system_backups_filter`
+splunk_rule_id: cd5aed7e-5cea-11eb-ae93-0242ac130002
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: wbadmin.exe
+  selection_1:
+    OriginalFileName: WBADMIN.EXE
+  selection_2:
+    CommandLine|contains: delete
+  selection_3:
+    CommandLine|contains: catalog
+  selection_4:
+    CommandLine|contains: backup
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

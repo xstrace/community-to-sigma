@@ -1,0 +1,56 @@
+title: MacOS Data Chunking
+id: 7f1c8bed-9bd4-40b0-a1df-c262cbade0fc
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  The following analytic detects suspicious data chunking activities that involve the use of split or dd, potentially indicating an attempt to evade detection by breaking large files into smaller parts.
+  Attackers may use this technique to bypass size-based security controls, facilitating the covert exfiltration of sensitive data.
+  By monitoring for unusual or unauthorized use of these commands, this analytic helps identify potential data exfiltration attempts, allowing security teams to intervene and prevent the unauthorized transfer of critical information from the network.
+references:
+- https://osquery.readthedocs.io/en/stable/deployment/process-auditing/
+- https://ss64.com/mac/dd.html
+- https://ss64.com/mac/split.html
+tags:
+- attack.t1030
+date: '2026-04-14'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  from datamodel=Endpoint.Processes where
+
+  (
+      Processes.process = "dd *"
+       Processes.process = "* if=*"
+  )
+  OR
+  (
+      Processes.process = "*split *"
+      Processes.process="* -b *"
+  )
+
+  by Processes.dest Processes.original_file_name Processes.parent_process_id
+     Processes.process Processes.process_exec Processes.process_guid
+     Processes.process_hash Processes.process_id
+     Processes.process_current_directory Processes.process_name
+     Processes.process_path Processes.user
+     Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `macos_data_chunking_filter`
+splunk_rule_id: 7f1c8bed-9bd4-40b0-a1df-c262cbade0fc
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|startswith: dd *
+    CommandLine|contains: '* if=*'
+  selection_1:
+    CommandLine|contains: '*split *'
+  condition: selection_0 and selection_1

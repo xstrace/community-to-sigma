@@ -1,0 +1,33 @@
+title: Zscaler Phishing Activity Threat Blocked
+id: 68d3e2c1-e97f-4310-b080-dea180b48aa9
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Rod Soto, Splunk
+description: The following analytic identifies potential phishing attempts blocked by Zscaler within a network. It leverages web proxy logs to detect actions tagged as HTML.Phish. The detection method involves
+  analyzing critical data points such as user, threat name, URL, and hostname. This activity is significant for a SOC as it serves as an early warning system for phishing threats, enabling prompt investigation
+  and mitigation. If confirmed malicious, this activity could indicate an attempt to deceive users into divulging sensitive information, potentially leading to data breaches or credential theft.
+references:
+- https://help.zscaler.com/zia/nss-feed-output-format-web-logs
+tags:
+- attack.t1566
+date: '2024-04-17'
+original_spl: |-
+  `zscaler_proxy` action=blocked threatname="HTML.Phish*"
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY action deviceowner user
+         threatname url src
+         dest
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `zscaler_phishing_activity_threat_blocked_filter`
+splunk_rule_id: 68d3e2c1-e97f-4310-b080-dea180b48aa9
+splunk_rule_type: Anomaly
+logsource:
+  category: proxy
+  service: zscaler
+detection:
+  selection_0:
+    action: blocked
+  selection_1:
+    threatname|startswith: HTML.Phish
+  condition: selection_0 and selection_1

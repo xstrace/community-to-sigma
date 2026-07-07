@@ -1,0 +1,32 @@
+title: Windows Raw Access To Disk Volume Partition
+id: a85aa37e-9647-11ec-90c5-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects suspicious raw access reads to the device disk partition of a host machine. It leverages Sysmon EventCode 9 logs to identify processes attempting to read or write
+  to the boot sector, excluding legitimate system processes. This activity is significant as it is commonly associated with destructive actions by adversaries, such as wiping, encrypting, or overwriting
+  the boot sector, as seen in attacks involving malware like HermeticWiper. If confirmed malicious, this behavior could lead to severe impacts, including system inoperability, data loss, or compromised
+  boot integrity.
+references:
+- https://blog.talosintelligence.com/2022/02/threat-advisory-hermeticwiper.html
+tags:
+- attack.t1561.002
+date: '2022-02-25'
+original_spl: '`sysmon` EventCode=9 Device = \\Device\\HarddiskVolume* NOT (Image IN("*\\Windows\\System32\\*", "*\\Windows\\SysWOW64\\*")) | stats count min(_time) as firstTime max(_time) as lastTime by
+  dest dvc process_exec process_guid process_id process_name process_path signature signature_id user_id vendor_product Device Image | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_raw_access_to_disk_volume_partition_filter`'
+splunk_rule_id: a85aa37e-9647-11ec-90c5-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 9
+  selection_1:
+    Device|startswith: \Device\HarddiskVolume
+  filter_2:
+    Image:
+    - '*\Windows\System32\*'
+    - '*\Windows\SysWOW64\*'
+  condition: (selection_0 and selection_1) and not (filter_2)

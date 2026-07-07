@@ -1,0 +1,33 @@
+title: Microsoft Intune Mobile Apps
+id: 98e6b389-2806-4426-a580-8a92cb0d9710
+status: experimental
+level: medium
+author: Dean Luxton
+description: |
+  Microsoft Intune supports deploying packaged applications to support software deployment, this functionality can also be abused for deploying malicious payloads to intune managed devices.
+  This detection identifies when a new packaged application has been added, updated or deleted.
+references:
+- https://posts.specterops.io/death-from-above-lateral-movement-from-azure-to-on-prem-ad-d18cb3959d4d
+- https://securityintelligence.com/x-force/detecting-intune-lateral-movement/
+- https://posts.specterops.io/maestro-9ed71d38d546
+tags:
+- attack.t1072
+- attack.t1021.007
+- attack.t1202
+- attack.t1105
+date: '2025-01-06'
+original_spl: |-
+  `azure_monitor_activity` operationName="*MobileApp*"
+  | rename identity as user, properties.TargetObjectIds{} as TargetObjectId, properties.TargetDisplayNames{} as TargetDisplayName, properties.Actor.IsDelegatedAdmin as user_isDelegatedAdmin
+  | rex field="operationName" "^(?P<action>\w+)\s" | replace "Patch" with "updated", "Create" with "created", "Delete", with "deleted", "assign", with "assigned" IN action
+  | table _time operationName action user user_type user_isDelegatedAdmin TargetDisplayName TargetObjectId status tenantId correlationId
+  | `microsoft_intune_mobile_apps_filter`
+splunk_rule_id: 98e6b389-2806-4426-a580-8a92cb0d9710
+splunk_rule_type: Hunting
+logsource:
+  product: azure
+  service: activity
+detection:
+  selection_0:
+    operationName|contains: MobileApp
+  condition: selection_0

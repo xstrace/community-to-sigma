@@ -1,0 +1,40 @@
+title: Windows MSIExec Unregister DLLRegisterServer
+id: a27db3c5-1a9a-46df-a577-765d3f1a3c24
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of msiexec.exe with the /z switch parameter, which is used to unload DLLRegisterServer. This detection leverages data from Endpoint Detection and Response
+  (EDR) agents, focusing on process execution logs, including command-line arguments. This activity is significant because unloading DLLRegisterServer can be indicative of an attempt to deregister a DLL,
+  potentially disrupting legitimate services or hiding malicious activity. If confirmed malicious, this could allow an attacker to disable security controls, evade detection, or disrupt system functionality,
+  leading to further compromise of the environment.
+references:
+- https://thedfirreport.com/2022/06/06/will-the-real-msiexec-please-stand-up-exploit-leads-to-data-exfiltration/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218.007/T1218.007.md
+tags:
+- attack.t1218.007
+date: '2022-06-17'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_msiexec` Processes.process IN ("*/z*", "*-z*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_msiexec_unregister_dllregisterserver_filter`
+splunk_rule_id: a27db3c5-1a9a-46df-a577-765d3f1a3c24
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - /z
+    - -z
+  condition: selection_0

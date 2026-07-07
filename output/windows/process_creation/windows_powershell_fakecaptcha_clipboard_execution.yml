@@ -1,0 +1,59 @@
+title: Windows PowerShell FakeCAPTCHA Clipboard Execution
+id: d81d4d3d-76b5-4f21-ab51-b17d5164c106
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: |
+  This detection identifies potential FakeCAPTCHA/ClickFix clipboard hijacking campaigns by looking for PowerShell execution with hidden window parameters and distinctive strings related to fake CAPTCHA verification. These campaigns use social engineering to trick users into pasting malicious PowerShell commands from their clipboard, typically delivering information stealers or remote access trojans.
+references:
+- https://urlhaus.abuse.ch/
+- https://www.proofpoint.com/us/blog/threat-insight/security-brief-clickfix-social-engineering-technique-floods-threat-landscape
+- https://reliaquest.com/blog/using-captcha-for-compromise/
+- https://attack.mitre.org/techniques/T1204/001/
+- https://github.com/MHaggis/ClickGrab
+tags:
+- attack.t1059.001
+- attack.t1204.001
+- attack.t1059.003
+date: '2025-05-19'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_powershell`
+      AND
+      Processes.process="*-w*h*"
+      AND
+      ( (Processes.process IN ("*robot*", "*captcha*", "*verify*", "*security check*", "*complete verification*"))
+      OR
+      ( (Processes.process IN ("*iwr *", "*Invoke-WebRequest*", "*wget *", "*curl *", "*Net.WebClient*", "*DownloadString*", "*[Convert]::FromBase64String*"))
+      AND
+      (Processes.process IN ("*iex*", "*Invoke-Expression*"))
+      AND
+      (Processes.process IN ("*click*", "*verify*", "*check*", "*human*", "*bot*", "*token*", "*challenge*")) )
+      OR
+      ( Processes.process="*clipboard*"
+      AND
+      Processes.process="*iex*"
+      AND
+      (Processes.process="*FromBase64String*"
+      OR
+      Processes.process="*decode*") ) )
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_powershell_fakecaptcha_clipboard_execution_filter`
+splunk_rule_id: d81d4d3d-76b5-4f21-ab51-b17d5164c106
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: -w*h
+  condition: selection_0

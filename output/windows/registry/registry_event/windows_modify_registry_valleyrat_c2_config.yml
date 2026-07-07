@@ -1,0 +1,32 @@
+title: Windows Modify Registry ValleyRAT C2 Config
+id: ac59298a-8d81-4c02-8c9b-ffdac993891f
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects modifications to theregistry related to ValleyRAT C2 configuration. Specifically,  it monitors changes in registry keys where ValleyRAT saves the IP address and
+  port information of its command-and-control (C2) server. This activity is a key indicator of ValleyRAT attempting to establish persistent communication with its C2 infrastructure. By identifying these
+  unauthorized registry modifications, security analysts can quickly detect malicious configurations and investigate the associated threats. Early detection of these changes helps prevent further exploitation
+  and limits the malware’s ability to exfiltrate data or control infected systems.
+references:
+- https://www.proofpoint.com/us/blog/threat-insight/chinese-malware-appears-earnest-across-cybercrime-threat-landscape
+- https://www.fortinet.com/blog/threat-research/valleyrat-campaign-targeting-chinese-speakers
+tags:
+- attack.t1112
+date: '2024-09-18'
+original_spl: '| tstats `security_content_summariesonly` count FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path= "*\\Console\\IpDateInfo" AND Registry.registry_value_data="Binary Data") OR
+  (Registry.registry_path= "*\\Console\\SelfPath" AND Registry.registry_value_data="*.exe") by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path
+  Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)`
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_modify_registry_valleyrat_c2_config_filter`'
+splunk_rule_id: ac59298a-8d81-4c02-8c9b-ffdac993891f
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: '*\Console\IpDateInfo'
+    Details: Binary Data
+  selection_1:
+    TargetObject|endswith: '*\Console\SelfPath'
+    Details|endswith: '*.exe'
+  condition: selection_0 and selection_1

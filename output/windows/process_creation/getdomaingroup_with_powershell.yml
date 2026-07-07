@@ -1,0 +1,43 @@
+title: GetDomainGroup with PowerShell
+id: 93c94be3-bead-4a60-860f-77ca3fe59903
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of `powershell.exe` with command-line arguments that query for domain groups using `Get-DomainGroup`. This detection leverages data from Endpoint
+  Detection and Response (EDR) agents, focusing on process names and command-line executions mapped to the `Processes` node of the `Endpoint` data model. Monitoring this activity is crucial as `Get-DomainGroup`
+  is part of PowerView, a tool often used by adversaries for domain enumeration and situational awareness. If confirmed malicious, this activity could allow attackers to gain insights into domain group
+  structures, aiding in further exploitation and privilege escalation.
+references:
+- https://attack.mitre.org/techniques/T1069/002/
+- https://powersploit.readthedocs.io/en/latest/Recon/Get-DomainGroup/
+tags:
+- attack.t1069.002
+date: '2021-08-26'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name="powershell.exe"
+      )
+      (Processes.process=*Get-DomainGroup*)
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `getdomaingroup_with_powershell_filter`
+splunk_rule_id: 93c94be3-bead-4a60-860f-77ca3fe59903
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: powershell.exe
+  selection_1:
+    CommandLine|contains: Get-DomainGroup
+  condition: selection_0 and selection_1

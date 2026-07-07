@@ -1,0 +1,74 @@
+title: Linux Docker Shell Execution
+id: 03b2b286-fa86-4ec9-b1a1-ec19d314bdf7
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Splunk, Emil Elsetrønning
+description: |
+  This detection identifies shell execution activity associated with Docker containers on Linux systems.
+  Specifically, it monitors for interactive or non-interactive shell processes (e.g., `/bin/bash`, `/bin/sh`, `/bin/zsh`) launched via Docker commands such as `docker exec`,  or through container entrypoint overrides.
+  Shell execution inside a container may indicate administrative troubleshooting activity.
+  However, it can also represent post-exploitation behavior, where an attacker gains access to a container and spawns a shell to execute arbitrary commands, establish persistence, or pivot to the host.
+references:
+- https://docs.docker.com/reference/cli/docker/container/exec/
+- https://gtfobins.github.io/gtfobins/docker/
+tags:
+- attack.t1059.013
+date: '2026-03-10'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+  from datamodel=Endpoint.Processes where
+  Processes.process_name=docker*
+  Processes.process="* exec *"
+  Processes.process IN (
+    "* /bin/bash *",
+    "* /bin/dash *",
+    "* /bin/sh *",
+    "* /bin/zsh *",
+    "* bash *",
+    "* bash",
+    "* dash *",
+    "* dash",
+    "* sh *",
+    "* sh",
+    "* zsh *",
+    "* zsh"
+  )
+  by Processes.action Processes.dest Processes.original_file_name
+     Processes.parent_process Processes.parent_process_exec
+     Processes.parent_process_guid Processes.parent_process_id
+     Processes.parent_process_name Processes.parent_process_path
+     Processes.process Processes.process_exec Processes.process_guid
+     Processes.process_hash Processes.process_id
+     Processes.process_integrity_level Processes.process_name
+     Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_docker_shell_execution_filter`
+splunk_rule_id: 03b2b286-fa86-4ec9-b1a1-ec19d314bdf7
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image|startswith: docker
+  selection_1:
+    CommandLine|contains: ' exec '
+  selection_2:
+    CommandLine:
+    - '* /bin/bash *'
+    - '* /bin/dash *'
+    - '* /bin/sh *'
+    - '* /bin/zsh *'
+    - '* bash *'
+    - '* bash'
+    - '* dash *'
+    - '* dash'
+    - '* sh *'
+    - '* sh'
+    - '* zsh *'
+    - '* zsh'
+  condition: selection_0 and selection_1 and selection_2

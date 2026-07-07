@@ -1,0 +1,41 @@
+title: Linux Telnet Authentication Bypass
+id: 6e0913d4-5461-487c-9dce-6d22ef2c0f03
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: Detects an authentication bypass in telnet tracked as CVE-2026-24061. An attacker can supply a specifically crafted USER environment variable (-f root) that is passed to /usr/bin/login. Because
+  this input isn't sanitized an attacker can force the system to skip authentication and login directly as root.
+references:
+- https://www.safebreach.com/blog/safebreach-labs-root-cause-analysis-and-poc-exploit-for-cve-2026-24061/
+tags:
+- attack.t1548
+date: '2022-08-10'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name = "login" Processes.parent_process_name = "telnetd" Processes.process = "* -p *" Processes.process = "* -f root*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_telnet_authentication_bypass_filter`
+splunk_rule_id: 6e0913d4-5461-487c-9dce-6d22ef2c0f03
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image: login
+  selection_1:
+    ParentImage: telnetd
+  selection_2:
+    CommandLine|contains: ' -p '
+  selection_3:
+    CommandLine|contains: ' -f root'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

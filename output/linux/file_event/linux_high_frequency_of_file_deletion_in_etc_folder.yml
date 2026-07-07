@@ -1,0 +1,35 @@
+title: Linux High Frequency Of File Deletion In Etc Folder
+id: 9d867448-2aff-4d07-876c-89409a752ff8
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a high frequency of file deletions in the /etc/ folder on Linux systems. It leverages the Endpoint.Filesystem data model to identify instances where 200 or more
+  files are deleted within an hour, grouped by process name and process ID. This behavior is significant as it may indicate the presence of wiper malware, such as AcidRain, which aims to delete critical
+  system files. If confirmed malicious, this activity could lead to severe system instability, data loss, and potential disruption of services.
+references:
+- https://www.sentinelone.com/labs/acidrain-a-modem-wiper-rains-down-on-europe/
+tags:
+- attack.t1070.004
+- attack.t1485
+date: '2022-04-12'
+original_spl: |-
+  | tstats `security_content_summariesonly` values(Filesystem.file_access_time) as file_access_time values(Filesystem.file_create_time) as file_create_time values(Filesystem.file_hash) as file_hash values(Filesystem.file_modify_time) as file_modify_time values(Filesystem.file_name) as file_name values(Filesystem.file_path) as file_path  values(Filesystem.file_acl) as file_acl values(Filesystem.file_size) as file_size values(Filesystem.process_id) as process_id values(Filesystem.user) as user dc(Filesystem.file_path) as numOfDelFilePath count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Filesystem
+    WHERE Filesystem.action=deleted Filesystem.file_path = "/etc/*"
+    BY _time span=1h Filesystem.dest
+       Filesystem.process_guid Filesystem.action Filesystem.vendor_product
+  | `drop_dm_object_name(Filesystem)`
+  | where  numOfDelFilePath >= 200
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_high_frequency_of_file_deletion_in_etc_folder_filter`
+splunk_rule_id: 9d867448-2aff-4d07-876c-89409a752ff8
+splunk_rule_type: Anomaly
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection_0:
+    Filesystem.action: deleted
+  selection_1:
+    TargetFilename|startswith: /etc/
+  condition: selection_0 and selection_1

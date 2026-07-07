@@ -1,0 +1,49 @@
+title: Windows Anomalous Registry Value Length in Environment Key
+id: f5bde743-245a-4e1f-a152-3971cec6e9ef
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |-
+  The following analytic detects creation or modification of registry values under a user or system Environment key (paths matching *\Environment\*) where the stored value exceeds 2,000 characters.
+  Legitimate environment variables are typically short strings (paths, tokens, or flags); unusually long values can indicate adversaries or malware staging encoded payloads, bloated malicious PATH entries, or other data in a location that is loaded for every interactive session.
+  This behavior has been observed in contexts such as .NET infostealer activity. Analysts should validate the writing process, value content, and whether the change aligns with trusted software deployment or administrative tasks.
+references:
+- https://www.joesandbox.com/analysis/1817558/0/pdfexecutive
+- https://www.broadcom.com/support/security-center/protection-bulletin/vip-keylogger-spreads-via-multi-org-impersonation-campaign
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.vipkeylogger
+tags:
+- attack.t1112
+date: '2026-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  FROM datamodel=Endpoint.Registry WHERE
+
+  Registry.action IN ("created", "modified")
+  Registry.registry_path= "*\\Environment\\*"
+  Registry.registry_value_name != "Path"
+
+  by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive  Registry.registry_key_name  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product Registry.registry_value_data Registry.registry_path
+  | `drop_dm_object_name(Registry)`
+  | eval registry_value_data_len = len(registry_value_data)
+  | where registry_value_data_len > 2000
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_anomalous_registry_value_length_in_environment_key_filter`
+splunk_rule_id: f5bde743-245a-4e1f-a152-3971cec6e9ef
+splunk_rule_type: Anomaly
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    Registry.action:
+    - created
+    - modified
+  selection_1:
+    TargetObject|contains: \Environment\
+  selection_2:
+    Details: Path
+  condition: selection_0 and selection_1 and selection_2

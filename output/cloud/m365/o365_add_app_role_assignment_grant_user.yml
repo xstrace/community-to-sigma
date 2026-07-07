@@ -1,0 +1,34 @@
+title: O365 Add App Role Assignment Grant User
+id: b2c81cc6-6040-11eb-ae93-0242ac130002
+status: stable
+level: medium
+author: Rod Soto, Splunk
+description: The following analytic detects the addition of an application role assignment grant to a user in Office 365. It leverages data from the `o365_management_activity` dataset, specifically monitoring
+  the "Add app role assignment grant to user" operation. This activity is significant as it can indicate unauthorized privilege escalation or the assignment of sensitive roles to users. If confirmed malicious,
+  this could allow an attacker to gain elevated permissions, potentially leading to unauthorized access to critical resources and data within the Office 365 environment.
+references:
+- https://www.fireeye.com/content/dam/fireeye-www/blog/pdfs/wp-m-unc2452-2021-000343-01.pdf
+- https://www.cisa.gov/uscert/ncas/alerts/aa21-008a
+tags:
+- attack.t1136.003
+date: '2021-01-26'
+original_spl: |-
+  `o365_management_activity` Workload=AzureActiveDirectory Operation="Add app role assignment grant to user."
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         src vendor_account vendor_product
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `o365_add_app_role_assignment_grant_user_filter`
+splunk_rule_id: b2c81cc6-6040-11eb-ae93-0242ac130002
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: Add app role assignment grant to user.
+  condition: selection_0 and selection_1

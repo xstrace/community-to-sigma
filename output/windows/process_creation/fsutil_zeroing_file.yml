@@ -1,0 +1,39 @@
+title: Fsutil Zeroing File
+id: 4e5e024e-fabb-11eb-8b8f-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of the 'fsutil' command with the 'setzerodata' parameter, which zeros out a target file. This detection leverages data from Endpoint Detection and
+  Response (EDR) agents, focusing on process names and command-line arguments. This activity is significant because it is a technique used by ransomware, such as LockBit, to evade detection by erasing its
+  malware path after encrypting the host. If confirmed malicious, this action could hinder forensic investigations and allow attackers to cover their tracks, complicating incident response efforts.
+references:
+- https://app.any.run/tasks/e0ac072d-58c9-4f53-8a3b-3e491c7ac5db/
+- https://news.sophos.com/en-us/2020/04/24/lockbit-ransomware-borrows-tricks-to-keep-up-with-revil-and-maze/
+tags:
+- attack.t1070
+date: '2021-08-11'
+original_spl: |-
+  | tstats `security_content_summariesonly` count values(Processes.process) as process values(Processes.parent_process) as parent_process min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=fsutil.exe Processes.process="*setzerodata*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `fsutil_zeroing_file_filter`
+splunk_rule_id: 4e5e024e-fabb-11eb-8b8f-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: fsutil.exe
+  selection_1:
+    CommandLine|contains: setzerodata
+  condition: selection_0 and selection_1

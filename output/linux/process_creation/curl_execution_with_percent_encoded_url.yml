@@ -1,0 +1,78 @@
+title: Curl Execution with Percent Encoded URL
+id: 9a8d5516-4c5e-11ef-9d42-acde48001122
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects the execution of the curl utility where the command line includes percent-encoded characters and explicit file output options (such as -o or --output).
+  It leverages process execution telemetry from Endpoint Detection and Response (EDR) data sources to identify curl commands that may be using URL encoding to obfuscate download locations or payload paths.
+  This behavior is notable because percent-encoded URLs are commonly used by adversaries to evade simple string-based detections, hide malicious infrastructure, or bypass network security controls.
+  When combined with file download behavior, this activity may indicate malware staging, payload retrieval, or secondary tool deployment.
+  Analysts should review the decoded URL, destination host, parent process, and downloaded file to determine whether the activity is authorized or malicious.
+  The analytic calculates the number of percent (%) characters in the curl command line and triggers when a threshold of three or more is met, indicating potential URL encoding.
+  Adjust the threshold as needed based on your environment and tuning requirements.
+references:
+- https://github.com/nasbench/Misc-Research/blob/main/LOLBINs/Curl.md
+- https://attack.mitre.org/techniques/T1027/
+- https://attack.mitre.org/techniques/T1105/
+- https://curl.se/docs/manpage.html
+tags:
+- attack.t1027
+- attack.t1105
+date: '2026-03-03'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+  from datamodel=Endpoint.Processes where
+  (
+    Processes.process_name IN ("curl.exe", "curl")
+    OR
+    Processes.original_file_name="curl.exe"
+  )
+  Processes.process IN (
+    "* --output *",
+    "* -o *"
+  )
+  Processes.process IN ("*%*")
+  by Processes.action Processes.dest Processes.original_file_name
+     Processes.parent_process Processes.parent_process_exec
+     Processes.parent_process_guid Processes.parent_process_id
+     Processes.parent_process_name Processes.parent_process_path
+     Processes.process Processes.process_exec Processes.process_guid
+     Processes.process_hash Processes.process_id
+     Processes.process_integrity_level Processes.process_name
+     Processes.process_path Processes.user
+     Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+
+  ```
+    Count the number of % characters in the process command line.
+    Change this threshold based on your environment and tuning needs.
+  ```
+  | eval percent_count = mvcount(split(process, "%")) - 1
+  | where percent_count >= 3
+
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `curl_execution_with_percent_encoded_url_filter`
+splunk_rule_id: 9a8d5516-4c5e-11ef-9d42-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image:
+    - curl.exe
+    - curl
+  selection_1:
+    OriginalFileName: curl.exe
+  selection_2:
+    CommandLine|contains:
+    - ' --output '
+    - ' -o '
+  selection_3:
+    CommandLine|contains: '%'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

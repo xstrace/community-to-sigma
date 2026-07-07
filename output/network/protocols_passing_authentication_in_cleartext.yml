@@ -1,0 +1,45 @@
+title: Protocols passing authentication in cleartext
+id: 6923cd64-17a0-453c-b945-81ac2d8c6db9
+status: stable
+level: medium
+author: Rico Valdez, Splunk
+description: The following analytic identifies the use of cleartext protocols that risk leaking sensitive information. It detects network traffic on legacy protocols such as Telnet (port 23), POP3 (port
+  110), IMAP (port 143), and non-anonymous FTP (port 21). The detection leverages the Network_Traffic data model to identify TCP traffic on these ports. Monitoring this activity is crucial as it can expose
+  credentials and other sensitive data to interception. If confirmed malicious, attackers could capture authentication details, leading to unauthorized access and potential data breaches.
+references:
+- https://www.rackaid.com/blog/secure-your-email-and-file-transfers/
+- https://www.infosecmatter.com/capture-passwords-using-wireshark/
+date: '2020-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Network_Traffic
+    WHERE NOT All_Traffic.action IN ("blocked", "block")
+      AND
+      All_Traffic.transport="tcp"
+      AND
+      (All_Traffic.dest_port="23"
+      OR
+      All_Traffic.dest_port="143"
+      OR
+      All_Traffic.dest_port="110"
+      OR
+      (All_Traffic.dest_port="21"
+      AND
+      All_Traffic.user != "anonymous"))
+    BY All_Traffic.user All_Traffic.src_ip All_Traffic.dest
+       All_Traffic.dest_port All_Traffic.rule
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `drop_dm_object_name("All_Traffic")`
+  | `protocols_passing_authentication_in_cleartext_filter`
+splunk_rule_id: 6923cd64-17a0-453c-b945-81ac2d8c6db9
+splunk_rule_type: Anomaly
+logsource:
+  category: network_connection
+detection:
+  filter_0:
+    All_Traffic.action:
+    - blocked
+    - block
+  selection_1:
+    All_Traffic.transport: tcp
+  condition: (selection_1) and not (filter_0)

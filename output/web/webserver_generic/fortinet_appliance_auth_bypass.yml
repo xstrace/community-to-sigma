@@ -1,0 +1,51 @@
+title: Fortinet Appliance Auth bypass
+id: a83122f2-fa09-4868-a230-544dbc54bc1c
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: |
+  The following analytic detects attempts to exploit CVE-2022-40684, a Fortinet appliance authentication bypass vulnerability.
+  It identifies REST API requests to the /api/v2/ endpoint using various HTTP methods (GET, POST, PUT, DELETE) that may indicate unauthorized modifications, such as adding SSH keys or creating new users.
+  This detection leverages the Web datamodel to monitor specific URL patterns and HTTP methods.
+  This activity is significant as it can lead to unauthorized access and control over the appliance.
+  If confirmed malicious, attackers could gain persistent access, reroute network traffic, or capture sensitive information.
+references:
+- https://www.wordfence.com/blog/2022/10/threat-advisory-cve-2022-40684-fortinet-appliance-auth-bypass/
+- https://www.horizon3.ai/fortios-fortiproxy-and-fortiswitchmanager-authentication-bypass-technical-deep-dive-cve-2022-40684/
+- https://github.com/horizon3ai/CVE-2022-40684
+- https://www.horizon3.ai/fortinet-iocs-cve-2022-40684/
+- https://attackerkb.com/topics/QWOxGIKkGx/cve-2022-40684/rapid7-analysis
+- https://github.com/rapid7/metasploit-framework/pull/17143
+tags:
+- attack.t1190
+- attack.t1133
+date: '2022-10-14'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+           count min(_time) as firstTime
+                 max(_time) as lastTime
+
+  FROM datamodel=Web WHERE
+
+  Web.url = "*/api/v2/cmdb/system/admin*"
+  Web.http_method IN ("GET", "PUT")
+  BY Web.http_user_agent
+     Web.http_method Web.url
+     Web.url_length
+     Web.src Web.dest
+  | `drop_dm_object_name("Web")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `fortinet_appliance_auth_bypass_filter`
+splunk_rule_id: a83122f2-fa09-4868-a230-544dbc54bc1c
+splunk_rule_type: TTP
+logsource:
+  category: webserver
+detection:
+  selection_0:
+    cs-uri|contains: /api/v2/cmdb/system/admin
+  selection_1:
+    cs-method:
+    - GET
+    - PUT
+  condition: selection_0 and selection_1

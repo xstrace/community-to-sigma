@@ -1,0 +1,50 @@
+title: Windows Excel Spawning Microsoft Project Application
+id: ee54241e-0815-4423-9729-e1f5dfc402de
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  The following analytic identifies the execution of uncommon Microsoft application executables as child processes of Microsoft Excel.
+  Under normal conditions, Excel primarily spawns internal Office-related processes, and the creation of executables such as WINPROJ.EXE, FOXPROW.exe, or SCHDPLUS.exe is uncommon in typical business workflows.
+  Adversaries may abuse this behavior to blend malicious activity within trusted applications, execute unauthorized code, or bypass application control mechanisms.
+  This technique aligns with common tradecraft where Office applications are leveraged as initial access or execution vectors due to their prevalence in enterprise environments.
+  Detecting this relationship helps defenders spot suspicious child processes that may indicate malware execution, persistence mechanisms, or attempts to establish command-and-control.
+  Security teams should investigate the parent Excel process, the context of the ActivateMicrosoftApp() execution, and any subsequent network or file activity.
+  While certain legitimate Office features could trigger this process in specific environments, its occurrence generally warrants further scrutiny to validate intent and rule out compromise.
+references:
+- https://specterops.io/blog/2023/10/30/lateral-movement-abuse-the-power-of-dcom-excel-application/
+- https://blog.talosintelligence.com/pathwiper-targets-ukraine/
+- https://www.trellix.com/blogs/research/dcom-abuse-and-network-erasure-with-trellix-ndr/
+tags:
+- attack.t1021.003
+date: '2025-08-21'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime
+  FROM datamodel=Endpoint.Processes WHERE
+  Processes.parent_process_name = "EXCEL.EXE"
+  Processes.process_name IN ("WINPROJ.EXE", "FOXPROW.exe","SCHDPLUS.exe")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_excel_spawning_microsoft_project_application_filter`
+splunk_rule_id: ee54241e-0815-4423-9729-e1f5dfc402de
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: EXCEL.EXE
+  selection_1:
+    Image:
+    - WINPROJ.EXE
+    - FOXPROW.exe
+    - SCHDPLUS.exe
+  condition: selection_0 and selection_1

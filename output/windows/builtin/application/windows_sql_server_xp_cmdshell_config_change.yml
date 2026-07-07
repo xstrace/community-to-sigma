@@ -1,0 +1,37 @@
+title: Windows SQL Server xp_cmdshell Config Change
+id: 5eb76fe2-a869-4865-8c4c-8cff424b18b1
+status: stable
+level: medium
+author: Michael Haag, Splunk, sidoyle from Splunk Community
+description: This detection identifies when the xp_cmdshell configuration is modified in SQL Server. The xp_cmdshell extended stored procedure allows execution of operating system commands and programs
+  from SQL Server, making it a high-risk feature commonly abused by attackers for privilege escalation and lateral movement.
+references:
+- https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/xp-cmdshell-transact-sql
+- https://attack.mitre.org/techniques/T1505/003/
+- https://learn.microsoft.com/en-us/sql/database-engine/configure-windows/xp-cmdshell-server-configuration-option
+tags:
+- attack.t1505.001
+date: '2025-02-13'
+original_spl: |-
+  `wineventlog_application` EventCode=15457
+    | rex field=EventData_Xml "<Data>(?<config_name>[^<]+)</Data><Data>(?<old_value>[^<]+)</Data><Data>(?<new_value>[^<]+)</Data>"
+    | rename host as dest
+    | where config_name="xp_cmdshell"
+    | eval change_type=case( old_value="0" AND new_value="1", "enabled", old_value="1" AND new_value="0", "disabled", true(), "modified" )
+    | eval risk_score=case( change_type="enabled", 90, change_type="disabled", 60, true(), 70 )
+    | eval risk_message="SQL Server xp_cmdshell was ".change_type." on host ".dest
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest EventCode config_name
+         change_type risk_message risk_score
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_sql_server_xp_cmdshell_config_change_filter`
+splunk_rule_id: 5eb76fe2-a869-4865-8c4c-8cff424b18b1
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: application
+detection:
+  selection_0:
+    EventID: 15457
+  condition: selection_0

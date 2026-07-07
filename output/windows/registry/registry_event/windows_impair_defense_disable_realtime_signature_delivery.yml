@@ -1,0 +1,30 @@
+title: Windows Impair Defense Disable Realtime Signature Delivery
+id: ffd99aea-542f-448e-b737-091c1b417274
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects modifications to the Windows registry that disable the Windows Defender real-time signature delivery feature. It leverages data from the Endpoint.Registry data
+  model, specifically monitoring changes to the registry path associated with Windows Defender signature updates. This activity is significant because disabling real-time signature delivery can prevent
+  Windows Defender from receiving timely malware definitions, reducing its effectiveness. If confirmed malicious, this action could allow attackers to bypass malware detection, leading to potential system
+  compromise and persistent threats.
+references:
+- https://x.com/malmoeb/status/1742604217989415386?s=20
+- https://github.com/undergroundwires/privacy.sexy
+tags:
+- attack.t1685
+date: '2024-01-29'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry where Registry.registry_path= "*\\Windows Defender\\Signature
+  Updates\\RealtimeSignatureDelivery" Registry.registry_value_data="0x00000000" by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name
+  Registry.registry_value_data Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `windows_impair_defense_disable_realtime_signature_delivery_filter`'
+splunk_rule_id: ffd99aea-542f-448e-b737-091c1b417274
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \Windows Defender\Signature Updates\RealtimeSignatureDelivery
+  selection_1:
+    Details: '0x00000000'
+  condition: selection_0 and selection_1

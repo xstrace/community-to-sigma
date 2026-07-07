@@ -1,0 +1,41 @@
+title: Services Escalate Exe
+id: c448488c-b7ec-11eb-8253-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies the execution of a randomly named binary via `services.exe`, indicative of privilege escalation using Cobalt Strike's `svc-exe`. This detection leverages data
+  from Endpoint Detection and Response (EDR) agents, focusing on process lineage and command-line executions. This activity is significant as it often follows initial access, allowing adversaries to escalate
+  privileges and establish persistence. If confirmed malicious, this behavior could enable attackers to execute arbitrary code, maintain long-term access, and potentially move laterally within the network,
+  posing a severe threat to the organization's security.
+references:
+- https://thedfirreport.com/2021/03/29/sodinokibi-aka-revil-ransomware/
+- https://attack.mitre.org/techniques/T1548/
+- https://hstechdocs.helpsystems.com/manuals/cobaltstrike/current/userguide/index.htm#cshid=1085
+tags:
+- attack.t1548
+date: '2021-05-18'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name=services.exe Processes.process_path=*admin$*
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `services_escalate_exe_filter`
+splunk_rule_id: c448488c-b7ec-11eb-8253-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: services.exe
+  selection_1:
+    Image|contains: admin$
+  condition: selection_0 and selection_1

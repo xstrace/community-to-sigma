@@ -1,0 +1,41 @@
+title: Windows ESX Admins Group Creation Security Event
+id: 53b4c927-5ec4-47cd-8aed-d4b303304f87
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: This analytic detects creation, deletion, or modification of the "ESX Admins" group in Active Directory. These events may indicate attempts to exploit the VMware ESXi Active Directory Integration
+  Authentication Bypass vulnerability (CVE-2024-37085).
+references:
+- https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24505
+- https://www.microsoft.com/en-us/security/blog/2024/07/29/ransomware-operators-exploit-esxi-hypervisor-vulnerability-for-mass-encryption/
+- https://www.securityweek.com/microsoft-says-ransomware-gangs-exploiting-just-patched-vmware-esxi-flaw/
+tags:
+- attack.t1136.001
+- attack.t1136.002
+date: '2024-07-30'
+original_spl: |-
+  `wineventlog_security` EventCode IN (4727, 4730, 4737) (TargetUserName="ESX Admins" OR TargetUserName="*ESX Admins*")
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY EventCode TargetUserName TargetDomainName
+         SubjectUserName SubjectDomainName Computer
+    | rename Computer as dest
+    | eval EventCodeDescription=case( EventCode=4727, "Security Enabled Global Group Created", EventCode=4730, "Security Enabled Global Group Deleted", EventCode=4737, "Security Enabled Global Group Modified" )
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_esx_admins_group_creation_security_event_filter`
+splunk_rule_id: 53b4c927-5ec4-47cd-8aed-d4b303304f87
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID:
+    - 4727
+    - 4730
+    - 4737
+  selection_1:
+    TargetUserName: ESX Admins
+  selection_2:
+    TargetUserName|contains: ESX Admins
+  condition: selection_0 and selection_1 and selection_2

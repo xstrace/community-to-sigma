@@ -1,0 +1,31 @@
+title: Windows Scheduled Task with Highest Privileges
+id: 2f15e1a4-0fc2-49dd-919e-cbbe60699218
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the creation of a new scheduled task with the highest execution privileges via Schtasks.exe. It leverages Endpoint Detection and Response (EDR) logs to monitor
+  for specific command-line parameters ('/rl' and 'highest') in schtasks.exe executions. This activity is significant as it is commonly used in AsyncRAT attacks for persistence and privilege escalation.
+  If confirmed malicious, this could allow an attacker to maintain persistent access and execute tasks with elevated privileges, potentially leading to unauthorized system access and data breaches.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.asyncrat
+tags:
+- attack.t1053.005
+date: '2023-01-26'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime  from datamodel=Endpoint.Processes where Processes.process_name = "schtasks.exe" Processes.process
+  = "*/rl *" Processes.process = "* highest *" by Processes.action Processes.dest Processes.original_file_name Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id
+  Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level
+  Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product | `drop_dm_object_name(Processes)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_scheduled_task_with_highest_privileges_filter`'
+splunk_rule_id: 2f15e1a4-0fc2-49dd-919e-cbbe60699218
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: schtasks.exe
+  selection_1:
+    CommandLine|contains: '/rl '
+  selection_2:
+    CommandLine|contains: ' highest '
+  condition: selection_0 and selection_1 and selection_2

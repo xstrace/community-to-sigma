@@ -1,0 +1,35 @@
+title: Cisco Isovalent - Late Process Execution
+id: 7f4b9b8e-5d6a-4a21-9e3f-0f1e8f2d1c3a
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: |
+  Detects process executions that occur well after a container has initialized, which can indicate
+  suspicious activity (e.g., interactive shells, injected binaries, or post-compromise tooling).
+  The analytic compares the process start time to the container start time and flags processes
+  launched more than 5 minutes (300 seconds) after initialization.
+references:
+- https://docs.isovalent.com/user-guide/sec-ops-visibility/process-execution/index.html
+tags:
+- attack.t1543
+date: '2026-01-05'
+original_spl: |-
+  `cisco_isovalent_process_exec` process_name="sh"
+  | rename process_exec.process.start_time as ProcessStartTime
+  | rename process_exec.process.pod.container.start_time as ContainerStartTime
+  | eval ProcessStartTime=strptime(ProcessStartTime, "%Y-%m-%dT%H:%M:%S.%3Q")
+  | eval ContainerStartTime=strptime(ContainerStartTime, "%Y-%m-%dT%H:%M:%S.%9Q")
+  | eval ContainerTime5min=relative_time(ContainerStartTime, "+5m")
+  | where ProcessStartTime > ContainerTime5min
+  | table node_name cluster_name, pod_name, container_id, process_name, process_exec, process, ProcessStartTime, ContainerTime5min | `security_content_ctime(ProcessStartTime)`
+  | `security_content_ctime(ContainerTime5min)`
+  | `cisco_isovalent___late_process_execution_filter`
+splunk_rule_id: 7f4b9b8e-5d6a-4a21-9e3f-0f1e8f2d1c3a
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    process_name: sh
+  condition: selection_0

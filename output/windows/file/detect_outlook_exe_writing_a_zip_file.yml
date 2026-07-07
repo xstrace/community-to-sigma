@@ -1,0 +1,88 @@
+title: Detect Outlook exe writing a zip file
+id: a51bfe1a-94f0-4822-b1e4-16ae10145893
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: |
+  The following analytic identifies the execution of `outlook.exe` writing a `.zip` file to the disk.
+  It leverages data from the Endpoint data model, specifically monitoring process and filesystem activities.
+  This behavior can be significant as it may indicate the use of Outlook to deliver malicious payloads or exfiltrate data via compressed files.
+  If confirmed malicious, this activity could lead to unauthorized data access, data exfiltration, or the delivery of malware, potentially compromising the security of the affected system and network.
+references:
+- https://www.paubox.com/news/hackers-exploit-corrupted-zip-and-office-files-to-bypass-email-security
+- https://docs.datadoghq.com/security/default_rules/def-000-14w/
+- https://theweborion.com/blog/zip-files/
+tags:
+- attack.t1566.001
+date: '2020-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    min(_time) as firstTime
+    max(_time) as lastTime
+
+  FROM datamodel=Endpoint.Processes where
+
+  Processes.process_name=outlook.exe
+
+  by _time span=5m
+    Processes.action Processes.dest Processes.original_file_name
+    Processes.parent_process Processes.parent_process_exec
+    Processes.parent_process_guid Processes.parent_process_id
+    Processes.parent_process_name Processes.parent_process_path
+    Processes.process Processes.process_exec Processes.process_guid
+    Processes.process_hash Processes.process_id Processes.process_integrity_level
+    Processes.process_name Processes.process_path
+    Processes.user Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+
+  | rename process_guid as malicious_id
+  | rename parent_process_id as outlook_id
+
+  | join malicious_id type=inner
+    [
+      | tstats `security_content_summariesonly`
+        count values(Filesystem.file_path) as file_path
+              values(Filesystem.file_name) as file_name
+        FROM datamodel=Endpoint.Filesystem where
+
+        Filesystem.file_path=*.zip
+        Filesystem.file_path IN ("*:\\Users*", "*\\AppData\\Local\\Temp*")
+        Filesystem.action=created
+
+        by _time span=5m
+           Filesystem.process_guid Filesystem.process_id
+           Filesystem.file_hash Filesystem.dest Filesystem.dvc
+           Filesystem.signature Filesystem.signature_id
+
+      | `drop_dm_object_name(Filesystem)`
+      | `security_content_ctime(firstTime)`
+      | `security_content_ctime(lastTime)`
+
+      | rename process_guid as malicious_id
+
+      | fields malicious_id outlook_id dest
+               file_path file_name
+               file_hash count file_id
+    ]
+  | table firstTime lastTime user malicious_id outlook_id
+          process_name parent_process_name file_name file_path
+          dest action original_file_name parent_process
+          parent_process_name parent_process_exec parent_process_guid
+          parent_process_id parent_process_path process_exec
+          process_guid process_hash process_id process_integrity_level
+          process_name process_path user user_id vendor_product
+
+  | where file_name != ""
+  | `detect_outlook_exe_writing_a_zip_file_filter`
+splunk_rule_id: a51bfe1a-94f0-4822-b1e4-16ae10145893
+splunk_rule_type: Anomaly
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image: outlook.exe
+  condition: selection_0

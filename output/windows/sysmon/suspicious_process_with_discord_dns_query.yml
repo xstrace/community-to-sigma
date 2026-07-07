@@ -1,0 +1,35 @@
+title: Suspicious Process With Discord DNS Query
+id: 4d4332ae-792c-11ec-89c1-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Mauricio Velazco, Splunk
+description: The following analytic identifies a process making a DNS query to Discord, excluding legitimate Discord application paths. It leverages Sysmon logs with Event ID 22 to detect DNS queries containing
+  "discord" in the QueryName field. This activity is significant because Discord can be abused by adversaries to host and download malicious files, as seen in the WhisperGate campaign. If confirmed malicious,
+  this could indicate malware attempting to download additional payloads from Discord, potentially leading to further code execution and compromise of the affected system.
+references:
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+- https://medium.com/s2wblog/analysis-of-destructive-malware-whispergate-targeting-ukraine-9d5d158f19f3
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+tags:
+- attack.t1059.005
+date: '2022-01-19'
+original_spl: '`sysmon` EventCode=22 QueryName IN ("*discord*") Image != "*\\AppData\\Local\\Discord\\*" AND Image != "*\\Program Files*" AND Image != "discord.exe" | stats count min(_time) as firstTime
+  max(_time) as lastTime by answer answer_count dvc process_exec process_guid process_name query query_count reply_code_id signature signature_id src user_id vendor_product QueryName QueryResults QueryStatus
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `suspicious_process_with_discord_dns_query_filter`'
+splunk_rule_id: 4d4332ae-792c-11ec-89c1-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 22
+  selection_1:
+    QueryName|contains: discord
+  selection_2:
+    Image|contains: \AppData\Local\Discord\
+  selection_3:
+    Image|contains: \Program Files
+  selection_4:
+    Image: discord.exe
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

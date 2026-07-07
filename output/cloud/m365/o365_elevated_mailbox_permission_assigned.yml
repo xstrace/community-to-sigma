@@ -1,0 +1,44 @@
+title: O365 Elevated Mailbox Permission Assigned
+id: 2246c142-a678-45f8-8546-aaed7e0efd30
+status: stable
+level: medium
+author: Patrick Bareiss, Mauricio Velazco, Splunk
+description: The following analytic identifies the assignment of elevated mailbox permissions in an Office 365 environment via the Add-MailboxPermission operation. It leverages logs from the Exchange workload
+  in the o365_management_activity data source, focusing on permissions such as FullAccess, ChangePermission, or ChangeOwner. This activity is significant as it indicates potential unauthorized access or
+  control over mailboxes, which could lead to data exfiltration or privilege escalation. If confirmed malicious, attackers could gain extensive access to sensitive email data and potentially manipulate
+  mailbox settings, posing a severe security risk.
+references:
+- https://attack.mitre.org/techniques/T1098/002/
+- https://learn.microsoft.com/en-us/powershell/module/exchange/add-mailboxpermission
+- https://learn.microsoft.com/en-us/exchange/recipients/mailbox-permissions?view=exchserver-2019
+tags:
+- attack.t1098.002
+date: '2024-04-17'
+original_spl: |-
+  `o365_management_activity` Workload=Exchange Operation=Add-MailboxPermission (AccessRights=FullAccess OR AccessRights=ChangePermission OR AccessRights=ChangeOwner)
+    | rename Identity AS dest_user
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         src vendor_account vendor_product
+         dest_user
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `o365_elevated_mailbox_permission_assigned_filter`
+splunk_rule_id: 2246c142-a678-45f8-8546-aaed7e0efd30
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: Exchange
+  selection_1:
+    Operation: Add-MailboxPermission
+  selection_2:
+    AccessRights: FullAccess
+  selection_3:
+    AccessRights: ChangePermission
+  selection_4:
+    AccessRights: ChangeOwner
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

@@ -1,0 +1,50 @@
+title: Linux Setuid Using Setcap Utility
+id: 9d96022e-6250-11ec-9a19-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of the 'setcap' utility to enable the SUID bit on Linux systems. It leverages Endpoint Detection and Response (EDR) data, focusing on process names
+  and command-line arguments that indicate the use of 'setcap' with specific capabilities. This activity is significant because setting the SUID bit allows a user to temporarily gain root access, posing
+  a substantial security risk. If confirmed malicious, an attacker could escalate privileges, execute arbitrary commands with elevated permissions, and potentially compromise the entire system.
+references:
+- https://www.hackingarticles.in/linux-privilege-escalation-using-capabilities/
+tags:
+- attack.t1548.001
+date: '2021-12-23'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name = setcap
+          OR
+          Processes.process = "*setcap *"
+      )
+      AND Processes.process IN ("* cap_setuid=ep *", "* cap_setuid+ep *", "* cap_net_bind_service+p *", "* cap_net_raw+ep *", "* cap_dac_read_search+ep *")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_setuid_using_setcap_utility_filter`
+splunk_rule_id: 9d96022e-6250-11ec-9a19-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image: setcap
+  selection_1:
+    CommandLine|contains: 'setcap '
+  selection_2:
+    CommandLine|contains:
+    - ' cap_setuid=ep '
+    - ' cap_setuid+ep '
+    - ' cap_net_bind_service+p '
+    - ' cap_net_raw+ep '
+    - ' cap_dac_read_search+ep '
+  condition: selection_0 and selection_1 and selection_2

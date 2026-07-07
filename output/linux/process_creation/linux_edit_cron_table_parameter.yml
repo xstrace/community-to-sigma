@@ -1,0 +1,40 @@
+title: Linux Edit Cron Table Parameter
+id: 0d370304-5f26-11ec-a4bb-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the suspicious editing of cron jobs in Linux using the crontab command-line parameter (-e). It identifies this activity by monitoring command-line executions
+  involving 'crontab' and the edit parameter. This behavior is significant for a SOC as cron job manipulations can indicate unauthorized persistence attempts or scheduled malicious actions. If confirmed
+  malicious, this activity could lead to system compromise, unauthorized access, or broader network compromise.
+references:
+- https://attack.mitre.org/techniques/T1053/003/
+tags:
+- attack.t1053.003
+date: '2021-12-21'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name = crontab Processes.process = "*crontab *" Processes.process = "* -e*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_edit_cron_table_parameter_filter`
+splunk_rule_id: 0d370304-5f26-11ec-a4bb-acde48001122
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image: crontab
+  selection_1:
+    CommandLine|contains: 'crontab '
+  selection_2:
+    CommandLine|contains: ' -e'
+  condition: selection_0 and selection_1 and selection_2

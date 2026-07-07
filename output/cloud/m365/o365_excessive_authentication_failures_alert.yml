@@ -1,0 +1,35 @@
+title: O365 Excessive Authentication Failures Alert
+id: d441364c-349c-453b-b55f-12eccab67cf9
+status: stable
+level: medium
+author: Rod Soto, Splunk
+description: The following analytic identifies an excessive number of authentication failures, including failed attempts against MFA prompt codes. It uses data from the `o365_management_activity` dataset,
+  focusing on events where the authentication status is marked as failure. This behavior is significant as it may indicate a brute force attack or an attempt to compromise user accounts. If confirmed malicious,
+  this activity could lead to unauthorized access, data breaches, or further exploitation within the environment.
+references:
+- https://attack.mitre.org/techniques/T1110/
+tags:
+- attack.t1110
+date: '2020-12-16'
+original_spl: |-
+  `o365_management_activity` Workload=AzureActiveDirectory UserAuthenticationMethod=* status=failure
+    | stats count earliest(_time) AS firstTime latest(_time) AS lastTime values(UserAuthenticationMethod) AS UserAuthenticationMethod values(UserAgent) AS user_agent values(status) AS status values(src_ip) AS src values(signature) as signature
+      BY user vendor_account vendor_product
+         dest
+    | where count > 10
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `o365_excessive_authentication_failures_alert_filter`
+splunk_rule_id: d441364c-349c-453b-b55f-12eccab67cf9
+splunk_rule_type: Anomaly
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    UserAuthenticationMethod|contains: ''
+  selection_2:
+    status: failure
+  condition: selection_0 and selection_1 and selection_2

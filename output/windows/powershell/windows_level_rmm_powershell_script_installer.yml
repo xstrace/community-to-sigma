@@ -1,0 +1,46 @@
+title: Windows Level RMM PowerShell Script Installer
+id: 1abf472a-88c9-41bb-9002-3272037531b7
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects the PowerShell installer for the Level tool.
+  Level is a commercial remote management tool from Level.io.
+  Remote management tools, when used for legitimate purposes, can help IT professionals and system administrators remotely access and manage computer systems.
+  However, threat actors may exploit these tools for malicious purposes.
+  It can be used to maintain persistence and execution on a host by a malicious actor.
+references:
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a
+tags:
+- attack.t1219
+date: '2026-05-05'
+original_spl: |-
+  `powershell`
+  EventID="4104"
+  ScriptBlockText IN (
+      "*$env:LEVEL_API_KEY *",
+      "*https://downloads.level.io/install_windows.ps1*"
+  )
+  | fillnull
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+    by Computer EventID ScriptBlockText signature signature_id user_id vendor_product Guid
+       Opcode Name Path ProcessID ScriptBlockId
+
+  | rename Computer as dest
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_level_rmm_powershell_script_installer_filter`
+splunk_rule_id: 1abf472a-88c9-41bb-9002-3272037531b7
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: '4104'
+  selection_1:
+    ScriptBlockText|contains:
+    - '$env:LEVEL_API_KEY '
+    - https://downloads.level.io/install_windows.ps1
+  condition: selection_0 and selection_1

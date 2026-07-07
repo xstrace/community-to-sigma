@@ -1,0 +1,36 @@
+title: Suspicious IcedID Rundll32 Cmdline
+id: bed761f8-ee29-11eb-8bf3-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a suspicious `rundll32.exe` command line used to execute a DLL file, a technique associated with IcedID malware. It leverages data from Endpoint Detection and
+  Response (EDR) agents, focusing on command-line executions containing the pattern `*/i:*`. This activity is significant as it indicates potential malware attempting to load an encrypted DLL payload, often
+  named `license.dat`. If confirmed malicious, this could allow attackers to execute arbitrary code, leading to further system compromise and potential data exfiltration.
+references:
+- https://threatpost.com/icedid-banking-trojan-surges-emotet/165314/
+tags:
+- attack.t1218.011
+date: '2021-07-29'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_rundll32` Processes.process=*/i:*
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `suspicious_icedid_rundll32_cmdline_filter`
+splunk_rule_id: bed761f8-ee29-11eb-8bf3-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '/i:'
+  condition: selection_0

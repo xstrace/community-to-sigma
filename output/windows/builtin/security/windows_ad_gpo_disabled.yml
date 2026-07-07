@@ -1,0 +1,38 @@
+title: Windows AD GPO Disabled
+id: 72793bc0-c0cd-400e-9e60-fdf36f278917
+status: stable
+level: medium
+author: Dean Luxton
+description: This detection identifies when an Active Directory Group Policy is disabled using the Group Policy Management Console.
+references:
+- https://lantern.splunk.com/Security/Product_Tips/Enterprise_Security/Enabling_an_audit_trail_from_Active_Directory
+tags:
+- attack.t1685
+- attack.t1484.001
+date: '2024-07-01'
+original_spl: |-
+  `wineventlog_security` EventCode=5136 AttributeLDAPDisplayName=flags OperationType="%%14674" AttributeValue!=0
+    | eval AttributeValueExp=case(AttributeValue==0,"Enabled",AttributeValue==1,"User configuration settings disabled",AttributeValue==2,"Computer configuration settings disabled",AttributeValue==3,"Disabled"), ObjectDN=upper(ObjectDN)
+    | join ObjectDN type=inner [
+    | search `admon` objectCategory="CN=Group-Policy-Container*" admonEventType=Update
+    | eval ObjectDN=upper(distinguishedName)
+    | stats latest(displayName) as displayName
+      BY ObjectDN ]
+    | stats min(_time) as _time values(AttributeValue) as AttributeValue values(AttributeValueExp) as AttributeValueExp values(OpCorrelationID) as OpCorrelationID values(displayName) as policyName values(src_user) as src_user
+      BY ObjectDN SubjectLogonId dest
+    | `windows_ad_gpo_disabled_filter`
+splunk_rule_id: 72793bc0-c0cd-400e-9e60-fdf36f278917
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5136
+  selection_1:
+    AttributeLDAPDisplayName: flags
+  selection_2:
+    OperationType: '%%14674'
+  selection_3:
+    AttributeValue: 0
+  condition: selection_0 and selection_1 and selection_2 and selection_3

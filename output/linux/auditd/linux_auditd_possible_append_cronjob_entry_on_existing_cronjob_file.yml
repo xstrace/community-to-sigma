@@ -1,0 +1,61 @@
+title: Linux Auditd Possible Append Cronjob Entry On Existing Cronjob File
+id: fea71cf0-fa10-4ef6-9202-9682b2e0c477
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  The following analytic detects potential tampering with cronjob files on a Linux system.
+  It leverages logs from Linux Auditd, focusing on events of type PATH or CWD.
+  This activity could be significant because adversaries often use it for persistence or privilege escalation.
+  Correlate this with related EXECVE or PROCTITLE events to identify the process or user responsible for the access or modification.
+  If confirmed malicious, this could allow attackers to execute unauthorized code automatically, leading to system compromises and unauthorized data access, thereby impacting business operations and data integrity.
+references:
+- https://attack.mitre.org/techniques/T1053/003/
+- https://blog.aquasec.com/threat-alert-kinsing-malware-container-vulnerability
+- https://www.intezer.com/blog/research/kaiji-new-chinese-linux-malware-turning-to-golang/
+tags:
+- attack.t1053.003
+date: '2024-08-12'
+original_spl: |-
+  `linux_auditd` (type=PATH OR type=CWD)
+  | rex "msg=audit\([^)]*:(?<audit_id>\d+)\)"
+
+  | stats
+    values(type) as types
+    values(name) as names
+    values(nametype) as nametype
+    values(cwd) as cwd_list
+    values(_time) as event_times
+    by audit_id, host
+
+  | eval current_working_directory = coalesce(mvindex(cwd_list, 0), "N/A")
+  | eval candidate_paths = mvmap(names, if(match(names, "^/"), names, current_working_directory + "/" + names))
+  | eval matched_paths = mvfilter(match(candidate_paths, "/etc/cron.*|.*/cron/.*|/etc/anacrontab.*"))
+  | eval match_count = mvcount(matched_paths)
+  | eval reconstructed_path = mvindex(matched_paths, 0)
+  | eval e_time = mvindex(event_times, 0)
+  | where match_count > 0
+  | rename host as dest
+
+  | stats count min(e_time) as firstTime max(e_time) as lastTime
+    values(nametype) as nametype
+    by current_working_directory
+       reconstructed_path
+       match_count
+       dest
+       audit_id
+
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_auditd_possible_append_cronjob_entry_on_existing_cronjob_file_filter`
+splunk_rule_id: fea71cf0-fa10-4ef6-9202-9682b2e0c477
+splunk_rule_type: Hunting
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    type: PATH
+  selection_1:
+    type: CWD
+  condition: selection_0 and selection_1

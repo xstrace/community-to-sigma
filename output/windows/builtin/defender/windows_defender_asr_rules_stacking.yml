@@ -1,0 +1,47 @@
+title: Windows Defender ASR Rules Stacking
+id: 425a6657-c5e4-4cbb-909e-fc9e5d326f01
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies security events from Microsoft Defender, focusing on Exploit Guard and Attack Surface Reduction (ASR) features. It detects Event IDs 1121, 1126, 1131, and
+  1133 for blocked operations, and Event IDs 1122, 1125, 1132, and 1134 for audit logs. Event ID 1129 indicates user overrides, while Event ID 5007 signals configuration changes. This detection uses a lookup
+  to correlate ASR rule GUIDs with descriptive names. Monitoring these events is crucial for identifying unauthorized operations, potential security breaches, and policy enforcement issues. If confirmed
+  malicious, attackers could bypass security measures, execute unauthorized actions, or alter system configurations.
+references:
+- https://asrgen.streamlit.app/
+- https://learn.microsoft.com/en-us/microsoft-365/security/defender-endpoint/attack-surface-reduction?view=o365-worldwide
+tags:
+- attack.t1566.001
+- attack.t1566.002
+- attack.t1059
+date: '2023-12-06'
+original_spl: |-
+  `ms_defender` EventCode IN (1121, 1122, 1125, 1126, 1129, 1131, 1132, 1133, 1134, 5007)
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY host Parent_Commandline, Process_Name,
+         Path, ID, EventCode
+    | lookup asr_rules ID OUTPUT ASR_Rule
+    | fillnull value=NULL
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | rename host as dest
+    | `windows_defender_asr_rules_stacking_filter`
+splunk_rule_id: 425a6657-c5e4-4cbb-909e-fc9e5d326f01
+splunk_rule_type: Hunting
+logsource:
+  product: windows
+  service: defender
+detection:
+  selection_0:
+    EventID:
+    - 1121
+    - 1122
+    - 1125
+    - 1126
+    - 1129
+    - 1131
+    - 1132
+    - 1133
+    - 1134
+    - 5007
+  condition: selection_0

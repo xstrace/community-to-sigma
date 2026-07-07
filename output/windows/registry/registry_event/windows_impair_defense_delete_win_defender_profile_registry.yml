@@ -1,0 +1,30 @@
+title: Windows Impair Defense Delete Win Defender Profile Registry
+id: 65d4b105-ec52-48ec-ac46-289d0fbf7d96
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the deletion of the Windows Defender main profile registry key. It leverages data from the Endpoint.Registry datamodel, specifically monitoring for deleted actions
+  within the Windows Defender registry path. This activity is significant as it indicates potential tampering with security defenses, often associated with Remote Access Trojans (RATs) and other malware.
+  If confirmed malicious, this action could allow an attacker to disable Windows Defender, reducing the system's ability to detect and respond to further malicious activities, thereby compromising endpoint
+  security.
+references:
+- https://blog.malwarebytes.com/malwarebytes-news/2021/02/lazyscripter-from-empire-to-double-rat/
+- https://app.any.run/tasks/45f5d114-91ea-486c-ab01-41c4093d2861/
+tags:
+- attack.t1685
+date: '2020-11-06'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime from datamodel=Endpoint.Registry where Registry.registry_path = "*\\Policies\\Microsoft\\Windows
+  Defender" Registry.action = deleted by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_impair_defense_delete_win_defender_profile_registry_filter`'
+splunk_rule_id: 65d4b105-ec52-48ec-ac46-289d0fbf7d96
+splunk_rule_type: Anomaly
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \Policies\Microsoft\Windows Defender
+  selection_1:
+    Registry.action: deleted
+  condition: selection_0 and selection_1

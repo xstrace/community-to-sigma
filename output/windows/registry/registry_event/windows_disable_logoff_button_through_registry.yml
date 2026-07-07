@@ -1,0 +1,34 @@
+title: Windows Disable LogOff Button Through Registry
+id: b2fb6830-9ed1-11ec-9fcb-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic detects a suspicious registry modification that disables the logoff feature on a Windows host. It leverages data from the Endpoint.Registry data model to identify changes
+  to specific registry values associated with logoff functionality. This activity is significant because it can indicate ransomware attempting to make the compromised host unusable and hinder remediation
+  efforts. If confirmed malicious, this action could prevent users from logging off, complicate incident response, and allow attackers to maintain persistence and control over the affected system.
+references:
+- https://www.hybrid-analysis.com/sample/e2d4018fd3bd541c153af98ef7c25b2bf4a66bc3bfb89e437cde89fd08a9dd7b/5b1f4d947ca3e10f22714774
+- https://malwiki.org/index.php?title=DigiPop.xp
+- https://www.trendmicro.com/vinfo/be/threat-encyclopedia/search/js_noclose.e/2
+tags:
+- attack.t1112
+date: '2022-03-08'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path= "*\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\\*"
+  Registry.registry_value_name IN ("NoLogOff", "StartMenuLogOff") Registry.registry_value_data = "0x00000001") by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive
+  Registry.registry_path Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)`
+  | where isnotnull(registry_value_data) | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_disable_logoff_button_through_registry_filter`'
+splunk_rule_id: b2fb6830-9ed1-11ec-9fcb-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer\
+  selection_1:
+    Details:
+    - NoLogOff
+    - StartMenuLogOff
+  selection_2:
+    Details: '0x00000001'
+  condition: selection_0 and selection_1 and selection_2

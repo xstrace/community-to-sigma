@@ -1,0 +1,76 @@
+title: Windows MSHTA Writing to World Writable Path
+id: efbcf8ee-bc75-47f1-8985-a5c638c4faf0
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies instances of `mshta.exe` writing files to world-writable directories. It leverages Sysmon EventCode 11 logs to detect file write operations by `mshta.exe`
+  to directories like `C:\Windows\Tasks` and `C:\Windows\Temp`. This activity is significant as it often indicates an attempt to establish persistence or execute malicious code, deviating from the utility's
+  legitimate use. If confirmed malicious, this behavior could lead to the execution of multi-stage payloads, potentially resulting in full system compromise and unauthorized access to sensitive information.
+references:
+- https://www.mandiant.com/resources/blog/apt29-wineloader-german-political-parties
+- https://www.zscaler.com/blogs/security-research/european-diplomats-targeted-spikedwine-wineloader
+tags:
+- attack.t1218.005
+date: '2024-04-04'
+original_spl: |-
+  `sysmon`
+  EventCode=11
+  (
+    Image="*\\mshta.exe"
+    OR
+    OriginalFileName="mshta.exe"
+  )
+  TargetFilename IN (
+                      "*\\Windows\\PLA\\Reports\\*",
+                      "*\\Windows\\PLA\\Rules\\*",
+                      "*\\Windows\\PLA\\Templates\\*",
+                      "*\\Windows\\Registration\\CRMLog\\*",
+                      "*\\Windows\\System32\\Com\\dmp\\*",
+                      "*\\Windows\\System32\\LogFiles\\WMI\\*",
+                      "*\\Windows\\System32\\Microsoft\\Crypto\\RSA\\MachineKeys\\*",
+                      "*\\Windows\\System32\\spool\\drivers\\color\\*",
+                      "*\\Windows\\System32\\spool\\PRINTERS\\*",
+                      "*\\Windows\\System32\\spool\\SERVERS\\*",
+                      "*\\Windows\\System32\\Tasks\\*",
+                      "*\\Windows\\SysWOW64\\Com\\dmp\\*",
+                      "*\\Windows\\SysWOW64\\Tasks\\*",
+                      "*\\Windows\\Tasks\\*",
+                      "*\\Windows\\Temp\\*",
+                      "*\\Windows\\tracing\\*"
+                    )
+  | stats count min(_time) as firstTime max(_time) as lastTime by action dest file_name
+  file_path  process_guid process_id user user_id vendor_product Image TargetFilename
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_mshta_writing_to_world_writable_path_filter`
+splunk_rule_id: efbcf8ee-bc75-47f1-8985-a5c638c4faf0
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 11
+  selection_1:
+    Image|endswith: \mshta.exe
+  selection_2:
+    OriginalFileName: mshta.exe
+  selection_3:
+    TargetFilename|contains:
+    - \Windows\PLA\Reports\
+    - \Windows\PLA\Rules\
+    - \Windows\PLA\Templates\
+    - \Windows\Registration\CRMLog\
+    - \Windows\System32\Com\dmp\
+    - \Windows\System32\LogFiles\WMI\
+    - \Windows\System32\Microsoft\Crypto\RSA\MachineKeys\
+    - \Windows\System32\spool\drivers\color\
+    - \Windows\System32\spool\PRINTERS\
+    - \Windows\System32\spool\SERVERS\
+    - \Windows\System32\Tasks\
+    - \Windows\SysWOW64\Com\dmp\
+    - \Windows\SysWOW64\Tasks\
+    - \Windows\Tasks\
+    - \Windows\Temp\
+    - \Windows\tracing\
+  condition: selection_0 and selection_1 and selection_2 and selection_3

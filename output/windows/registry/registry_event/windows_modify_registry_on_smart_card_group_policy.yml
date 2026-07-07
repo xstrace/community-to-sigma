@@ -1,0 +1,28 @@
+title: Windows Modify Registry on Smart Card Group Policy
+id: 1522145a-8e86-4f83-89a8-baf62a8f489d
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: This analytic is developed to detect suspicious registry modifications targeting the "scforceoption" key. Altering this key enforces smart card login for all users, potentially disrupting normal
+  access methods. Unauthorized changes to this setting could indicate an attempt to restrict access or force a specific authentication method, possibly signifying malicious intent to manipulate system security
+  protocols.
+references:
+- https://www.bleepingcomputer.com/news/security/new-shrinklocker-ransomware-uses-bitlocker-to-encrypt-your-files/
+tags:
+- attack.t1112
+date: '2024-07-25'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry where Registry.registry_path= "*\\Windows\\CurrentVersion\\Policies\\System\\scforceoption*"
+  Registry.registry_value_data="0x00000001" by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_modify_registry_on_smart_card_group_policy_filter`'
+splunk_rule_id: 1522145a-8e86-4f83-89a8-baf62a8f489d
+splunk_rule_type: Anomaly
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \Windows\CurrentVersion\Policies\System\scforceoption
+  selection_1:
+    Details: '0x00000001'
+  condition: selection_0 and selection_1

@@ -1,0 +1,48 @@
+title: Linux GDB Privilege Escalation
+id: 310b7da2-ab52-437f-b1bf-0bd458674308
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Splunk
+description: The following analytic detects the execution of the GNU Debugger (GDB) with specific flags that indicate an attempt to escalate privileges on a Linux system. It leverages Endpoint Detection
+  and Response (EDR) telemetry to identify processes where GDB is run with the `-nx`, `-ex`, and `sudo` flags. This activity is significant because it can allow a user to execute system commands as root,
+  potentially leading to a root shell. If confirmed malicious, this could result in full system compromise, allowing an attacker to gain complete control over the affected endpoint.
+references:
+- https://gtfobins.github.io/gtfobins/gdb/
+tags:
+- attack.t1548.003
+date: '2022-08-10'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process="*gdb*"
+      AND
+      Processes.process="*-nx*"
+      AND
+      Processes.process="*-ex*!*"
+      AND
+      Processes.process="*sudo*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_gdb_privilege_escalation_filter`
+splunk_rule_id: 310b7da2-ab52-437f-b1bf-0bd458674308
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: gdb
+  selection_1:
+    CommandLine|contains: -nx
+  selection_2:
+    CommandLine|contains: -ex*!
+  selection_3:
+    CommandLine|contains: sudo
+  condition: selection_0 and selection_1 and selection_2 and selection_3

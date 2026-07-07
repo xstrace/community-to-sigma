@@ -1,0 +1,50 @@
+title: Windows Network Share Interaction Via Net
+id: e51fbdb0-0be0-474f-92ea-d289f71a695e
+status: stable
+level: medium
+author: Dean Luxton
+description: The following analytic identifies network share discovery and collection activities performed on Windows systems using the Net command. Attackers often use network share discovery to identify
+  accessible shared resources within a network, which can be a precursor to privilege escalation or data exfiltration. By monitoring Windows Event Logs for the usage of the Net command to list and interact
+  with network shares, this detection helps identify potential reconnaissance and collection activities.
+references:
+- https://attack.mitre.org/techniques/T1135/
+tags:
+- attack.t1135
+- attack.t1039
+date: '2024-07-11'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          `process_net`
+          OR
+          (Processes.process_name="net.exe"
+          OR
+          Processes.original_file_name="net.exe")
+      )
+      AND Processes.process IN ("*use *", "*view*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_network_share_interaction_via_net_filter`
+splunk_rule_id: e51fbdb0-0be0-474f-92ea-d289f71a695e
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: net.exe
+  selection_1:
+    OriginalFileName: net.exe
+  selection_2:
+    CommandLine|contains:
+    - 'use '
+    - view
+  condition: selection_0 and selection_1 and selection_2

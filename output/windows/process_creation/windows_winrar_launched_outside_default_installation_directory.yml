@@ -1,0 +1,46 @@
+title: Windows WinRAR Launched Outside Default Installation Directory
+id: 3b711292-9793-4a88-8e89-6e016cfbc09c
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  This Analytics detects the execution of WinRAR or RAR outside the default installation directory.
+  This behavior can be significant as it could indicate attempts to archive collected sensitive data from the endpoint for exfiltration.
+  We recommend reviewing the process path and the parent process path to determine if the execution is legitimate and if possible validate the data being archived.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/py.blankgrabber
+tags:
+- attack.t1047
+date: '2026-03-16'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime
+    from datamodel=Endpoint.Processes where
+    Processes.process_name IN ("Winrar.exe", "rar.exe")
+    NOT Processes.process_path IN (
+      "*:\\Program Files (x86)\\WinRAR\\*",
+      "*:\\Program Files\\WinRAR\\*"
+    )
+    by Processes.action Processes.dest Processes.original_file_name Processes.parent_process
+    Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id
+    Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec
+    Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level
+    Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_winrar_launched_outside_default_installation_directory_filter`
+splunk_rule_id: 3b711292-9793-4a88-8e89-6e016cfbc09c
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image:
+    - Winrar.exe
+    - rar.exe
+  filter_1:
+    Image:
+    - '*:\Program Files (x86)\WinRAR\*'
+    - '*:\Program Files\WinRAR\*'
+  condition: (selection_0) and not (filter_1)

@@ -1,0 +1,30 @@
+title: Windows AD DSRM Account Changes
+id: 08cb291e-ea77-48e8-a95a-0799319bf056
+status: stable
+level: medium
+author: Dean Luxton
+description: The following analytic identifies changes to the Directory Services Restore Mode (DSRM) account behavior via registry modifications. It detects alterations in the registry path "*\\System\\CurrentControlSet\\Control\\Lsa\\DSRMAdminLogonBehavior"
+  with specific values indicating potential misuse. This activity is significant because the DSRM account, if misconfigured, can be exploited to persist within a domain, similar to a local administrator
+  account. If confirmed malicious, an attacker could gain persistent administrative access to a Domain Controller, leading to potential domain-wide compromise and unauthorized access to sensitive information.
+references:
+- https://adsecurity.org/?p=1714
+tags:
+- attack.t1098
+date: '2022-09-08'
+original_spl: '| tstats `security_content_summariesonly` min(_time) as firstTime max(_time) as lastTime from datamodel=Endpoint.Registry where Registry.registry_path= "*\\System\\CurrentControlSet\\Control\\Lsa\\DSRMAdminLogonBehavior"
+  Registry.registry_value_data IN ("*1","*2") by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_ad_dsrm_account_changes_filter`'
+splunk_rule_id: 08cb291e-ea77-48e8-a95a-0799319bf056
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \System\CurrentControlSet\Control\Lsa\DSRMAdminLogonBehavior
+  selection_1:
+    Details|endswith:
+    - '1'
+    - '2'
+  condition: selection_0 and selection_1

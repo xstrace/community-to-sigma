@@ -1,0 +1,24 @@
+title: Windows Chrome Extension Allowed Registry Modification
+id: 2846089a-ffe9-4881-a2a2-43f3be2b8cc7
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects modifications to the Windows registry keys that control the Chrome Extension Install Allowlist. Unauthorized changes to these keys may indicate attempts to bypass
+  Chrome extension restrictions or install unapproved extensions. This detection helps identify potential security policy violations or malicious activity targeting Chrome extension settings.
+references:
+- https://www.gdatasoftware.com/blog/2025/11/38298-learning-about-browser-hijacking
+tags:
+- attack.t1185
+date: '2026-01-12'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry where Registry.registry_path = "*\\Google\\Chrome\\ExtensionInstallAllowlist*"
+  by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name
+  Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_chrome_extension_allowed_registry_modification_filter`'
+splunk_rule_id: 2846089a-ffe9-4881-a2a2-43f3be2b8cc7
+splunk_rule_type: Anomaly
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \Google\Chrome\ExtensionInstallAllowlist
+  condition: selection_0

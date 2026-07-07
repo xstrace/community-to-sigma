@@ -1,0 +1,46 @@
+title: Linux Emacs Privilege Escalation
+id: 92033cab-1871-483d-a03b-a7ce98665cfc
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Splunk
+description: The following analytic detects the execution of Emacs with elevated privileges using the `sudo` command and the `--eval` option. It leverages data from Endpoint Detection and Response (EDR)
+  agents, focusing on process execution logs that include command-line arguments. This activity is significant because it indicates a potential privilege escalation attempt, where a user could gain root
+  access by running Emacs with elevated permissions. If confirmed malicious, this could allow an attacker to execute arbitrary commands as root, leading to full system compromise and unauthorized access
+  to sensitive information.
+references:
+- https://gtfobins.github.io/gtfobins/emacs/
+- https://en.wikipedia.org/wiki/Emacs
+tags:
+- attack.t1548.003
+date: '2022-08-10'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process="*emacs*"
+      AND
+      Processes.process="*--eval*"
+      AND
+      Processes.process="*sudo*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_emacs_privilege_escalation_filter`
+splunk_rule_id: 92033cab-1871-483d-a03b-a7ce98665cfc
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: emacs
+  selection_1:
+    CommandLine|contains: --eval
+  selection_2:
+    CommandLine|contains: sudo
+  condition: selection_0 and selection_1 and selection_2

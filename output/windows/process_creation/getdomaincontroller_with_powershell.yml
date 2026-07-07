@@ -1,0 +1,43 @@
+title: GetDomainController with PowerShell
+id: 868ee0e4-52ab-484a-833a-6d85b7c028d0
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of `powershell.exe` with the `Get-DomainController` command, which is used to discover remote systems within a Windows domain. This detection leverages
+  data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line arguments. Monitoring this activity is crucial as it may indicate an attempt to enumerate domain controllers,
+  a common tactic in Active Directory discovery. If confirmed malicious, this activity could allow attackers to gain situational awareness, potentially leading to further exploitation and lateral movement
+  within the network.
+references:
+- https://attack.mitre.org/techniques/T1018/
+- https://powersploit.readthedocs.io/en/latest/Recon/Get-DomainController/
+tags:
+- attack.t1018
+date: '2021-09-01'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name="powershell.exe"
+      )
+      (Processes.process=*Get-DomainController*)
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `getdomaincontroller_with_powershell_filter`
+splunk_rule_id: 868ee0e4-52ab-484a-833a-6d85b7c028d0
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: powershell.exe
+  selection_1:
+    CommandLine|contains: Get-DomainController
+  condition: selection_0 and selection_1

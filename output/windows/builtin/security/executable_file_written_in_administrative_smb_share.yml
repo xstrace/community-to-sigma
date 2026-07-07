@@ -1,0 +1,42 @@
+title: Executable File Written in Administrative SMB Share
+id: f63c34fe-a435-11eb-935a-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Mauricio Velazco, Splunk
+description: The following analytic detects executable files (.exe or .dll) being written to Windows administrative SMB shares (Admin$, IPC$, C$). It leverages Windows Security Event Logs with EventCode
+  5145 to identify this activity. This behavior is significant as it is commonly used by tools like PsExec/PaExec for staging binaries before creating and starting services on remote endpoints, a technique
+  often employed for lateral movement and remote code execution. If confirmed malicious, this activity could allow an attacker to execute arbitrary code remotely, potentially compromising additional systems
+  within the network.
+references:
+- https://attack.mitre.org/techniques/T1021/002/
+- https://www.rapid7.com/blog/post/2013/03/09/psexec-demystified/
+- https://labs.vipre.com/trickbot-and-its-modules/
+- https://whitehat.eu/incident-response-case-study-featuring-ryuk-and-trickbot-part-2/
+- https://thedfirreport.com/2023/05/22/icedid-macro-ends-in-nokoyawa-ransomware/
+tags:
+- attack.t1021.002
+date: '2021-04-26'
+original_spl: '`wineventlog_security` EventCode=5145 RelativeTargetName IN ("*.exe","*.dll") ObjectType=File ShareName IN ("\\\\*\\C$","\\\\*\\IPC$","\\\\*\\admin$") AccessMask= "0x2" | stats min(_time)
+  as firstTime max(_time) as lastTime count by EventCode ShareName RelativeTargetName ObjectType AccessMask src_user src_port IpAddress dest | `security_content_ctime(firstTime)`  | `executable_file_written_in_administrative_smb_share_filter`'
+splunk_rule_id: f63c34fe-a435-11eb-935a-acde48001122
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5145
+  selection_1:
+    RelativeTargetName|endswith:
+    - .exe
+    - .dll
+  selection_2:
+    ObjectType: File
+  selection_3:
+    ShareName:
+    - \\*\C$
+    - \\*\IPC$
+    - \\*\admin$
+  selection_4:
+    AccessMask: '0x2'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

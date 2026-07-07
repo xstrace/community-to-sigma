@@ -1,0 +1,31 @@
+title: Windows Steal Authentication Certificates Certificate Issued
+id: 9b1a5385-0c31-4c39-9753-dc26b8ce64c2
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies the issuance of a new certificate by Certificate Services - AD CS, detected via Event ID 4887. This event logs the requester user context, DNS hostname of
+  the requesting machine, and the request time. Monitoring this activity is crucial as it can indicate potential misuse of authentication certificates. If confirmed malicious, an attacker could use the
+  issued certificate to impersonate users, escalate privileges, or maintain persistence within the environment. This detection helps in identifying and correlating suspicious certificate-related activities
+  for further investigation.
+references:
+- https://specterops.io/wp-content/uploads/sites/3/2022/06/Certified_Pre-Owned.pdf
+tags:
+- attack.t1649
+date: '2023-02-06'
+original_spl: |-
+  `wineventlog_security`  EventCode=4887
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest, name, Requester,
+         action, Attributes, Subject
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_steal_authentication_certificates_certificate_issued_filter`
+splunk_rule_id: 9b1a5385-0c31-4c39-9753-dc26b8ce64c2
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4887
+  condition: selection_0

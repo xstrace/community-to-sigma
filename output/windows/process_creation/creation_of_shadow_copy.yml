@@ -1,0 +1,45 @@
+title: Creation of Shadow Copy
+id: eb120f5f-b879-4a63-97c1-93352b5df844
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects the creation of shadow copies using Vssadmin or Wmic. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process execution logs
+  that include command-line details. This activity is significant because creating shadow copies can be a precursor to ransomware attacks or data exfiltration, allowing attackers to bypass file locks and
+  access sensitive data. If confirmed malicious, this behavior could enable attackers to maintain persistence, recover deleted files, or prepare for further malicious activities, posing a significant risk
+  to the integrity and confidentiality of the system.
+references:
+- https://2017.zeronights.org/wp-content/uploads/materials/ZN17_Kheirkhabarov_Hunting_for_Credentials_Dumping_in_Windows_Environment.pdf
+- https://media.defense.gov/2023/May/24/2003229517/-1/-1/0/CSA_Living_off_the_Land.PDF
+tags:
+- attack.t1003.003
+date: '2019-12-11'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name=vssadmin.exe Processes.process=*create* Processes.process=*shadow*
+      )
+      OR (Processes.process_name=wmic.exe Processes.process=*shadowcopy* Processes.process=*create*)
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `creation_of_shadow_copy_filter`
+splunk_rule_id: eb120f5f-b879-4a63-97c1-93352b5df844
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: vssadmin.exe
+    CommandLine|contains: '*create*'
+  selection_1:
+    Image: wmic.exe
+    CommandLine|contains: '*shadowcopy*'
+  condition: selection_0 and selection_1

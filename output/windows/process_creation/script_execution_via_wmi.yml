@@ -1,0 +1,37 @@
+title: Script Execution via WMI
+id: aa73f80d-d728-4077-b226-81ea0c8be589
+status: stable
+level: medium
+author: Rico Valdez, Michael Haag, Splunk
+description: The following analytic detects the execution of scripts via Windows Management Instrumentation (WMI) by monitoring the process 'scrcons.exe'. This detection leverages data from Endpoint Detection
+  and Response (EDR) agents, focusing on process creation events. WMI-based script execution is significant because adversaries often use it to perform malicious activities stealthily, such as system compromise,
+  data exfiltration, or establishing persistence. If confirmed malicious, this activity could allow attackers to execute arbitrary code, escalate privileges, or maintain long-term access to the environment.
+  Analysts should differentiate between legitimate administrative use and potential threats.
+references:
+- https://redcanary.com/blog/child-processes/
+tags:
+- attack.t1047
+date: '2020-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=scrcons.exe
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `script_execution_via_wmi_filter`
+splunk_rule_id: aa73f80d-d728-4077-b226-81ea0c8be589
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: scrcons.exe
+  condition: selection_0

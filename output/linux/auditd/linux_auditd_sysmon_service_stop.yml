@@ -1,0 +1,33 @@
+title: Linux Auditd Sysmon Service Stop
+id: 20901256-633a-40de-8753-7b88811a460f
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the suspicious sysmon service stop. This behavior is critical for a SOC to monitor because it may indicate attempts to gain unauthorized access or maintain control
+  over a system. Such actions could be signs of malicious activity. If confirmed, this could lead to serious consequences, including a compromised system, unauthorized access to sensitive data, or even
+  a wider breach affecting the entire network. Detecting and responding to these signs early is essential to prevent potential security incidents.
+references:
+- https://www.splunk.com/en_us/blog/security/deep-dive-on-persistence-privilege-escalation-technique-and-detection-in-linux-platform.html
+tags:
+- attack.t1489
+date: '2024-08-12'
+original_spl: |-
+  `linux_auditd` type=SERVICE_STOP unit IN ("sysmon")
+    | rename host as dest
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY type pid comm
+         exe unit dest
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `linux_auditd_sysmon_service_stop_filter`
+splunk_rule_id: 20901256-633a-40de-8753-7b88811a460f
+splunk_rule_type: Anomaly
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    type: SERVICE_STOP
+  selection_1:
+    unit: sysmon
+  condition: selection_0 and selection_1

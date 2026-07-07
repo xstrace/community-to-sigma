@@ -1,0 +1,79 @@
+title: Windows SSH Proxy Command
+id: ac520039-21f1-4567-b528-5b7133dba76f
+status: stable
+level: medium
+author: Michael Haag, AJ King, Nasreddine Bencherchali, Splunk, Jesse Hunter, Splunk Community Contributor
+description: |
+  This detection identifies potential abuse of SSH "ProxyCommand" or "LocalCommand" by monitoring for suspicious process execution patterns.
+  Specifically, it looks for instances where ssh.exe (as a parent process) containing "ProxyCommand" or "LocalCommand" in its arguments spawns potentially malicious child processes like mshta, powershell, wscript, or cscript, or processes containing "http" in their command line.
+  This technique can be used by attackers to execute arbitrary commands through SSH proxy configurations, potentially enabling command & control activities or remote code execution. The detection focuses on commonly abused Windows scripting engines and web requests that may indicate malicious activity when spawned through SSH proxy commands.
+references:
+- https://www.virustotal.com/gui/file/c33f82868dbbfc3ab03918f430b1a348499f5baf047b136ff0a4fc3e8addaa9b/detection
+- https://attack.mitre.org/techniques/T1572/
+- https://lolbas-project.github.io/lolbas/Binaries/Ssh/
+- https://man.openbsd.org/ssh_config#ProxyCommand
+- https://man.openbsd.org/ssh_config#LocalCommand
+tags:
+- attack.t1572
+- attack.t1059.001
+- attack.t1105
+date: '2025-03-24'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  from datamodel=Endpoint.Processes where
+
+  Processes.parent_process_name="ssh.exe"
+  (
+    Processes.parent_process = "*ProxyCommand=*"
+    OR
+    (
+      Processes.parent_process = "* PermitLocalCommand=yes*"
+      Processes.parent_process = "* LocalCommand=*"
+    )
+  )
+
+  Processes.process IN (
+    "*cscript*",
+    "*http*",
+    "*mshta*",
+    "*powershell*",
+    "*pwsh*",
+    "*wmic*",
+    "*wscript*"
+  )
+
+  by Processes.action Processes.dest Processes.original_file_name Processes.parent_process Processes.parent_process_exec
+     Processes.parent_process_guid Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+     Processes.process Processes.process_exec Processes.process_guid Processes.process_hash Processes.process_id
+     Processes.process_integrity_level Processes.process_name Processes.process_path Processes.user Processes.user_id
+     Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_ssh_proxy_command_filter`
+splunk_rule_id: ac520039-21f1-4567-b528-5b7133dba76f
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: ssh.exe
+  selection_1:
+    ParentCommandLine|contains: ProxyCommand=
+  selection_2:
+    ParentCommandLine|contains: '* PermitLocalCommand=yes*'
+  selection_3:
+    CommandLine|contains:
+    - cscript
+    - http
+    - mshta
+    - powershell
+    - pwsh
+    - wmic
+    - wscript
+  condition: selection_0 and selection_1 and selection_2 and selection_3

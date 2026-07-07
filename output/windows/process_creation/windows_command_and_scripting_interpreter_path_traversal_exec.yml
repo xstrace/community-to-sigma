@@ -1,0 +1,33 @@
+title: Windows Command and Scripting Interpreter Path Traversal Exec
+id: 58fcdeb1-728d-415d-b0d7-3ab18a275ec2
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects path traversal command-line execution, often used in malicious documents to execute code via msdt.exe for defense evasion. It leverages Endpoint Detection and
+  Response (EDR) data, focusing on specific patterns in process paths. This activity is significant as it can indicate an attempt to bypass security controls and execute unauthorized code. If confirmed
+  malicious, this behavior could lead to code execution, privilege escalation, or persistence within the environment, potentially allowing attackers to deploy malware or leverage other living-off-the-land
+  binaries (LOLBins).
+references:
+- https://app.any.run/tasks/713f05d2-fe78-4b9d-a744-f7c133e3fafb/
+tags:
+- attack.t1059
+date: '2022-05-30'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes where NOT Processes.os="Linux" Processes.process="*\/..\/..\/..\/*"
+  OR Processes.process="*\\..\\..\\..\\*" OR Processes.process="*\/\/..\/\/..\/\/..\/\/*" by Processes.action Processes.dest Processes.original_file_name Processes.parent_process Processes.parent_process_exec
+  Processes.parent_process_guid Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec Processes.process_guid Processes.process_hash
+  Processes.process_id Processes.process_integrity_level Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product | `drop_dm_object_name("Processes")` | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `windows_command_and_scripting_interpreter_path_traversal_exec_filter`'
+splunk_rule_id: 58fcdeb1-728d-415d-b0d7-3ab18a275ec2
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Processes.os: Linux
+    CommandLine|contains: '*\/..\/..\/..\/*'
+  selection_1:
+    CommandLine|contains: \..\..\..\
+  selection_2:
+    CommandLine|contains: \/\/..\/\/..\/\/..\/\/
+  condition: selection_0 and selection_1 and selection_2

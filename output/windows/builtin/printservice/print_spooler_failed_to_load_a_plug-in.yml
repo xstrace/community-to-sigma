@@ -1,0 +1,27 @@
+title: Print Spooler Failed to Load a Plug-in
+id: 1adc9548-da7c-11eb-8f13-acde48001122
+status: stable
+level: medium
+author: Mauricio Velazco, Michael Haag, Splunk
+description: The following analytic detects driver load errors in the Windows PrintService Admin logs, specifically identifying issues related to CVE-2021-34527 (PrintNightmare). It triggers on error messages
+  indicating the print spooler failed to load a plug-in module, such as "meterpreter.dll," with error code 0x45A. This detection method leverages specific event codes and error messages. This activity is
+  significant as it may indicate an exploitation attempt of a known vulnerability. If confirmed malicious, an attacker could gain unauthorized code execution on the affected system, leading to potential
+  system compromise.
+references:
+- https://www.truesec.com/hub/blog/fix-for-printnightmare-cve-2021-1675-exploit-to-keep-your-print-servers-running-while-a-patch-is-not-available
+- https://www.truesec.com/hub/blog/exploitable-critical-rce-vulnerability-allows-regular-users-to-fully-compromise-active-directory-printnightmare-cve-2021-1675
+- https://www.reddit.com/r/msp/comments/ob6y02/critical_vulnerability_printnightmare_exposes
+tags:
+- attack.t1547.012
+date: '2021-07-01'
+original_spl: '`printservice` ((ErrorCode="0x45A" (EventCode="808" OR EventCode="4909")) OR ("The print spooler failed to load a plug-in module" OR "\\drivers\\x64\\")) | stats count min(_time) as firstTime
+  max(_time) as lastTime by OpCode EventCode ComputerName Message | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `print_spooler_failed_to_load_a_plug_in_filter`'
+splunk_rule_id: 1adc9548-da7c-11eb-8f13-acde48001122
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: printservice
+detection:
+  selection_0:
+    ErrorCode: '0x45A'
+  condition: selection_0

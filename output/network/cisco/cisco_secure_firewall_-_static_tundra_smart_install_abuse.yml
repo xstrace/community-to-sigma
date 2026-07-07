@@ -1,0 +1,59 @@
+title: Cisco Secure Firewall - Static Tundra Smart Install Abuse
+id: 7e9a5a2c-2f1a-4b6a-9a4b-9e7d9c8f5a21
+status: stable
+level: medium
+author: Bhavin Patel, Michael Haag, Splunk
+description: |
+  This analytic detects activity associated with "Static Tundra" threat actor abuse of the Cisco Smart Install (SMI) protocol
+  using Cisco Secure Firewall Intrusion Events. It leverages Cisco Secure Firewall Threat Defense IntrusionEvent logs to
+  identify occurrences of Smart Install exploitation and protocol abuse, including denial-of-service and buffer overflow
+  attempts. The detection triggers when multiple Cisco Smart Install-related Snort signatures are observed in a short period from the
+  same source, which is indicative of active exploitation or reconnaissance against Cisco devices that expose SMI.
+references:
+- https://blog.talosintelligence.com/static-tundra/
+- https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-20180328-smi2
+tags:
+- attack.t1190
+- attack.t1210
+- attack.t1499
+date: '2025-04-16'
+original_spl: |-
+  `cisco_secure_firewall` EventType=IntrusionEvent signature_id IN (46468, 46096, 41722, 41723, 41724, 41725)
+  | bin _time span=15m
+  | fillnull
+  | stats dc(signature_id) as unique_signature_count
+          values(signature_id) as signature_id
+          values(signature) as signature
+          values(class_desc) as class_desc
+          values(MitreAttackGroups) as MitreAttackGroups
+          values(InlineResult) as InlineResult
+          values(InlineResultReason) as InlineResultReason
+          values(dest) as dest
+          values(dest_port) as dest_port
+          values(rule) as rule
+          values(transport) as transport
+          values(app) as app
+          min(_time) as firstTime
+          max(_time) as lastTime
+          by src
+  | where unique_signature_count >= 2
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_secure_firewall___static_tundra_smart_install_abuse_filter`
+splunk_rule_id: 7e9a5a2c-2f1a-4b6a-9a4b-9e7d9c8f5a21
+splunk_rule_type: TTP
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: IntrusionEvent
+  selection_1:
+    signature_id:
+    - 46468
+    - 46096
+    - 41722
+    - 41723
+    - 41724
+    - 41725
+  condition: selection_0 and selection_1

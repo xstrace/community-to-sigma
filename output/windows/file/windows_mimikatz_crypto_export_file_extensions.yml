@@ -1,0 +1,41 @@
+title: Windows Mimikatz Crypto Export File Extensions
+id: 3a9a6806-16a8-4cda-8d73-b49d10a05b16
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the creation of files with extensions commonly associated with the Mimikatz Crypto module. It leverages the Endpoint.Filesystem data model to identify specific
+  file names indicative of certificate export activities. This behavior is significant as it may indicate the use of Mimikatz to export cryptographic keys, which is a common tactic for credential theft.
+  If confirmed malicious, this activity could allow an attacker to exfiltrate sensitive cryptographic material, potentially leading to unauthorized access and further compromise of the environment.
+references:
+- https://github.com/gentilkiwi/mimikatz/blob/master/mimikatz/modules/kuhl_m_crypto.c#L628-L645
+tags:
+- attack.t1649
+date: '2023-02-09'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Filesystem
+    WHERE Filesystem.file_name IN ("*.keyx.rsa.pvk","*sign.rsa.pvk","*sign.dsa.pvk","*dsa.ec.p8k","*dh.ec.p8k", "*.pfx", "*.der")
+    BY Filesystem.action Filesystem.dest Filesystem.file_access_time
+       Filesystem.file_create_time Filesystem.file_hash Filesystem.file_modify_time
+       Filesystem.file_name Filesystem.file_path Filesystem.file_acl
+       Filesystem.file_size Filesystem.process_guid Filesystem.process_id
+       Filesystem.user Filesystem.vendor_product
+  | `security_content_ctime(lastTime)`
+  | `security_content_ctime(firstTime)`
+  | `drop_dm_object_name(Filesystem)`
+  | `windows_mimikatz_crypto_export_file_extensions_filter`
+splunk_rule_id: 3a9a6806-16a8-4cda-8d73-b49d10a05b16
+splunk_rule_type: Anomaly
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|endswith:
+    - .keyx.rsa.pvk
+    - sign.rsa.pvk
+    - sign.dsa.pvk
+    - dsa.ec.p8k
+    - dh.ec.p8k
+    - .pfx
+    - .der
+  condition: selection_0

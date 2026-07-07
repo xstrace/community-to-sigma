@@ -1,0 +1,46 @@
+title: Tomcat Session Deserialization Attempt
+id: e28b4fd4-8f5a-41cd-8222-2f1ccca53ef1
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: This detection identifies potential exploitation of CVE-2025-24813 in Apache Tomcat through the second stage of the attack. This phase occurs when an attacker attempts to trigger deserialization
+  of a previously uploaded malicious session file by sending a GET request with a specially crafted JSESSIONID cookie. These requests typically have specific characteristics, including a JSESSIONID cookie
+  with a leading dot that matches a previously uploaded filename, and typically result in a HTTP 500 error when the exploitation succeeds.
+references:
+- https://lists.apache.org/thread/j5fkjv2k477os90nczf2v9l61fb0kkgq
+- https://nvd.nist.gov/vuln/detail/CVE-2025-24813
+- https://github.com/vulhub/vulhub/tree/master/tomcat/CVE-2025-24813
+- https://www.rapid7.com/db/vulnerabilities/apache-tomcat-cve-2025-24813/
+- https://gist.github.com/MHaggis/e106367f6649fbb09ab27e7b4a01cf73
+tags:
+- attack.t1190
+- attack.t1505.003
+date: '2025-03-25'
+original_spl: |-
+  | tstats count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Web
+    WHERE Web.http_method=GET
+      AND
+      Web.cookie="*JSESSIONID=.*"
+      AND
+      Web.status=500
+    BY Web.src, Web.dest, Web.http_user_agent,
+       Web.uri_path, Web.cookie, Web.status
+  | `drop_dm_object_name("Web")`
+  | where match(cookie, "^JSESSIONID=\.")
+  | rex field=cookie "JSESSIONID=\.(?<cookie_path>[^;]+)"
+  | eval severity="High"
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `tomcat_session_deserialization_attempt_filter`
+splunk_rule_id: e28b4fd4-8f5a-41cd-8222-2f1ccca53ef1
+splunk_rule_type: Anomaly
+logsource:
+  category: webserver
+detection:
+  selection_0:
+    cs-method: GET
+  selection_1:
+    Web.cookie|contains: JSESSIONID=.
+  selection_2:
+    sc-status: 500
+  condition: selection_0 and selection_1 and selection_2

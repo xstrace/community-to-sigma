@@ -1,0 +1,32 @@
+title: Network Share Discovery Via Dir Command
+id: dc1457d0-1d9b-422e-b5a7-db46c184d9aa
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects access to Windows administrative SMB shares (Admin$, IPC$, C$) using the 'dir' command. It leverages Windows Security Event Logs with EventCode 5140 to identify
+  this activity. This behavior is significant as it is commonly used by tools like PsExec/PaExec for staging binaries before creating and starting services on remote endpoints, a technique often employed
+  by adversaries for lateral movement and remote code execution. If confirmed malicious, this activity could allow attackers to propagate malware, such as IcedID, across the network, leading to widespread
+  infection and potential data breaches.
+references:
+- https://thedfirreport.com/2023/05/22/icedid-macro-ends-in-nokoyawa-ransomware/
+tags:
+- attack.t1135
+date: '2023-05-23'
+original_spl: '`wineventlog_security` EventCode=5140 ShareName IN("\\\\*\\ADMIN$","\\\\*\\C$","*\\\\*\\IPC$") AccessMask= 0x1 | stats min(_time) as firstTime max(_time) as lastTime count by ShareName IpAddress
+  ObjectType SubjectUserName SubjectDomainName IpPort AccessMask Computer | rename Computer as dest | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `network_share_discovery_via_dir_command_filter`'
+splunk_rule_id: dc1457d0-1d9b-422e-b5a7-db46c184d9aa
+splunk_rule_type: Hunting
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5140
+  selection_1:
+    ShareName|endswith:
+    - \\*\ADMIN$
+    - \\*\C$
+    - \\*\IPC$
+  selection_2:
+    AccessMask: '0x1'
+  condition: selection_0 and selection_1 and selection_2

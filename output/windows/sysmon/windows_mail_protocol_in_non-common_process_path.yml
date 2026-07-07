@@ -1,0 +1,57 @@
+title: Windows Mail Protocol In Non-Common Process Path
+id: ac3311f5-661d-4e99-bd1f-3ec665b05441
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a Windows application establishing an SMTP connection from a non-common installation path. It leverages Sysmon EventCode 3 to identify processes not typically
+  associated with email clients (e.g., Thunderbird, Outlook) making SMTP connections. This activity is significant as adversaries, including malware like AgentTesla, use such connections for Command and
+  Control (C2) communication to exfiltrate stolen data. If confirmed malicious, this behavior could lead to unauthorized data exfiltration, including sensitive information like desktop screenshots, browser
+  data, and system details, compromising the affected host.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.agent_tesla
+tags:
+- attack.t1071.003
+date: '2022-09-21'
+original_spl: |-
+  `sysmon`
+  EventCode=3
+  NOT Image IN(
+    "C:\\Program Files \(x86\)\\*",
+    "C:\\Program Files\\*",
+    "C:\\Windows\\System32\\*",
+    "C:\\Windows\\SysWOW64\\*"
+  )
+  (
+    DestinationPortName="smtp"
+    OR
+    DestinationPort IN (25, 587)
+  )
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+  by action app dest dest_ip dest_port direction dvc protocol protocol_version
+     src src_ip src_port transport user vendor_product process_name
+     process_exec process_guid process_id
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_mail_protocol_in_non_common_process_path_filter`
+splunk_rule_id: ac3311f5-661d-4e99-bd1f-3ec665b05441
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 3
+  filter_1:
+    Image:
+    - C:\Program Files \(x86\)\*
+    - C:\Program Files\*
+    - C:\Windows\System32\*
+    - C:\Windows\SysWOW64\*
+  selection_2:
+    DestinationPortName: smtp
+  selection_3:
+    DestinationPort:
+    - 25
+    - 587
+  condition: (selection_0 and selection_2 and selection_3) and not (filter_1)

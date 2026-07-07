@@ -1,0 +1,46 @@
+title: Windows Ngrok Reverse Proxy Usage
+id: e2549f2c-0aef-408a-b0c1-e0f270623436
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of ngrok.exe on a Windows operating system. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line
+  arguments. This activity is significant because while ngrok is a legitimate tool for creating secure tunnels, it is increasingly used by adversaries to bypass network defenses and establish reverse proxies.
+  If confirmed malicious, this could allow attackers to exfiltrate data, maintain persistence, or facilitate further attacks by tunneling traffic through the compromised system.
+references:
+- https://www.cisa.gov/uscert/sites/default/files/publications/aa22-320a_joint_csa_iranian_government-sponsored_apt_actors_compromise_federal%20network_deploy_crypto%20miner_credential_harvester.pdf
+tags:
+- attack.t1572
+- attack.t1090
+- attack.t1102
+date: '2022-11-16'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name=ngrok.exe Processes.process IN ("*start*", "*--config*","*http*","*authtoken*", "*http*", "*tcp*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_ngrok_reverse_proxy_usage_filter`
+splunk_rule_id: e2549f2c-0aef-408a-b0c1-e0f270623436
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: ngrok.exe
+  selection_1:
+    CommandLine|contains:
+    - start
+    - --config
+    - http
+    - authtoken
+    - http
+    - tcp
+  condition: selection_0 and selection_1

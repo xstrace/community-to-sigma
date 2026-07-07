@@ -1,0 +1,44 @@
+title: GetWmiObject User Account with PowerShell
+id: b44f6ac6-0429-11ec-87e9-acde48001122
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of `powershell.exe` with command-line arguments that utilize the `Get-WmiObject` cmdlet and the `Win32_UserAccount` parameter to query local user
+  accounts. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line executions. This activity is significant as it may indicate an attempt by adversaries
+  to enumerate user accounts for situational awareness or Active Directory discovery. If confirmed malicious, this behavior could lead to further reconnaissance, privilege escalation, or lateral movement
+  within the network.
+references:
+- https://attack.mitre.org/techniques/T1087/001/
+tags:
+- attack.t1087.001
+date: '2021-08-24'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name="powershell.exe"
+      )
+      (Processes.process=*Get-WmiObject* AND Processes.process=*Win32_UserAccount*)
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `getwmiobject_user_account_with_powershell_filter`
+splunk_rule_id: b44f6ac6-0429-11ec-87e9-acde48001122
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: powershell.exe
+  selection_1:
+    CommandLine|contains: Get-WmiObject
+  selection_2:
+    CommandLine|contains: Win32_UserAccount
+  condition: selection_0 and selection_1 and selection_2

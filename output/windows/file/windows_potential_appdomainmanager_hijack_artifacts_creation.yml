@@ -1,0 +1,74 @@
+title: Windows Potential AppDomainManager Hijack Artifacts Creation
+id: be19b369-fd0c-42be-ae97-c10b6c01638f
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the creation of an .exe file along with its corresponding .exe.config and a .dll in the same directory, which is a common pattern indicative of potential AppDomain
+  hijacking or CLR code injection attempts. This behavior may signal that a malicious actor is attempting to load a rogue assembly into a legitimate application's AppDomain, allowing code execution under
+  the context of a trusted process.
+references:
+- https://www.microsoft.com/en-us/security/blog/2025/11/03/sesameop-novel-backdoor-uses-openai-assistants-api-for-command-and-control/
+- https://attack.mitre.org/techniques/T1574/014/
+- https://gist.github.com/djhohnstein/afb93a114b848e16facf0b98cd7cb57b
+- https://www.scworld.com/brief/appdomain-manager-injection-exploited-for-cobalt-strike-beacon-delivery
+- https://jp.security.ntt/insights_resources/tech_blog/appdomainmanager-injection-en/
+tags:
+- attack.t1574.014
+date: '2026-01-07'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) AS firstTime max(_time) AS lastTime from datamodel=Endpoint.Filesystem
+  where Filesystem.file_name IN ("*.exe", "*.exe.config", "*.dll") AND Filesystem.file_path IN
+    ("*\\windows\\fonts\\*", "*\\temp\\*", "*\\users\\public\\*", "*\\windows\\debug\\*","*\\Users\\Administrator\\Music\\*", "*\\Windows\\servicing\\*", "*\\Users\\Default\\*", "*Recycle.bin*", "*\\Windows\\Media\\*", "*\\Windows\\repair\\*", "*\\PerfLogs\\*")
+  AND Filesystem.action = "created"
+  by Filesystem.action Filesystem.dest Filesystem.file_access_time Filesystem.file_create_time Filesystem.file_hash Filesystem.file_modify_time Filesystem.file_name Filesystem.file_path Filesystem.file_acl Filesystem.file_size Filesystem.process_guid Filesystem.process_id Filesystem.user Filesystem.vendor_product
+  | `drop_dm_object_name("Filesystem")`
+  | stats values(file_name) AS file_name
+          values(file_path) AS file_path
+          values(user) AS user
+          min(firstTime) AS firstTime max(lastTime) AS lastTime
+          BY dest process_guid
+  | eval exe_present = if(mvcount(mvfilter(match(file_name, "\.exe$"))) > 0, 1, 0)
+  | eval config_present = if(mvcount(mvfilter(match(file_name, "\.exe\.config$"))) > 0, 1, 0)
+  | eval dll_present = if(mvcount(mvfilter(match(file_name, "\.dll$"))) > 0, 1, 0)
+
+  | eval exe_files = mvfilter(match(file_name, "\.exe$") AND NOT match(file_name, "\.exe\.config$"))
+  | eval config_files = mvfilter(match(file_name, "\.exe\.config$"))
+  | eval exe_base_names = mvmap(exe_files, replace(exe_files, "\.exe$", ""))
+  | eval config_base_names = mvmap(config_files, replace(config_files, "\.exe\.config$", ""))
+
+  | mvexpand exe_base_names
+  | mvexpand config_base_names
+
+  | eval file_count = mvcount(file_name)
+
+  | where file_count >= 3 AND exe_present = 1 AND config_present = 1 AND dll_present = 1 AND exe_base_names = config_base_names
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_potential_appdomainmanager_hijack_artifacts_creation_filter`
+splunk_rule_id: be19b369-fd0c-42be-ae97-c10b6c01638f
+splunk_rule_type: Anomaly
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|endswith:
+    - .exe
+    - .exe.config
+    - .dll
+  selection_1:
+    TargetFilename|contains:
+    - \windows\fonts\
+    - \temp\
+    - \users\public\
+    - \windows\debug\
+    - \Users\Administrator\Music\
+    - \Windows\servicing\
+    - \Users\Default\
+    - Recycle.bin
+    - \Windows\Media\
+    - \Windows\repair\
+    - \PerfLogs\
+  selection_2:
+    Filesystem.action: created
+  condition: selection_0 and selection_1 and selection_2

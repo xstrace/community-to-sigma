@@ -1,0 +1,37 @@
+title: Linux Deletion Of Init Daemon Script
+id: 729aab57-d26f-4156-b97f-ab8dda8f44b1
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the deletion of init daemon scripts on a Linux machine. It leverages filesystem event logs to identify when files within the /etc/init.d/ directory are deleted.
+  This activity is significant because init daemon scripts control the start and stop of critical services, and their deletion can indicate an attempt to impair security features or evade defenses. If confirmed
+  malicious, this behavior could allow an attacker to disrupt essential services, execute destructive payloads, or persist undetected in the environment.
+references:
+- https://www.sentinelone.com/labs/acidrain-a-modem-wiper-rains-down-on-europe/
+tags:
+- attack.t1070.004
+- attack.t1485
+date: '2022-04-12'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Filesystem
+    WHERE Filesystem.action=deleted Filesystem.file_path IN ( "/etc/init.d/*")
+    BY Filesystem.action Filesystem.dest Filesystem.file_access_time
+       Filesystem.file_create_time Filesystem.file_hash Filesystem.file_modify_time
+       Filesystem.file_name Filesystem.file_path Filesystem.file_acl
+       Filesystem.file_size Filesystem.process_guid Filesystem.process_id
+       Filesystem.user Filesystem.vendor_product
+  | `drop_dm_object_name(Filesystem)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_deletion_of_init_daemon_script_filter`
+splunk_rule_id: 729aab57-d26f-4156-b97f-ab8dda8f44b1
+splunk_rule_type: TTP
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection_0:
+    Filesystem.action: deleted
+  selection_1:
+    TargetFilename|startswith: /etc/init.d/
+  condition: selection_0 and selection_1

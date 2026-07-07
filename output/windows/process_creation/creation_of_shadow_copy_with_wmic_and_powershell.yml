@@ -1,0 +1,39 @@
+title: Creation of Shadow Copy with wmic and powershell
+id: 2ed8b538-d284-449a-be1d-82ad1dbd186b
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects the creation of shadow copies using "wmic" or "Powershell" commands. It leverages the Endpoint.Processes data model in Splunk to identify processes where the
+  command includes "shadowcopy" and "create". This activity is significant because it may indicate an attacker attempting to manipulate or access data in an unauthorized manner, potentially leading to data
+  theft or manipulation. If confirmed malicious, this behavior could allow attackers to backup and exfiltrate sensitive data or hide their tracks by restoring files to a previous state after an attack.
+references:
+- https://2017.zeronights.org/wp-content/uploads/materials/ZN17_Kheirkhabarov_Hunting_for_Credentials_Dumping_in_Windows_Environment.pdf
+- https://media.defense.gov/2023/May/24/2003229517/-1/-1/0/CSA_Living_off_the_Land.PDF
+tags:
+- attack.t1003.003
+date: '2019-12-11'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_wmic`
+      OR
+      `process_powershell` Processes.process=*shadowcopy* Processes.process=*create*
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `creation_of_shadow_copy_with_wmic_and_powershell_filter`
+splunk_rule_id: 2ed8b538-d284-449a-be1d-82ad1dbd186b
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*shadowcopy*'
+  condition: selection_0

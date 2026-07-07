@@ -1,0 +1,43 @@
+title: Windows Default Group Policy Object Modified
+id: fe6a6cc4-9e0d-4d66-bcf4-2c7f44860876
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects modifications to default Group Policy Objects (GPOs) using Event ID 5136. It monitors changes to the `Default Domain Controllers Policy` and `Default Domain Policy`,
+  which are critical for enforcing security settings across domain controllers and all users/computers, respectively. This activity is significant because unauthorized changes to these GPOs can indicate
+  an adversary with privileged access attempting to deploy persistence mechanisms or execute malware across the network. If confirmed malicious, such modifications could lead to widespread compromise, allowing
+  attackers to maintain control and execute arbitrary code on numerous hosts.
+references:
+- https://attack.mitre.org/techniques/T1484/
+- https://attack.mitre.org/techniques/T1484/001
+- https://www.trustedsec.com/blog/weaponizing-group-policy-objects-access/
+- https://adsecurity.org/?p=2716
+tags:
+- attack.t1484.001
+date: '2023-03-28'
+original_spl: |-
+  `wineventlog_security` EventCode=5136 ObjectClass=groupPolicyContainer AttributeLDAPDisplayName=versionNumber (ObjectDN="CN={31B2F340-016D-11D2-945F-00C04FB984F9},CN=POLICIES,CN=SYSTEM,DC=*" OR ObjectDN="CN={6AC1786C-016F-11D2-945F-00C04fB984F9},CN=POLICIES,CN=SYSTEM,DC=*")
+    | stats min(_time) as firstTime max(_time) as lastTime
+      BY ObjectDN SubjectUserSid AttributeValue
+         Computer DSName dest
+    | rename AttributeValue as versionNumber
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_default_group_policy_object_modified_filter`
+splunk_rule_id: fe6a6cc4-9e0d-4d66-bcf4-2c7f44860876
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5136
+  selection_1:
+    ObjectClass: groupPolicyContainer
+  selection_2:
+    AttributeLDAPDisplayName: versionNumber
+  selection_3:
+    ObjectDN|startswith: CN={31B2F340-016D-11D2-945F-00C04FB984F9},CN=POLICIES,CN=SYSTEM,DC=
+  selection_4:
+    ObjectDN|startswith: CN={6AC1786C-016F-11D2-945F-00C04fB984F9},CN=POLICIES,CN=SYSTEM,DC=
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

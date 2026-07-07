@@ -1,0 +1,37 @@
+title: Windows Remote Assistance Spawning Process
+id: ced50492-8849-11ec-9f68-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects Microsoft Remote Assistance (msra.exe) spawning PowerShell.exe or cmd.exe as a child process. This detection leverages data from Endpoint Detection and Response
+  (EDR) agents, focusing on process creation events where msra.exe is the parent process. This activity is significant because msra.exe typically does not spawn command-line interfaces, indicating potential
+  process injection or misuse. If confirmed malicious, an attacker could use this technique to execute arbitrary commands, escalate privileges, or maintain persistence on the compromised system.
+references:
+- https://thedfirreport.com/2022/02/07/qbot-likes-to-move-it-move-it/
+- https://app.any.run/tasks/ca1616de-89a1-4afc-a3e4-09d428df2420/
+tags:
+- attack.t1055
+date: '2022-02-09'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name=msra.exe `windows_shells`
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_remote_assistance_spawning_process_filter`
+splunk_rule_id: ced50492-8849-11ec-9f68-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: msra.exe
+  condition: selection_0

@@ -1,0 +1,32 @@
+title: GetWmiObject Ds Group with PowerShell Script Block
+id: 67740bd3-1506-469c-b91d-effc322cc6e5
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of the `Get-WmiObject` commandlet with the `DS_Group` parameter via PowerShell Script Block Logging (EventCode=4104). This method leverages WMI
+  to query all domain groups. Monitoring this activity is crucial as adversaries and Red Teams may use it for domain group enumeration, aiding in situational awareness and Active Directory discovery. If
+  confirmed malicious, this activity could allow attackers to map out the domain structure, potentially leading to further exploitation and privilege escalation within the network.
+references:
+- https://attack.mitre.org/techniques/T1069/002/
+- https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-wmiobject?view=powershell-5.1
+tags:
+- attack.t1069.002
+date: '2021-08-27'
+original_spl: '`powershell` EventCode=4104 (ScriptBlockText=*Get-WmiObject* AND ScriptBlockText="*namespace root\\directory\\ldap*" AND ScriptBlockText="*class ds_group*") | fillnull | stats count min(_time)
+  as firstTime max(_time) as lastTime by dest signature signature_id user_id vendor_product EventID Guid Opcode Name Path ProcessID ScriptBlockId ScriptBlockText | `security_content_ctime(firstTime)` |
+  `security_content_ctime(lastTime)` |`getwmiobject_ds_group_with_powershell_script_block_filter`'
+splunk_rule_id: 67740bd3-1506-469c-b91d-effc322cc6e5
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: Get-WmiObject
+  selection_2:
+    ScriptBlockText|contains: namespace root\directory\ldap
+  selection_3:
+    ScriptBlockText|contains: class ds_group
+  condition: selection_0 and selection_1 and selection_2 and selection_3

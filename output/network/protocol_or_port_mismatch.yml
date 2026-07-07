@@ -1,0 +1,76 @@
+title: Protocol or Port Mismatch
+id: 54dc1265-2f74-4b6d-b30d-49eb506a31b3
+status: stable
+level: medium
+author: Rico Valdez, Splunk
+description: The following analytic identifies network traffic where the higher layer protocol does not match the expected port, such as non-HTTP traffic on TCP port 80. It leverages data from network traffic
+  inspection technologies like Bro or Palo Alto Networks firewalls. This activity is significant because it may indicate attempts to bypass firewall restrictions or conceal malicious communications. If
+  confirmed malicious, this behavior could allow attackers to evade detection, maintain persistence, or exfiltrate data through commonly allowed ports, posing a significant threat to network security.
+tags:
+- attack.t1048.003
+date: '2020-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  from datamodel=Network_Traffic where
+
+  (
+    All_Traffic.app=dns
+    NOT All_Traffic.dest_port IN (53)
+  )
+  OR
+  (
+    All_Traffic.app IN (web-browsing, http)
+    NOT All_Traffic.dest_port IN (80, 8000, 8080)
+  )
+  OR
+  (
+    All_Traffic.app=ssl
+    NOT All_Traffic.dest_port IN (443, 465, 993, 8443)
+  )
+  OR
+  (
+    All_Traffic.app=smtp
+    NOT All_Traffic.dest_port IN (25, 587, 2525)
+  )
+
+  by All_Traffic.src_ip All_Traffic.dest_ip All_Traffic.app,
+     All_Traffic.dest_port All_Traffic.transport
+     All_Traffic.action All_Traffic.rule
+
+  |`security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `drop_dm_object_name("All_Traffic")`
+  | `protocol_or_port_mismatch_filter`
+splunk_rule_id: 54dc1265-2f74-4b6d-b30d-49eb506a31b3
+splunk_rule_type: Anomaly
+logsource:
+  category: network_connection
+detection:
+  selection_0:
+    All_Traffic.app: dns
+    All_Traffic.dest_port: 53
+  selection_1:
+    All_Traffic.app:
+    - web-browsing
+    - http
+    All_Traffic.dest_port:
+    - 80
+    - 8000
+    - 8080
+  selection_2:
+    All_Traffic.app: ssl
+    All_Traffic.dest_port:
+    - 443
+    - 465
+    - 993
+    - 8443
+  selection_3:
+    All_Traffic.app: smtp
+    All_Traffic.dest_port:
+    - 25
+    - 587
+    - 2525
+  condition: selection_0 and selection_1 and selection_2 and selection_3

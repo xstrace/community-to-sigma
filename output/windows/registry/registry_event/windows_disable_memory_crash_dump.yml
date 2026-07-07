@@ -1,0 +1,29 @@
+title: Windows Disable Memory Crash Dump
+id: 59e54602-9680-11ec-a8a6-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects attempts to disable the memory crash dump feature on Windows systems by setting the registry value to 0. It leverages data from the Endpoint.Registry datamodel,
+  specifically monitoring changes to the CrashDumpEnabled registry key. This activity is significant because disabling crash dumps can hinder forensic analysis and incident response efforts. If confirmed
+  malicious, this action could be part of a broader attack strategy, such as data destruction or system destabilization, as seen with HermeticWiper, potentially leading to significant operational disruptions
+  and data loss.
+references:
+- https://blog.talosintelligence.com/2022/02/threat-advisory-hermeticwiper.html
+- https://docs.microsoft.com/en-us/troubleshoot/windows-server/performance/memory-dump-file-options
+tags:
+- attack.t1485
+date: '2022-02-25'
+original_spl: '| tstats `security_content_summariesonly` count FROM datamodel=Endpoint.Registry where (Registry.registry_path="*\\CurrentControlSet\\Control\\CrashControl\\CrashDumpEnabled") AND Registry.registry_value_data="0x00000000"
+  by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name
+  Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_disable_memory_crash_dump_filter`'
+splunk_rule_id: 59e54602-9680-11ec-a8a6-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \CurrentControlSet\Control\CrashControl\CrashDumpEnabled
+  selection_1:
+    Details: '0x00000000'
+  condition: selection_0 and selection_1

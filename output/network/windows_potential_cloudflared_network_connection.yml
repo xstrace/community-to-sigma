@@ -1,0 +1,45 @@
+title: Windows Potential Cloudflared Network Connection
+id: 29798d45-c9c7-4240-a5ef-d7648c016024
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  This analytic detects network connection events possibly associated with the Cloudflared tool, a tool used to create tunnels via Cloudflare.
+  Cloudflared is functionally very similar to ngrok, an ingress-as-a-service tool.
+  It reaches out to the Cloudflare Edge Servers, creating an outbound connection over HTTPS(HTTP2/QUIC), where the tunnel's controller makes services or private networks accessible.
+references:
+- https://www-bleepingcomputer-com.cdn.ampproject.org/c/s/www.bleepingcomputer.com/news/security/hackers-increasingly-abuse-cloudflare-tunnels-for-stealthy-connections/amp/
+- https://github.com/cloudflare/cloudflared
+- https://www.guidepointsecurity.com/blog/tunnel-vision-cloudflared-abused-in-the-wild/
+tags:
+- attack.t1572
+date: '2026-05-05'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+     count min(_time) as firstTime
+           max(_time) as lastTime
+           values(All_Traffic.src_port) as src_port
+
+  from datamodel=Network_Traffic.All_Traffic where
+
+  All_Traffic.dest_port=7844
+
+  BY All_Traffic.action All_Traffic.app All_Traffic.dest
+     All_Traffic.dest_ip All_Traffic.dest_port All_Traffic.direction
+     All_Traffic.dvc All_Traffic.protocol All_Traffic.protocol_version
+     All_Traffic.src All_Traffic.src_ip All_Traffic.transport
+     All_Traffic.user All_Traffic.vendor_product
+
+  | `drop_dm_object_name(All_Traffic)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_potential_cloudflared_network_connection_filter`
+splunk_rule_id: 29798d45-c9c7-4240-a5ef-d7648c016024
+splunk_rule_type: Hunting
+logsource:
+  category: all_traffic
+  product: windows
+detection:
+  selection_0:
+    All_Traffic.dest_port: 7844
+  condition: selection_0

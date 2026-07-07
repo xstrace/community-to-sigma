@@ -1,0 +1,101 @@
+title: PowerShell PInvoke Process Injection API Chain
+id: 3f1a2b4c-d5e6-7890-abcd-ef1234567890
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  The following analytic detects PowerShell Script Block Logging (Event ID 4104) evidence of a complete P/Invoke process-injection API chain at either the compile phase or the execution phase.
+  Portions of this search were modified to retain the same functionality while preventing antivirus products from alerting on the detection itself
+references:
+- https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportattribute
+- https://www.ired.team/offensive-security/code-injection-process-injection
+- https://www.broadcom.com/support/security-center/protection-bulletin/vip-keylogger-spreads-via-multi-org-impersonation-campaign
+- https://attack.mitre.org/techniques/T1055/
+- https://attack.mitre.org/techniques/T1620/
+tags:
+- attack.t1055.001
+- attack.t1055.003
+- attack.t1055.004
+- attack.t1055.012
+- attack.t1055.013
+- attack.t1059.001
+- attack.t1620
+date: '2026-04-29'
+original_spl: |-
+  `powershell`
+  EventCode=4104
+  ScriptBlockText="*add-type*"
+  ScriptBlockText="*DllImport*"
+  ScriptBlockText IN (
+      "*extern IntPtr*",
+      "*extern bool*",
+      "*extern uint*",
+      "*extern int*"
+  )
+  | where
+      (
+          match(ScriptBlockText, "(?i)[v][i][r][t][u][a][l][a][l][l][o][c]")
+          AND match(ScriptBlockText, "(?i)[v][i][r][t][u][a][l][p][r][o][t][e][c][t]")
+          AND match(ScriptBlockText, "(?i)[c][r][e][a][t][e][t][h][r][e][a][d]")
+      )
+      OR
+      (
+          match(ScriptBlockText, "(?i)[o][p][e][n][p][r][o][c][e][s][s]")
+          AND match(ScriptBlockText, "(?i)[v][i][r][t][u][a][l][a][l][l][o][c]")
+          AND match(ScriptBlockText, "(?i)[w][r][i][t][e][p][r][o][c][e][s][s][m][e][m][o][r][y]")
+          AND (
+              match(ScriptBlockText, "(?i)[c][r][e][a][t][e][r][e][m][o][t][e][t][h][r][e][a][d]")
+              OR
+              match(ScriptBlockText, "(?i)[q][u][e][u][e][u][s][e][r][a][p][c]")
+          )
+      )
+      OR
+      (
+          match(ScriptBlockText, "(?i)[o][p][e][n][t][h][r][e][a][d]")
+          AND match(ScriptBlockText, "(?i)[s][u][s][p][e][n][d][t][h][r][e][a][d]")
+          AND match(ScriptBlockText, "(?i)[g][e][t][t][h][r][e][a][d][c][o][n][t][e][x][t]")
+          AND match(ScriptBlockText, "(?i)[w][r][i][t][e][p][r][o][c][e][s][s][m][e][m][o][r][y]")
+          AND match(ScriptBlockText, "(?i)[s][e][t][t][h][r][e][a][d][c][o][n][t][e][x][t]")
+          AND match(ScriptBlockText, "(?i)[r][e][s][u][m][e][t][h][r][e][a][d]")
+      )
+      OR
+      (
+          match(ScriptBlockText, "(?i)[c][r][e][a][t][e][p][r][o][c][e][s][s]")
+          AND match(ScriptBlockText, "(?i)[v][i][r][t][u][a][l][a][l][l][o][c]")
+          AND match(ScriptBlockText, "(?i)[w][r][i][t][e][p][r][o][c][e][s][s][m][e][m][o][r][y]")
+          AND match(ScriptBlockText, "(?i)[s][e][t][t][h][r][e][a][d][c][o][n][t][e][x][t]")
+          AND ScriptBlockText = "*ResumeThread*"
+      )
+      OR
+      (
+          match(ScriptBlockText, "(?i)[n][t][c][r][e][a][t][e][s][e][c][t][i][o][n]")
+          AND match(ScriptBlockText, "(?i)[n][t][m][a][p][v][i][e][w][o][f][s][e][c][t][i][o][n]")
+          AND match(ScriptBlockText, "(?i)[c][r][e][a][t][e][r][e][m][o][t][e][t][h][r][e][a][d]")
+      )
+  | fillnull
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+     by dest signature signature_id user_id vendor_product EventID
+        Guid Opcode Name Path ProcessID ScriptBlockId ScriptBlockText
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `powershell_pinvoke_process_injection_api_chain_filter`
+splunk_rule_id: 3f1a2b4c-d5e6-7890-abcd-ef1234567890
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: add-type
+  selection_2:
+    ScriptBlockText|contains: DllImport
+  selection_3:
+    ScriptBlockText|contains:
+    - extern IntPtr
+    - extern bool
+    - extern uint
+    - extern int
+  condition: selection_0 and selection_1 and selection_2 and selection_3

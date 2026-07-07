@@ -1,0 +1,33 @@
+title: Windows RDPClient Connection Sequence Events
+id: 67340df1-3f1d-4470-93c8-9ac7249d11b0
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: This analytic monitors Windows RDP client connection sequence events (EventCode 1024) from the Microsoft-Windows-TerminalServices-RDPClient/Operational log. These events track when RDP ClientActiveX
+  initiates connection attempts to remote servers. The connection sequence is a critical phase of RDP where the client and server exchange settings and establish common parameters for the session. Monitoring
+  these events can help identify unusual RDP connection patterns, potential lateral movement attempts, unauthorized remote access activity, and RDP connection chains that may indicate compromised systems.
+  NOTE the analytic was written for Multi-Line as XML was not properly parsed out.
+references:
+- https://gist.github.com/MHaggis/acd5dcbf1d4fb705b77f0a48e772eefc
+- https://www.microsoft.com/en-us/security/blog/2024/10/29/midnight-blizzard-conducts-large-scale-spear-phishing-campaign-using-rdp-files/
+tags:
+- attack.t1133
+date: '2024-11-25'
+original_spl: |-
+  `wineventlog_rdp` EventCode=1024
+    | rename host as dest
+    | stats count as "Event Count", min(_time) as firstTime, max(_time) as lastTime, values(Message) as messages
+      BY dest, source, LogName,
+         EventCode, category
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_rdpclient_connection_sequence_events_filter`
+splunk_rule_id: 67340df1-3f1d-4470-93c8-9ac7249d11b0
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: terminalservices
+detection:
+  selection_0:
+    EventID: 1024
+  condition: selection_0

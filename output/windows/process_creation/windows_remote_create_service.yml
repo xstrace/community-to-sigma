@@ -1,0 +1,30 @@
+title: Windows Remote Create Service
+id: 0dc44d03-8c00-482d-ba7c-796ba7ab18c9
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies the creation of a new service on a remote endpoint using sc.exe. It leverages data from Endpoint Detection and Response (EDR) agents, specifically monitoring
+  for EventCode 7045, which indicates a new service creation. This activity is significant as it may indicate lateral movement or remote code execution attempts by an attacker. If confirmed malicious, this
+  could allow the attacker to establish persistence, escalate privileges, or execute arbitrary code on the remote system, potentially leading to further compromise of the network.
+references:
+- https://attack.mitre.org/techniques/T1543/003/
+tags:
+- attack.t1543.003
+date: '2022-06-17'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime from datamodel=Endpoint.Processes where Processes.process_name=sc.exe Processes.process IN ("*create*")  Processes.process="*\\\\*"
+  by Processes.action Processes.dest Processes.original_file_name Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id Processes.parent_process_name
+  Processes.parent_process_path Processes.process Processes.process_exec Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level Processes.process_name Processes.process_path
+  Processes.user Processes.user_id Processes.vendor_product | `drop_dm_object_name(Processes)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_remote_create_service_filter`'
+splunk_rule_id: 0dc44d03-8c00-482d-ba7c-796ba7ab18c9
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: sc.exe
+  selection_1:
+    CommandLine|contains: create
+  selection_2:
+    CommandLine|contains: \\
+  condition: selection_0 and selection_1 and selection_2

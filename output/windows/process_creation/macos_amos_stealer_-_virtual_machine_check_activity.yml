@@ -1,0 +1,65 @@
+title: MacOS AMOS Stealer - Virtual Machine Check Activity
+id: 4e41ad21-9761-426d-8aa1-083712ff9f30
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk, Alex Karkins
+description: |
+  The following analytic detects AMOS Stealer VM check activity on macOS. It leverages osquery to monitor process events and identifies the execution of the "osascript" command along with specific commandline strings.
+  This activity is significant as AMOS stealer was seen using this pattern in order to check if the host is a Virtual Machine or not.
+  If confirmed malicious, this behavior indicate that the host is already infected by the AMOS stealer, which could allow attackers to execute arbitrary code, escalate privileges, steal information, or persist within the environment, posing a significant security risk.
+references:
+- https://osquery.readthedocs.io/en/stable/deployment/process-auditing/
+- https://www.virustotal.com/gui/search/behaviour_processes%253A%2522osascript%2520-e%2520set%2522%2520AND%2520behaviour_processes%253A%2522system_profiler%2522%2520AND%2520(behaviour_processes%253A%2522VMware%2522%2520OR%2520behaviour_processes%253A%2522QEMU%2522)?type=files
+tags:
+- attack.t1059.002
+date: '2025-04-25'
+original_spl: |-
+  `osquery_macro`
+  name=es_process_events
+  columns.cmdline="*osascript*"
+  columns.cmdline="* -e *"
+  columns.cmdline="*set*"
+  columns.cmdline="*system_profiler*"
+  columns.cmdline IN ("*VMware*", "*QEMU*")
+
+  | rename columns.* as *
+
+  | stats  min(_time) as firstTime max(_time) as lastTime
+    values(cmdline) as cmdline,
+    values(pid) as pid,
+    values(parent) as parent,
+    values(path) as path,
+    values(signing_id) as signing_id,
+    by username host
+
+  | rename
+    username as user,
+    cmdline as process,
+    parent as parent_process,
+    path as process_path,
+    host as dest
+
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `macos_amos_stealer___virtual_machine_check_activity_filter`
+splunk_rule_id: 4e41ad21-9761-426d-8aa1-083712ff9f30
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    name: es_process_events
+  selection_1:
+    columns.cmdline|contains: osascript
+  selection_2:
+    columns.cmdline|contains: ' -e '
+  selection_3:
+    columns.cmdline|contains: set
+  selection_4:
+    columns.cmdline|contains: system_profiler
+  selection_5:
+    columns.cmdline|contains:
+    - VMware
+    - QEMU
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4 and selection_5

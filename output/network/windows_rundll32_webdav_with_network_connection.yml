@@ -1,0 +1,67 @@
+title: Windows Rundll32 WebDav With Network Connection
+id: f03355e0-28b5-4e9b-815a-6adffc63b38c
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of rundll32.exe with command-line arguments loading davclnt.dll and the davsetcookie function to access a remote WebDav instance. It uses data from
+  Endpoint Detection and Response (EDR) agents, correlating process execution and network traffic data. This activity is significant as it may indicate exploitation of CVE-2023-23397, a known vulnerability.
+  If confirmed malicious, this could allow an attacker to establish unauthorized remote connections, potentially leading to data exfiltration or further network compromise.
+references:
+- https://strontic.github.io/xcyclopedia/library/davclnt.dll-0EA3050E7CC710526E330C413C165DA0.html
+- https://twitter.com/ACEResponder/status/1636116096506818562?s=20
+- https://twitter.com/domchell/status/1635999068282408962?s=20
+- https://msrc.microsoft.com/blog/2023/03/microsoft-mitigates-outlook-elevation-of-privilege-vulnerability/
+- https://www.pwndefend.com/2023/03/15/the-long-game-persistent-hash-theft/
+tags:
+- attack.t1048.003
+date: '2023-09-15'
+original_spl: |-
+  | tstats `security_content_summariesonly` count
+    min(_time) as firstTime
+    max(_time) as lastTime
+  FROM datamodel=Endpoint.Processes where
+    Processes.parent_process_name=svchost.exe
+    `process_rundll32`
+    Processes.process IN (
+      "*\\windows\\system32\\davclnt.dll,*davsetcookie*",
+      "*\\windows\\syswow64\\davclnt.dll,*davsetcookie*")
+  by host _time span=1h
+    Processes.action Processes.dest Processes.original_file_name Processes.parent_process
+    Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id
+    Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec
+    Processes.process_guid Processes.process_hash  Processes.process_id Processes.process_integrity_level
+    Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | rename dest as src
+  | join host process_id
+  [
+    | tstats `security_content_summariesonly` count
+      latest(All_Traffic.dest) as dest
+      latest(All_Traffic.dest_ip) as dest_ip
+      latest(All_Traffic.dest_port) as dest_port
+    FROM datamodel=Network_Traffic.All_Traffic where
+      All_Traffic.dest_port!=0
+      NOT (All_Traffic.dest_ip IN (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16))
+    by host All_Traffic.action All_Traffic.app All_Traffic.bytes All_Traffic.bytes_in All_Traffic.bytes_out
+            All_Traffic.dest  All_Traffic.dest_ip All_Traffic.dest_port All_Traffic.dvc All_Traffic.protocol
+            All_Traffic.protocol_version All_Traffic.src All_Traffic.src_ip All_Traffic.src_port
+            All_Traffic.transport All_Traffic.user All_Traffic.vendor_product All_Traffic.direction
+            All_Traffic.process_id
+    | `drop_dm_object_name(All_Traffic)`
+  ]
+  | `windows_rundll32_webdav_with_network_connection_filter`
+splunk_rule_id: f03355e0-28b5-4e9b-815a-6adffc63b38c
+splunk_rule_type: TTP
+logsource:
+  category: all_traffic
+  product: windows
+detection:
+  selection_0:
+    ParentImage: svchost.exe
+  selection_1:
+    CommandLine|contains:
+    - \windows\system32\davclnt.dll,*davsetcookie
+    - \windows\syswow64\davclnt.dll,*davsetcookie
+  condition: selection_0 and selection_1

@@ -1,0 +1,39 @@
+title: Windows AppX Deployment Full Trust Package Installation
+id: 8560de46-ea2d-4c69-8ca3-5b78b90f1338
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the installation of MSIX/AppX packages with full trust privileges. This detection leverages Windows event logs from the AppXDeployment-Server, specifically focusing
+  on EventCode 400 which indicates a package deployment operation. Full trust packages are significant as they run with elevated privileges outside the normal AppX container restrictions, allowing them
+  to access system resources that regular AppX packages cannot. Adversaries have been observed leveraging full trust MSIX packages to deliver malware, as documented in recent threat intelligence reports.
+  If confirmed malicious, these packages could allow attackers to execute arbitrary code with elevated privileges, establish persistence, or deliver malware while evading traditional detection mechanisms.
+references:
+- https://redcanary.com/blog/threat-intelligence/msix-installers/
+- https://redcanary.com/threat-detection-report/techniques/installer-packages/
+- https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes
+- https://learn.microsoft.com/en-us/windows/msix/package/package-identity
+- https://attack.mitre.org/techniques/T1553/005/
+tags:
+- attack.t1553.005
+- attack.t1204.002
+date: '2025-08-18'
+original_spl: |-
+  `wineventlog_appxdeploymentserver` EventCode=400 HasFullTrust="true"
+    | stats count min(_time) as firstTime max(_time) as lastTime values(PackageFullName) as PackageFullName values(Path) as PackagePath values(PackageSourceUri) as PackageSourceUri values(PackageDisplayName) as PackageDisplayName values(CallingProcess) as CallingProcess values(IsCentennial) as IsCentennial
+      BY dvc EventCode HasFullTrust
+         user_id
+    | rename dvc as dest
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_appx_deployment_full_trust_package_installation_filter`
+splunk_rule_id: 8560de46-ea2d-4c69-8ca3-5b78b90f1338
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    EventID: 400
+  selection_1:
+    HasFullTrust: 'true'
+  condition: selection_0 and selection_1

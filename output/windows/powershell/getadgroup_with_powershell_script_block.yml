@@ -1,0 +1,37 @@
+title: GetAdGroup with PowerShell Script Block
+id: e4c73d68-794b-468d-b4d0-dac1772bbae7
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of the `Get-AdGroup` PowerShell cmdlet using PowerShell Script Block Logging (EventCode=4104). This cmdlet is used to enumerate all domain groups,
+  which adversaries may exploit for situational awareness and Active Directory discovery. Monitoring this activity is crucial as it can indicate reconnaissance efforts within the network. If confirmed malicious,
+  this behavior could lead to further exploitation, such as privilege escalation or lateral movement, by providing attackers with detailed information about the domain's group structure.
+references:
+- https://attack.mitre.org/techniques/T1069/002/
+- https://docs.microsoft.com/en-us/powershell/module/activedirectory/get-adgroup?view=windowsserver2019-ps
+tags:
+- attack.t1069.002
+date: '2021-08-27'
+original_spl: |-
+  `powershell` EventCode=4104 ScriptBlockText = "*Get-ADGroup*"
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest signature signature_id
+         user_id vendor_product EventID
+         Guid Opcode Name
+         Path ProcessID ScriptBlockId
+         ScriptBlockText
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `getadgroup_with_powershell_script_block_filter`
+splunk_rule_id: e4c73d68-794b-468d-b4d0-dac1772bbae7
+splunk_rule_type: Hunting
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: Get-ADGroup
+  condition: selection_0 and selection_1

@@ -1,0 +1,53 @@
+title: File with Samsam Extension
+id: 02c6cfc2-ae66-4735-bfc7-6291da834cbf
+status: stable
+level: medium
+author: Rico Valdez, Splunk
+description: |
+  The following analytic detects file writes with extensions indicative of a SamSam ransomware attack.
+  It leverages file-system activity data to identify file names ending in .stubbin, .berkshire, .satoshi, .sophos, or .keyxml.
+  This activity is significant because SamSam ransomware is highly destructive, leading to file encryption and ransom demands.
+  If confirmed malicious, the impact includes significant financial losses, operational disruptions, and reputational damage.
+  Immediate actions should include isolating affected systems, restoring files from backups, and investigating the attack source to prevent further incidents.
+date: '2020-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+          values(Filesystem.user) as user
+          values(Filesystem.dest) as dest
+          values(Filesystem.file_path) as file_path
+  from datamodel=Endpoint.Filesystem where
+  Filesystem.file_name IN (
+    "*.berkshire",
+    "*.keyxml",
+    "*.satoshi",
+    "*.sophos",
+    "*.stubbin"
+  )
+  by Filesystem.action Filesystem.dest Filesystem.file_access_time
+     Filesystem.file_create_time Filesystem.file_hash
+     Filesystem.file_modify_time Filesystem.file_name
+     Filesystem.file_path Filesystem.file_acl Filesystem.file_size
+     Filesystem.process_guid Filesystem.process_id
+     Filesystem.user Filesystem.vendor_product
+  | `drop_dm_object_name(Filesystem)`
+  | `security_content_ctime(lastTime)`
+  | `security_content_ctime(firstTime)`
+  | rex field=file_name "(?<file_extension>\.[^\.]+)$"
+  | search file_extension IN (".berkshire", ".keyxml", ".satoshi", ".sophos", ".stubbin")
+  | `file_with_samsam_extension_filter`
+splunk_rule_id: 02c6cfc2-ae66-4735-bfc7-6291da834cbf
+splunk_rule_type: TTP
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|endswith:
+    - .berkshire
+    - .keyxml
+    - .satoshi
+    - .sophos
+    - .stubbin
+  condition: selection_0

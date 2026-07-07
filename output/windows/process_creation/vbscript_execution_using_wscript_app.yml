@@ -1,0 +1,47 @@
+title: Vbscript Execution Using Wscript App
+id: 35159940-228f-11ec-8a49-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of VBScript using the wscript.exe application. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process and command-line
+  telemetry. This activity is significant because wscript.exe is typically not used to execute VBScript, which is usually associated with cscript.exe. This deviation can indicate an attempt to evade traditional
+  process monitoring and antivirus defenses. If confirmed malicious, this technique could allow attackers to execute arbitrary code, potentially leading to system compromise, data exfiltration, or further
+  lateral movement within the network.
+references:
+- https://www.joesandbox.com/analysis/369332/0/html
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.asyncrat
+tags:
+- attack.t1059.005
+date: '2021-09-14'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.parent_process_name = "wscript.exe"
+          AND
+          Processes.parent_process = "*//e:vbscript*"
+      )
+      OR (Processes.process_name = "wscript.exe" AND Processes.process = "*//e:vbscript*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `vbscript_execution_using_wscript_app_filter`
+splunk_rule_id: 35159940-228f-11ec-8a49-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: wscript.exe
+    ParentCommandLine|contains: '*//e:vbscript*'
+  selection_1:
+    Image: wscript.exe
+    CommandLine|contains: '*//e:vbscript*'
+  condition: selection_0 and selection_1

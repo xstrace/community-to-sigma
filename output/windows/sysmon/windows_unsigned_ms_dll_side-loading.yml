@@ -1,0 +1,73 @@
+title: Windows Unsigned MS DLL Side-Loading
+id: 8d9e0e06-ba71-4dc5-be16-c1a46d58728c
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies potential DLL side-loading instances involving unsigned DLLs mimicking Microsoft signatures. It detects this activity by analyzing Sysmon logs for Event Code
+  7, where both the `Image` and `ImageLoaded` paths do not match system directories like `system32`, `syswow64`, and `programfiles`. This behavior is significant as adversaries often exploit DLL side-loading
+  to execute malicious code via legitimate processes. If confirmed malicious, this activity could allow attackers to execute arbitrary code, potentially leading to privilege escalation, persistence, and
+  unauthorized access to sensitive information.
+references:
+- https://www.mandiant.com/resources/blog/apt29-wineloader-german-political-parties
+- https://www.zscaler.com/blogs/security-research/european-diplomats-targeted-spikedwine-wineloader
+tags:
+- attack.t1574.001
+- attack.t1547
+date: '2024-04-17'
+original_spl: |-
+  `sysmon`
+  EventCode=7
+  Company="Microsoft Corporation"
+  Signed=false
+  SignatureStatus!= Valid
+  NOT (Image IN (
+                "C:\\Program Files \(x86\)\\*",
+                "C:\\Program Files\\*",
+                "C:\\Windows\\System32\\*",
+                "C:\\Windows\\SysWow64\\*"
+                )
+      )
+  NOT (ImageLoaded IN (
+                      "C:\\Program Files \(x86\)\\*",
+                      "C:\\Program Files\\*",
+                      "C:\\Windows\\System32\\*",
+                      "C:\\Windows\\SysWow64\\*"
+                      )
+      )
+  | rex field=Image "(?<ImageFolderPath>.+\\\)"
+  | rex field=ImageLoaded "(?<ImageLoadedFolderPath>.+\\\)"
+  | where ImageFolderPath = ImageLoadedFolderPath
+  | stats count min(_time) as firstTime max(_time) as lastTime by Image ImageLoaded
+  dest loaded_file loaded_file_path original_file_name process_exec process_guid process_hash
+  process_id process_name process_path service_dll_signature_exists service_dll_signature_verified
+  signature signature_id user_id vendor_product
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_unsigned_ms_dll_side_loading_filter`
+splunk_rule_id: 8d9e0e06-ba71-4dc5-be16-c1a46d58728c
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 7
+  selection_1:
+    Company: Microsoft Corporation
+  selection_2:
+    Signed: 'false'
+  selection_3:
+    SignatureStatus: Valid
+  filter_4:
+    Image:
+    - C:\Program Files \(x86\)\*
+    - C:\Program Files\*
+    - C:\Windows\System32\*
+    - C:\Windows\SysWow64\*
+  filter_5:
+    ImageLoaded:
+    - C:\Program Files \(x86\)\*
+    - C:\Program Files\*
+    - C:\Windows\System32\*
+    - C:\Windows\SysWow64\*
+  condition: (selection_0 and selection_1 and selection_2 and selection_3) and not (filter_4 and filter_5)

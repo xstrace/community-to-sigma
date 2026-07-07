@@ -1,0 +1,54 @@
+title: Cisco Secure Firewall - Citrix NetScaler Memory Overread Attempt
+id: 93db24a0-fd21-45d7-9daf-84afd5a8cca2
+status: stable
+level: medium
+author: Michael Haag, Nasreddine Bencherchali, Splunk, Talos NTDR
+description: |
+  This analytic detects exploitation activity of CVE-2025-5777 using Cisco Secure Firewall Intrusion Events.
+  It leverages Cisco Secure Firewall Threat Defense IntrusionEvent logs to identify cases where Snort signature 65118 (Citrix NetScaler memory overread attempt) is triggered
+  If confirmed malicious, this behavior is highly indicative of a potential exploitation of CVE-2025-5777.
+references:
+- https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX693420
+- https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX693420
+- https://www.netscaler.com/blog/news/critical-security-updates-for-netscaler-netscaler-gateway-and-netscaler-console/
+- https://github.com/mingshenhk/CitrixBleed-2-CVE-2025-5777-PoC-
+- https://horizon3.ai/attack-research/attack-blogs/cve-2025-5777-citrixbleed-2-write-up-maybe/
+- https://labs.watchtowr.com/how-much-more-must-we-bleed-citrix-netscaler-memory-disclosure-citrixbleed-2-cve-2025-5777/
+- https://github.com/projectdiscovery/nuclei-templates/blob/main/http/cves/2025/CVE-2025-5777.yaml
+tags:
+- attack.t1203
+- attack.t1059
+date: '2025-07-17'
+original_spl: |-
+  `cisco_secure_firewall`
+  EventType=IntrusionEvent
+  signature_id = 65118
+  | fillnull
+  | stats min(_time) as firstTime
+          max(_time) as lastTime
+          values(signature_id) as signature_id
+          values(signature) as signature
+          values(class_desc) as class_desc
+          values(MitreAttackGroups) as MitreAttackGroups
+          values(InlineResult) as InlineResult
+          values(InlineResultReason) as InlineResultReason
+          values(src) as src
+          values(dest_port) as dest_port
+          values(rule) as rule
+          values(transport) as transport
+          values(app) as app
+          by dest
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_secure_firewall___citrix_netscaler_memory_overread_attempt_filter`
+splunk_rule_id: 93db24a0-fd21-45d7-9daf-84afd5a8cca2
+splunk_rule_type: TTP
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: IntrusionEvent
+  selection_1:
+    signature_id: 65118
+  condition: selection_0 and selection_1

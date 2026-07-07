@@ -1,0 +1,41 @@
+title: Windows AD GPO Deleted
+id: 0d41772b-35ab-4e1c-a2ba-d0b455481aee
+status: stable
+level: medium
+author: Dean Luxton
+description: This detection identifies when an Active Directory Group Policy is deleted using the Group Policy Management Console.
+references:
+- https://lantern.splunk.com/Security/Product_Tips/Enterprise_Security/Enabling_an_audit_trail_from_Active_Directory
+tags:
+- attack.t1685
+- attack.t1484.001
+date: '2024-07-01'
+original_spl: |-
+  `wineventlog_security` EventCode=5136 AttributeLDAPDisplayName=gpLink
+    | eval  ObjectDN=upper(ObjectDN)
+    | stats min(_time) as eventTime values(eval(if(OperationType=="%%14675",AttributeValue,null))) as old_value values(eval(if(OperationType=="%%14674",AttributeValue,null))) as new_value values(OperationType) as OperationType values(src_user) as src_user values(dest) as dest
+      BY OpCorrelationID ObjectDN SubjectLogonId
+    | rex field=old_value max_match=10000 "(?i)LDAP://(?P<old_dn>cn.*?);(?P<old_flag>\d)\]"
+    | rex field=new_value max_match=10000 "(?i)LDAP://(?P<new_dn>cn.*?);(?P<new_flag>\d)\]"
+    | mvexpand old_dn
+    | where NOT old_dn IN (new_dn)
+    | eval ObjectDN=upper(old_dn)
+    | join ObjectDN type=outer [
+    | search `admon` objectCategory="CN=Group-Policy-Container*" admonEventType=Update
+    | eval ObjectDN=upper(distinguishedName)
+    | stats latest(displayName) as displayName
+      BY ObjectDN ]
+    | stats min(eventTime) as _time values(OpCorrelationID) as OpCorrelationID values(displayName) as policyName values(src_user) as src_user
+      BY ObjectDN SubjectLogonId
+    | `windows_ad_gpo_deleted_filter`
+splunk_rule_id: 0d41772b-35ab-4e1c-a2ba-d0b455481aee
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5136
+  selection_1:
+    AttributeLDAPDisplayName: gpLink
+  condition: selection_0 and selection_1

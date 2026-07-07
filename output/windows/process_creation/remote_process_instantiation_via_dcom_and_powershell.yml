@@ -1,0 +1,42 @@
+title: Remote Process Instantiation via DCOM and PowerShell
+id: d4f42098-4680-11ec-ad07-3e22fbd008af
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of `powershell.exe` with arguments used to start a process on a remote endpoint by abusing the DCOM protocol, specifically targeting ShellExecute
+  and ExecuteShellCommand. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names, parent processes, and command-line executions. This activity is significant as
+  it indicates potential lateral movement and remote code execution attempts by adversaries. If confirmed malicious, this could allow attackers to execute arbitrary code remotely, escalate privileges, and
+  move laterally within the network, posing a severe security risk.
+references:
+- https://attack.mitre.org/techniques/T1021/003/
+- https://www.cybereason.com/blog/dcom-lateral-movement-techniques
+tags:
+- attack.t1021.003
+date: '2021-11-15'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_powershell` (Processes.process="*Document.ActiveView.ExecuteShellCommand*"
+      OR
+      Processes.process="*Document.Application.ShellExecute*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `remote_process_instantiation_via_dcom_and_powershell_filter`
+splunk_rule_id: d4f42098-4680-11ec-ad07-3e22fbd008af
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: Document.ActiveView.ExecuteShellCommand
+  selection_1:
+    CommandLine|contains: Document.Application.ShellExecute
+  condition: selection_0 and selection_1

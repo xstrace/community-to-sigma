@@ -1,0 +1,60 @@
+title: Windows Entra User Management Via Azure CLI
+id: f6332409-abeb-42f8-b6a7-76201bdc7a0a
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  This analytic detects the usage of the Azure CLI to interact with user accounts such as creating or deleting a user.
+  Adversaries create new users so that their malicious activity does not interrupt the normal functions of the compromised users and can remain undetected.
+  While legitimate administrative use is expected, anomalous execution patterns, unexpected users, or unusual parent processes should be treated as potential indicators of compromise and investigated promptly.
+references:
+- https://atomicredteam.io/persistence/T1136.003/#atomic-test-3---azure-ad---create-a-new-user-via-azure-cli
+- https://learn.microsoft.com/en-us/cli/azure/?view=azure-cli-latest
+tags:
+- attack.t1136
+- attack.t1078.004
+- attack.t1098
+date: '2026-05-05'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  from datamodel=Endpoint.Processes where
+
+  Processes.process IN (
+      "*az.cmd*",
+      "*azure.cli*"
+  )
+  Processes.process="*ad *"
+  Processes.process="* user*"
+
+  by Processes.process Processes.vendor_product Processes.user_id
+     Processes.process_hash Processes.parent_process_name
+     Processes.parent_process_exec Processes.action Processes.dest
+     Processes.process_current_directory Processes.process_path
+     Processes.process_integrity_level Processes.original_file_name
+     Processes.parent_process Processes.parent_process_path
+     Processes.parent_process_guid Processes.parent_process_id
+     Processes.process_guid Processes.process_id
+     Processes.user Processes.process_name
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_entra_user_management_via_azure_cli_filter`
+splunk_rule_id: f6332409-abeb-42f8-b6a7-76201bdc7a0a
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - az.cmd
+    - azure.cli
+  selection_1:
+    CommandLine|contains: 'ad '
+  selection_2:
+    CommandLine|contains: ' user'
+  condition: selection_0 and selection_1 and selection_2

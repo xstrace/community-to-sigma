@@ -1,0 +1,51 @@
+title: Windows DNS Query Request To TinyUrl
+id: b1ea79da-719c-437c-acaf-5c93f838f425
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  The following analytic detects a process located in a potentially suspicious location making DNS queries to known URL shortening services, specifically tinyurl.
+  URL shorteners are frequently used by threat actors to obfuscate malicious destinations, including phishing pages, malware distribution sites, or command-and-control (C2) endpoints.
+  While tinyurl.com is a legitimate service, its use in enterprise environments—particularly by non-browser processes or scripts—should be considered suspicious, especially if correlated with subsequent outbound connections, file downloads, process file path or credential prompts. Analysts should investigate the source process, execution context, and destination domain to determine intent and risk.
+references:
+- https://x.com/Unit42_Intel/status/1919418143476199869
+tags:
+- attack.t1105
+date: '2021-11-18'
+original_spl: |-
+  `sysmon`
+  EventCode=22
+  QueryName = "tinyurl.com"
+  Image IN (
+    "*\\AppData\\*",
+    "*\\Perflogs\\*",
+    "*\\ProgramData\\*",
+    "*\\Temp\\*",
+    "*\\Users\\Public\\*",
+    "*\\Windows\\Tasks\\*"
+    )
+  | stats count min(_time) as firstTime max(_time) as lastTime
+    by answer answer_count dvc process_exec process_guid process_name query query_count
+       reply_code_id signature signature_id src user_id vendor_product QueryName QueryResults QueryStatus
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_dns_query_request_to_tinyurl_filter`
+splunk_rule_id: b1ea79da-719c-437c-acaf-5c93f838f425
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 22
+  selection_1:
+    QueryName: tinyurl.com
+  selection_2:
+    Image|contains:
+    - \AppData\
+    - \Perflogs\
+    - \ProgramData\
+    - \Temp\
+    - \Users\Public\
+    - \Windows\Tasks\
+  condition: selection_0 and selection_1 and selection_2

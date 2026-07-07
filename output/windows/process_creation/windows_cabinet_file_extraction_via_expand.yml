@@ -1,0 +1,42 @@
+title: Windows Cabinet File Extraction Via Expand
+id: 4e3e3b8c-6d3a-4b47-9f5a-9e3e0a0a6f2f
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: |
+  Detects usage of expand.exe to extract Microsoft Cabinet (CAB) archives, with
+  emphasis on extractions into `C:\\ProgramData` or similar staging locations. In
+  recent APT37 activity, a CAB payload (e.g., wonder.cab) was expanded into
+  ProgramData prior to persistence and execution. This behavior is a strong signal
+  for ingress tool transfer and staging of payloads.
+references:
+- https://www.zscaler.com/blogs/security-research/apt37-targets-windows-rust-backdoor-and-python-loader
+tags:
+- attack.t1105
+date: '2025-10-13'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime
+  from datamodel=Endpoint.Processes
+  where Processes.process_name="expand.exe"
+    (Processes.process="*-F:*" OR Processes.process="*/F:*")
+    Processes.process="*\\ProgramData\\*"
+  by Processes.dest Processes.user Processes.parent_process_name Processes.process_name Processes.process Processes.original_file_name Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id Processes.parent_process_path Processes.process_exec Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level Processes.process_path Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_cabinet_file_extraction_via_expand_filter`
+splunk_rule_id: 4e3e3b8c-6d3a-4b47-9f5a-9e3e0a0a6f2f
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: expand.exe
+  selection_1:
+    CommandLine|contains: '-F:'
+  selection_2:
+    CommandLine|contains: '/F:'
+  selection_3:
+    CommandLine|contains: \ProgramData\
+  condition: selection_0 and selection_1 and selection_2 and selection_3

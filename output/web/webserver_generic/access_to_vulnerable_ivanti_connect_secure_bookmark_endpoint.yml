@@ -1,0 +1,37 @@
+title: Access to Vulnerable Ivanti Connect Secure Bookmark Endpoint
+id: 15838756-f425-43fa-9d88-a7f88063e81a
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies access to the /api/v1/configuration/users/user-roles/user-role/rest-userrole1/web/web-bookmarks/bookmark endpoint, which is associated with CVE-2023-46805
+  and CVE-2024-21887 vulnerabilities. It detects this activity by monitoring for GET requests that receive a 403 Forbidden response with an empty body. This behavior is significant as it indicates potential
+  exploitation attempts against Ivanti Connect Secure systems. If confirmed malicious, attackers could exploit these vulnerabilities to gain unauthorized access or control over the affected systems, leading
+  to potential data breaches or system compromise.
+references:
+- https://github.com/RootUp/PersonalStuff/blob/master/http-vuln-cve2023-46805_2024_21887.nse
+- https://github.com/projectdiscovery/nuclei-templates/blob/c6b351e71b0fb0e40e222e97038f1fe09ac58194/http/misconfiguration/ivanti/CVE-2023-46085-CVE-2024-21887-mitigation-not-applied.yaml
+- https://github.com/rapid7/metasploit-framework/pull/18708/files
+tags:
+- attack.t1190
+date: '2024-01-17'
+original_spl: |-
+  | tstats count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Web
+    WHERE Web.url="*/api/v1/configuration/users/user-roles/user-role/rest-userrole1/web/web-bookmarks/bookmark*" Web.http_method=GET Web.status=403
+    BY Web.src, Web.dest, Web.http_user_agent,
+       Web.status, Web.url source
+  | `drop_dm_object_name("Web")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `access_to_vulnerable_ivanti_connect_secure_bookmark_endpoint_filter`
+splunk_rule_id: 15838756-f425-43fa-9d88-a7f88063e81a
+splunk_rule_type: TTP
+logsource:
+  category: webserver
+detection:
+  selection_0:
+    cs-uri|contains: /api/v1/configuration/users/user-roles/user-role/rest-userrole1/web/web-bookmarks/bookmark
+  selection_1:
+    cs-method: GET
+  selection_2:
+    sc-status: 403
+  condition: selection_0 and selection_1 and selection_2

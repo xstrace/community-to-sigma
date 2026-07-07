@@ -1,0 +1,32 @@
+title: O365 Block User Consent For Risky Apps Disabled
+id: 12a23592-e3da-4344-8545-205d3290647c
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects when the "risk-based step-up consent" security setting in Microsoft 365 is disabled. It monitors Azure Active Directory logs for the "Update authorization policy"
+  operation, specifically changes to the "AllowUserConsentForRiskyApps" setting. This activity is significant because disabling this feature can expose the organization to OAuth phishing threats, allowing
+  users to grant consent to malicious applications. If confirmed malicious, attackers could gain unauthorized access to user data and sensitive information, leading to data breaches and further compromise
+  within the organization.
+references:
+- https://attack.mitre.org/techniques/T1562/
+- https://goodworkaround.com/2020/10/19/a-look-behind-the-azure-ad-permission-classifications-preview/
+- https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-risk-based-step-up-consent
+- https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
+tags:
+- attack.t1685
+date: '2023-12-06'
+original_spl: '`o365_management_activity` Workload=AzureActiveDirectory Operation="Update authorization policy." | eval index_number = if(mvfind(''ModifiedProperties{}.Name'',"AllowUserConsentForRiskyApps")
+  >= 0, mvfind(''ModifiedProperties{}.Name'',"AllowUserConsentForRiskyApps"), -1) | search index_number >= 0 | eval AllowUserConsentForRiskyApps = mvindex(''ModifiedProperties{}.NewValue'',index_number)
+  | where AllowUserConsentForRiskyApps like "%true%" | fillnull | stats count min(_time) as firstTime max(_time) as lastTime by signature dest user src vendor_account vendor_product AllowUserConsentForRiskyApps
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `o365_block_user_consent_for_risky_apps_disabled_filter`'
+splunk_rule_id: 12a23592-e3da-4344-8545-205d3290647c
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: Update authorization policy.
+  condition: selection_0 and selection_1

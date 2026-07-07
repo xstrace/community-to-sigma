@@ -1,0 +1,30 @@
+title: O365 New Forwarding Mailflow Rule Created
+id: 289ed0a1-4c78-4a43-9321-44ea2e089c14
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the creation of new mail flow rules in Office 365 that may redirect or copy emails to unauthorized or external addresses. It leverages Office 365 Management Activity
+  logs, specifically querying for the "New-TransportRule" operation and parameters like "BlindCopyTo", "CopyTo", and "RedirectMessageTo". This activity is significant as it can indicate potential data exfiltration
+  or unauthorized access to sensitive information. If confirmed malicious, attackers could intercept or redirect email communications, leading to data breaches or information leakage.
+references:
+- https://attack.mitre.org/techniques/T1114/
+- https://learn.microsoft.com/en-us/exchange/security-and-compliance/mail-flow-rules/mail-flow-rules
+- https://learn.microsoft.com/en-us/exchange/security-and-compliance/mail-flow-rules/mail-flow-rule-actions
+tags:
+- attack.t1114
+date: '2024-04-17'
+original_spl: '`o365_management_activity` Workload=Exchange Operation="New-TransportRule" | eval match1=mvfind(''Parameters{}.Name'',"BlindCopyTo") | eval match2=mvfind(''Parameters{}.Name'',"CopyTo") |
+  eval match3=mvfind(''Parameters{}.Name'', "RedirectMessageTo") | where match1>= 0 OR match2>= 0 OR match3>=0 | eval ForwardTo=coalesce(BlindCopyTo, CopyTo, RedirectMessageTo) | search ForwardTo!="" |
+  rename UserId as user | fillnull | stats count earliest(_time) as firstTime latest(_time) as lastTime by user, Name, ForwardTo, vendor_account, vendor_product, dest, signature | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `o365_new_forwarding_mailflow_rule_created_filter`'
+splunk_rule_id: 289ed0a1-4c78-4a43-9321-44ea2e089c14
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: Exchange
+  selection_1:
+    Operation: New-TransportRule
+  condition: selection_0 and selection_1

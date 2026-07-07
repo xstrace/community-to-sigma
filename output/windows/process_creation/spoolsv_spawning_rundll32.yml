@@ -1,0 +1,39 @@
+title: Spoolsv Spawning Rundll32
+id: 15d905f6-da6b-11eb-ab82-acde48001122
+status: stable
+level: medium
+author: Mauricio Velazco, Michael Haag, Splunk
+description: The following analytic detects the spawning of `rundll32.exe` without command-line arguments by `spoolsv.exe`, which is unusual and potentially indicative of exploitation attempts like CVE-2021-34527
+  (PrintNightmare). This detection leverages Endpoint Detection and Response (EDR) telemetry, focusing on process creation events where `spoolsv.exe` is the parent process. This activity is significant
+  as `spoolsv.exe` typically does not spawn other processes, and such behavior could indicate an active exploitation attempt. If confirmed malicious, this could allow an attacker to execute arbitrary code,
+  escalate privileges, or maintain persistence on the compromised endpoint.
+references:
+- https://www.truesec.com/hub/blog/fix-for-printnightmare-cve-2021-1675-exploit-to-keep-your-print-servers-running-while-a-patch-is-not-available
+- https://www.truesec.com/hub/blog/exploitable-critical-rce-vulnerability-allows-regular-users-to-fully-compromise-active-directory-printnightmare-cve-2021-1675
+- https://www.reddit.com/r/msp/comments/ob6y02/critical_vulnerability_printnightmare_exposes
+tags:
+- attack.t1547.012
+date: '2021-07-01'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name=spoolsv.exe `process_rundll32`
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `spoolsv_spawning_rundll32_filter`
+splunk_rule_id: 15d905f6-da6b-11eb-ab82-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: spoolsv.exe
+  condition: selection_0

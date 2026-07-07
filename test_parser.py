@@ -48,6 +48,11 @@ class TestTokenizer:
         assert TokenType.GE in types
         assert TokenType.LE in types
 
+    def test_bang_is_unary_not_and_tokenizer_advances(self):
+        tokens = tokenize("!(a=b) !match(value, pattern)")
+        assert [token.value for token in tokens].count("NOT") == 2
+        assert all(token.value for token in tokens)
+
 
 class TestParser:
     def test_simple_search(self):
@@ -100,6 +105,18 @@ class TestParser:
         stage = ast["stages"][0]
         cond = stage["condition"]
         assert cond["type"] == "not"
+
+    def test_bang_boolean_not(self):
+        ast = parse_spl("!(a=1 OR b=2)")
+        condition = ast["stages"][0]["condition"]
+        assert condition["type"] == "not"
+        assert condition["expr"]["type"] == "or"
+
+    def test_bang_function_not(self):
+        ast = parse_spl("!match(country, expected_country)")
+        condition = ast["stages"][0]["condition"]
+        assert condition["type"] == "not"
+        assert condition["expr"]["type"] == "function_call"
 
     def test_parenthesized_group(self):
         ast = parse_spl("(a=1 OR b=2) AND c=3")

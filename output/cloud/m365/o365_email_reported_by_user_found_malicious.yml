@@ -1,0 +1,45 @@
+title: O365 Email Reported By User Found Malicious
+id: 7698b945-238e-4bb9-b172-81f5ca1685a1
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic detects when an email submitted to Microsoft using the built-in report button in Outlook is found to be malicious. This capability is an enhanced protection feature that
+  can be used within o365 tenants by users to report potentially malicious emails. This correlation looks for any submission that returns a Phish or Malware verdict upon submission.
+references:
+- https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/submissions-outlook-report-messages?view=o365-worldwide
+tags:
+- attack.t1566.001
+- attack.t1566.002
+date: '2024-04-07'
+original_spl: |-
+  `o365_management_activity` Workload=SecurityComplianceCenter Operation=AlertEntityGenerated Name="Email reported by user as*"
+    | fromjson Data
+    | rename _raw AS temp etps AS _raw
+    | extract pairdelim=";" kvdelim=":"
+    | rename _raw AS etps temp AS _raw
+    | search RescanVerdict IN (Phish,Malware)
+    | rex field=tsd "\<(?<src_user>.+)\>"
+    | eval src_user = case(isnull(src_user),tsd,true(),src_user)
+    | rename Name as signature, AlertId as signature_id, AlertEntityId as user, tsd as sender, ms as subject
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product signature
+         signature_id src_user sender
+         subject
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `o365_email_reported_by_user_found_malicious_filter`
+splunk_rule_id: 7698b945-238e-4bb9-b172-81f5ca1685a1
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: SecurityComplianceCenter
+  selection_1:
+    Operation: AlertEntityGenerated
+  selection_2:
+    Name|startswith: Email reported by user as
+  condition: selection_0 and selection_1 and selection_2

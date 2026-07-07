@@ -1,0 +1,41 @@
+title: Spring4Shell Payload URL Request
+id: 9d44d649-7d67-4559-95c1-8022ff49420b
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects attempts to exploit the Spring4Shell vulnerability (CVE-2022-22963) by identifying specific URL patterns associated with web shell payloads. It leverages web
+  traffic data, focusing on HTTP GET requests with URLs containing indicators like "tomcatwar.jsp," "poc.jsp," and "shell.jsp." This activity is significant as it suggests an attacker is trying to deploy
+  a web shell, which can lead to remote code execution. If confirmed malicious, this could allow the attacker to gain persistent access, execute arbitrary commands, and potentially escalate privileges within
+  the compromised environment.
+references:
+- https://www.microsoft.com/security/blog/2022/04/04/springshell-rce-vulnerability-guidance-for-protecting-against-and-detecting-cve-2022-22965/
+- https://github.com/TheGejr/SpringShell
+- https://www.tenable.com/blog/spring4shell-faq-spring-framework-remote-code-execution-vulnerability
+tags:
+- attack.t1133
+- attack.t1190
+- attack.t1505.003
+date: '2022-04-05'
+original_spl: |-
+  | tstats count FROM datamodel=Web
+    WHERE Web.http_method IN ("GET") Web.url IN ("*tomcatwar.jsp*","*poc.jsp*","*shell.jsp*")
+    BY Web.http_user_agent Web.http_method, Web.url,Web.url_length
+       Web.src, Web.dest sourcetype
+  | `drop_dm_object_name("Web")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `spring4shell_payload_url_request_filter`
+splunk_rule_id: 9d44d649-7d67-4559-95c1-8022ff49420b
+splunk_rule_type: TTP
+logsource:
+  category: webserver
+  product: windows
+detection:
+  selection_0:
+    cs-method: GET
+  selection_1:
+    cs-uri|contains:
+    - tomcatwar.jsp
+    - poc.jsp
+    - shell.jsp
+  condition: selection_0 and selection_1

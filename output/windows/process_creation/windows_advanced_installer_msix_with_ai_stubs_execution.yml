@@ -1,0 +1,40 @@
+title: Windows Advanced Installer MSIX with AI_STUBS Execution
+id: 56b2e58c-5909-49a3-998e-1f4815186ec2
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies the execution of Advanced Installer MSIX Package Support Framework (PSF) components, specifically the AI_STUBS executables with the original filename 'popupwrapper.exe'.
+  This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on process paths and original filenames. This activity is significant as adversaries have been observed packaging
+  malicious content within MSIX files built with Advanced Installer to bypass security controls. These AI_STUBS executables (with original filename 'popupwrapper.exe') are hallmark artifacts of potentially
+  malicious MSIX packages. If confirmed malicious, this could allow attackers to execute arbitrary code, establish persistence, or deliver malware while evading traditional detection mechanisms.
+references:
+- https://redcanary.com/blog/threat-intelligence/msix-installers/
+- https://redcanary.com/threat-detection-report/techniques/installer-packages/
+- https://learn.microsoft.com/en-us/windows/msix/package/package-support-framework
+- https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes
+- https://attack.mitre.org/techniques/T1218/
+tags:
+- attack.t1218
+- attack.t1553.005
+- attack.t1204.002
+date: '2025-08-18'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes where Processes.process_path IN ("*\\AI_STUBS\\AiStubX64Elevated.exe",
+  "*\\AI_STUBS\\AiStubX86Elevated.exe", "*\\AI_STUBS\\AiStubX64.exe", "*\\AI_STUBS\\AiStubX86.exe") AND Processes.original_file_name="popupwrapper.exe" by Processes.action Processes.dest Processes.original_file_name
+  Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec
+  Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name("Processes")` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_advanced_installer_msix_with_ai_stubs_execution_filter`'
+splunk_rule_id: 56b2e58c-5909-49a3-998e-1f4815186ec2
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image|endswith:
+    - \AI_STUBS\AiStubX64Elevated.exe
+    - \AI_STUBS\AiStubX86Elevated.exe
+    - \AI_STUBS\AiStubX64.exe
+    - \AI_STUBS\AiStubX86.exe
+  selection_1:
+    OriginalFileName: popupwrapper.exe
+  condition: selection_0 and selection_1

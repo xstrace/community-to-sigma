@@ -1,0 +1,47 @@
+title: Deleting Shadow Copies
+id: b89919ed-ee5f-492c-b139-95dbb162039e
+status: stable
+level: medium
+author: David Dorsey, Splunk
+description: The following analytic detects the deletion of shadow copies using the vssadmin.exe or wmic.exe utilities. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process
+  names and command-line arguments. This activity is significant because deleting shadow copies is a common tactic used by attackers to prevent recovery and hide their tracks. If confirmed malicious, this
+  action could hinder incident response efforts and allow attackers to maintain persistence and cover their activities, making it crucial for security teams to investigate promptly.
+references:
+- https://blogs.vmware.com/security/2022/10/lockbit-3-0-also-known-as-lockbit-black.html
+tags:
+- attack.t1490
+date: '2020-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly` count values(Processes.process) as process values(Processes.parent_process) as parent_process min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name=vssadmin.exe
+          OR
+          Processes.process_name=wmic.exe
+      )
+      Processes.process=*delete* Processes.process=*shadow*
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `deleting_shadow_copies_filter`
+splunk_rule_id: b89919ed-ee5f-492c-b139-95dbb162039e
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: vssadmin.exe
+  selection_1:
+    Image: wmic.exe
+  selection_2:
+    CommandLine|contains: delete
+  selection_3:
+    CommandLine|contains: shadow
+  condition: selection_0 and selection_1 and selection_2 and selection_3

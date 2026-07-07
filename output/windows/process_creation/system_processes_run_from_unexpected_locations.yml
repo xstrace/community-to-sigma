@@ -1,0 +1,59 @@
+title: System Processes Run From Unexpected Locations
+id: a34aae96-ccf8-4aef-952c-3ea21444444d
+status: stable
+level: medium
+author: David Dorsey, Michael Haag, Nasreddine Bencherchali, Splunk
+description: The following analytic identifies system processes running from unexpected locations outside of paths such as `C:\Windows\System32\` or `C:\Windows\SysWOW64`. It leverages data from Endpoint
+  Detection and Response (EDR) agents, focusing on process paths, names, and hashes. This activity is significant as it may indicate a malicious process attempting to masquerade as a legitimate system process.
+  If confirmed malicious, this behavior could allow an attacker to execute code, escalate privileges, or maintain persistence within the environment, posing a significant security risk.
+references:
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1036.003/T1036.003.yaml
+- https://attack.mitre.org/techniques/T1036/003/
+tags:
+- attack.t1036.003
+date: '2019-10-16'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime max(_time) as lastTime
+    FROM datamodel=Endpoint.Processes where
+    NOT Processes.process_path IN (
+      "*:\\$WINDOWS.~BT\\*",
+      "*:\\$WinREAgent\\*",
+      "*:\\Program Files \(x86\)\\Windows Kits\\10\\App Certification Kit\\*",
+      "*:\\Windows\\SoftwareDistribution\\*",
+      "*:\\Windows\\System32\\*",
+      "*:\\Windows\\SystemTemp\\*",
+      "*:\\Windows\\SysWOW64\\*",
+      "*:\\Windows\\uus\\*",
+      "*:\\Windows\\WinSxS\\*"
+    )
+  by Processes.action Processes.dest Processes.original_file_name Processes.parent_process
+     Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id
+     Processes.parent_process_name Processes.parent_process_path Processes.process
+     Processes.process_exec Processes.process_guid Processes.process_hash
+     Processes.process_id Processes.process_integrity_level Processes.process_name
+     Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name("Processes")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | lookup update=true is_windows_system_file filename as process_name OUTPUT systemFile
+  | search systemFile=true
+  | `system_processes_run_from_unexpected_locations_filter`
+splunk_rule_id: a34aae96-ccf8-4aef-952c-3ea21444444d
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  filter_0:
+    Image:
+    - '*:\$WINDOWS.~BT\*'
+    - '*:\$WinREAgent\*'
+    - '*:\Program Files \(x86\)\Windows Kits\10\App Certification Kit\*'
+    - '*:\Windows\SoftwareDistribution\*'
+    - '*:\Windows\System32\*'
+    - '*:\Windows\SystemTemp\*'
+    - '*:\Windows\SysWOW64\*'
+    - '*:\Windows\uus\*'
+    - '*:\Windows\WinSxS\*'
+  condition: filter_0

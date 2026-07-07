@@ -1,0 +1,36 @@
+title: SAM Database File Access Attempt
+id: 57551656-ebdb-11eb-afdf-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Mauricio Velazco, Splunk
+description: The following analytic detects attempts to access the SAM, SYSTEM, or SECURITY database files within the `windows\system32\config` directory using Windows Security EventCode 4663. This detection
+  leverages Windows Security Event logs to identify unauthorized access attempts. Monitoring this activity is crucial as it indicates potential credential access attempts, possibly exploiting vulnerabilities
+  like CVE-2021-36934. If confirmed malicious, an attacker could extract user passwords, leading to unauthorized access, privilege escalation, and further compromise of the system.
+references:
+- https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID=4663
+- https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4663
+- https://msrc.microsoft.com/update-guide/vulnerability/CVE-2021-36934
+- https://github.com/GossiTheDog/HiveNightmare
+- https://github.com/JumpsecLabs/Guidance-Advice/tree/main/SAM_Permissions
+- https://en.wikipedia.org/wiki/Security_Account_Manager
+tags:
+- attack.t1003.002
+date: '2021-07-23'
+original_spl: '`wineventlog_security` (EventCode=4663)  ProcessName!=*\\dllhost.exe ObjectName IN ("*\\Windows\\System32\\config\\SAM*","*\\Windows\\System32\\config\\SYSTEM*","*\\Windows\\System32\\config\\SECURITY*")
+  | stats values(AccessList) count by ProcessName ObjectName dest src_user | rename ProcessName as process_name | `sam_database_file_access_attempt_filter`'
+splunk_rule_id: 57551656-ebdb-11eb-afdf-acde48001122
+splunk_rule_type: Hunting
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4663
+  selection_1:
+    ProcessName|endswith: \dllhost.exe
+  selection_2:
+    ObjectName|contains:
+    - \Windows\System32\config\SAM
+    - \Windows\System32\config\SYSTEM
+    - \Windows\System32\config\SECURITY
+  condition: selection_0 and selection_1 and selection_2

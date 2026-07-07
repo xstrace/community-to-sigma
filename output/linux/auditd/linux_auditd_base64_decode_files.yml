@@ -1,0 +1,38 @@
+title: Linux Auditd Base64 Decode Files
+id: 5890ba10-4e48-4dc0-8a40-3e1ebe75e737
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects suspicious Base64 decode operations that may indicate malicious activity, such as data exfiltration or execution of encoded commands. Base64 is commonly used
+  to encode data for safe transmission, but attackers may abuse it to conceal malicious payloads. This detection focuses on identifying unusual or unexpected Base64 decoding processes, particularly when
+  associated with critical files or directories. By monitoring these activities, the analytic helps uncover potential threats, enabling security teams to respond promptly and mitigate risks associated with
+  encoded malware or unauthorized data access.
+references:
+- https://www.splunk.com/en_us/blog/security/deep-dive-on-persistence-privilege-escalation-technique-and-detection-in-linux-platform.html
+- https://gtfobins.github.io/gtfobins/dd/
+tags:
+- attack.t1140
+date: '2024-08-12'
+original_spl: |-
+  `linux_auditd` execve_command = "*base64*" AND execve_command IN ("*-d*", "* --d*")
+    | rename host as dest
+    | rename comm as process_name
+    | rename exe as process
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY argc execve_command dest
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `linux_auditd_base64_decode_files_filter`
+splunk_rule_id: 5890ba10-4e48-4dc0-8a40-3e1ebe75e737
+splunk_rule_type: Anomaly
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    execve_command|contains: base64
+  selection_1:
+    execve_command|contains:
+    - -d
+    - ' --d'
+  condition: selection_0 and selection_1

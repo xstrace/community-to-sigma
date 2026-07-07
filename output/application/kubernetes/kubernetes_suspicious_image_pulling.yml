@@ -1,0 +1,33 @@
+title: Kubernetes Suspicious Image Pulling
+id: 4d3a17b3-0a6d-4ae0-9421-46623a69c122
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects suspicious image pulling in Kubernetes environments. It identifies this activity by monitoring Kubernetes audit logs for image pull requests that do not match
+  a predefined list of allowed images. This behavior is significant for a SOC as it may indicate an attacker attempting to deploy malicious software or infiltrate the system. If confirmed malicious, the
+  impact could be severe, potentially leading to unauthorized access to sensitive systems or data, and enabling further malicious activities within the cluster.
+references:
+- https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/
+tags:
+- attack.t1526
+date: '2023-12-20'
+original_spl: |-
+  `kube_audit` requestObject.message="Pulling image*"
+    | search NOT `kube_allowed_images`
+    | fillnull
+    | stats count
+      BY objectRef.name objectRef.namespace objectRef.resource
+         requestReceivedTimestamp requestURI responseStatus.code
+         sourceIPs{} stage user.groups{}
+         user.uid user.username userAgent
+         verb
+    | rename sourceIPs{} as src_ip, user.username as user
+    | `kubernetes_suspicious_image_pulling_filter`
+splunk_rule_id: 4d3a17b3-0a6d-4ae0-9421-46623a69c122
+splunk_rule_type: Anomaly
+logsource:
+  product: kubernetes
+detection:
+  selection_0:
+    requestObject.message|startswith: Pulling image
+  condition: selection_0

@@ -1,0 +1,76 @@
+title: DLLHost with no Command Line Arguments with Network
+id: f1c07594-a141-11eb-8407-acde48001122
+status: stable
+level: medium
+author: Steven Dick, Michael Haag, Splunk
+description: |
+  The following analytic detects instances of DLLHost.exe running without
+  command line arguments while establishing a network connection.
+  This behavior is identified using Endpoint Detection and Response (EDR) telemetry,
+  focusing on process execution and network activity data.
+  It is significant because DLLHost.exe typically runs with specific arguments,
+  and its absence can indicate malicious activity, such as Cobalt Strike usage.
+  If confirmed malicious, this activity could allow attackers to execute code,
+  move laterally, or exfiltrate data, posing a severe threat to the network's security.
+references:
+- https://raw.githubusercontent.com/threatexpress/malleable-c2/c3385e481159a759f79b8acfe11acf240893b830/jquery-c2.4.2.profile
+- https://www.cobaltstrike.com/blog/learn-pipe-fitting-for-all-of-your-offense-projects/
+tags:
+- attack.t1055
+date: '2021-04-19'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time)
+  as lastTime FROM datamodel=Endpoint.Processes where
+  (
+    Processes.process_name=dllhost.exe
+    OR
+    Processes.original_file_name=dllhost.exe
+  )
+  Processes.process IN (
+    "*dllhost",
+    "*dllhost.exe",
+    "*dllhost.exe\""
+  )
+  by host _time span=1h
+     Processes.action Processes.dest Processes.original_file_name
+     Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+     Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+     Processes.process Processes.process_exec Processes.process_guid Processes.process_hash
+     Processes.process_id Processes.process_integrity_level Processes.process_name Processes.process_path
+     Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | rename dest as src
+  | join host process_id
+  [
+    | tstats `security_content_summariesonly`
+      count
+      latest(All_Traffic.dest) as dest
+      latest(All_Traffic.dest_ip) as dest_ip
+      latest(All_Traffic.dest_port) as dest_port
+      FROM datamodel=Network_Traffic.All_Traffic where
+        All_Traffic.dest_port != 0
+        by host All_Traffic.action All_Traffic.app All_Traffic.bytes All_Traffic.bytes_in
+           All_Traffic.bytes_out All_Traffic.dest  All_Traffic.dest_ip All_Traffic.dest_port
+           All_Traffic.dvc All_Traffic.protocol All_Traffic.protocol_version All_Traffic.src
+           All_Traffic.src_ip All_Traffic.src_port All_Traffic.transport All_Traffic.user
+           All_Traffic.vendor_product All_Traffic.direction All_Traffic.process_id
+    | `drop_dm_object_name(All_Traffic)`
+  ]
+  | `dllhost_with_no_command_line_arguments_with_network_filter`
+splunk_rule_id: f1c07594-a141-11eb-8407-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: all_traffic
+detection:
+  selection_0:
+    Image: dllhost.exe
+  selection_1:
+    OriginalFileName: dllhost.exe
+  selection_2:
+    CommandLine|endswith:
+    - dllhost
+    - dllhost.exe
+    - dllhost.exe\"
+  condition: selection_0 and selection_1 and selection_2

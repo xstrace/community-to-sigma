@@ -1,0 +1,102 @@
+title: Windows Proxy Execution of .NET Utilities via Scripts
+id: eb59cf01-1874-4d16-b7e4-54a6eb9b3118
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |-
+  The following analytic detects the launch of common .NET-related utilities—aspnet_compiler.exe, msbuild.exe, regasm.exe, InstallUtil.exe, or vbc.exe when the parent appears to be a script (batch, CMD, PowerShell, JScript, VBScript, or HTML) running from an unusual or user-writable Windows location (for example Public, Temp, Fonts, Debug, Recycle Bin, Prefetch, or similar paths), and the child process shows little or no command-line variation from the image path or name.
+  That pattern is consistent with adversaries using trusted .NET binaries as a proxy to run code while hiding execution behind script parents in low-trust folders, behavior associated with techniques such as signed binary proxy execution.
+references:
+- https://www.joesandbox.com/analysis/1817558/0/pdfexecutive
+- https://www.broadcom.com/support/security-center/protection-bulletin/vip-keylogger-spreads-via-multi-org-impersonation-campaign
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.vipkeylogger
+tags:
+- attack.t1218
+date: '2026-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+  from datamodel=Endpoint.Processes where
+
+  Processes.process_name IN (
+      "aspnet_compiler.exe",
+      "InstallUtil.exe",
+      "msbuild.exe",
+      "regasm.exe",
+      "vbc.exe",
+  )
+  Processes.parent_process IN (
+      "*.bat*",
+      "*.cmd*",
+      "*.html*",
+      "*.js*",
+      "*.ps1*",
+      "*.vbe*",
+      "*.vbs*"
+  )
+  Processes.parent_process IN (
+      ":\\Windows\\repair\\*",
+      "*:\\Microsoft\\Windows\\Libraries\\*",
+      "*:\\Temp\\*",
+      "*:\\Users\\Administrator\\Music\\*",
+      "*:\\Users\\Public\\*",
+      "*:\\Windows\\Cursors\\*",
+      "*:\\Windows\\debug\\*",
+      "*:\\Windows\\Fonts\\*",
+      "*:\\Windows\\INF\\*",
+      "*:\\Windows\\Media\\*",
+      "*:\\Windows\\Prefetch\\*",
+      "*:\\Windows\\Temp\\*",
+      "*\\AppData\\Local\\Temp\\*",
+      "*\\PerfLogs\\*",
+      "*Recycle.bin*"
+    )
+    by Processes.action Processes.dest Processes.original_file_name Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+
+    | where (isnull(Processes.process) OR Processes.process=Processes.process_path OR Processes.process=Processes.process_name)
+
+    | `drop_dm_object_name(Processes)`
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_proxy_execution_of__net_utilities_via_scripts_filter`
+splunk_rule_id: eb59cf01-1874-4d16-b7e4-54a6eb9b3118
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image:
+    - aspnet_compiler.exe
+    - InstallUtil.exe
+    - msbuild.exe
+    - regasm.exe
+    - vbc.exe
+  selection_1:
+    ParentCommandLine|contains:
+    - .bat
+    - .cmd
+    - .html
+    - .js
+    - .ps1
+    - .vbe
+    - .vbs
+  selection_2:
+    ParentCommandLine:
+    - :\Windows\repair\*
+    - '*:\Microsoft\Windows\Libraries\*'
+    - '*:\Temp\*'
+    - '*:\Users\Administrator\Music\*'
+    - '*:\Users\Public\*'
+    - '*:\Windows\Cursors\*'
+    - '*:\Windows\debug\*'
+    - '*:\Windows\Fonts\*'
+    - '*:\Windows\INF\*'
+    - '*:\Windows\Media\*'
+    - '*:\Windows\Prefetch\*'
+    - '*:\Windows\Temp\*'
+    - '*\AppData\Local\Temp\*'
+    - '*\PerfLogs\*'
+    - '*Recycle.bin*'
+  condition: selection_0 and selection_1 and selection_2

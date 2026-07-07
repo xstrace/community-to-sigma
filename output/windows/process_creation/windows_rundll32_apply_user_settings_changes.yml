@@ -1,0 +1,50 @@
+title: Windows Rundll32 Apply User Settings Changes
+id: b9fb8d97-dbc9-4a09-804c-ff0e3862bb2d
+status: stable
+level: medium
+author: Teoderick Contreras, Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects the execution of rundll32 with a call to the user32 DLL, specifically the UpdatePerUserSystemParameters function.
+  This function is responsible for updating system parameters, such as desktop backgrounds, display settings, and visual themes.
+  It leverages data from Endpoint Detection and Response (EDR) agents, focusing on command-line executions.
+  This activity can be significant as it is an uncommon way to apply settings. It was also observed as part of Rhysida Ransomware activity.
+  If confirmed malicious, this could allow an attacker to disguise activities or make unauthorized system changes, potentially leading to persistent unauthorized access.
+references:
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-319a
+- https://www.cisa.gov/sites/default/files/publications/aa22-264a-iranian-cyber-actors-conduct-cyber-operations-against-the-government-of-albania.pdf
+- https://cdn.pathfactory.com/assets/10555/contents/400686/13f4424c-05b4-46db-bb9c-6bf9b5436ec4.pdf
+tags:
+- attack.t1218.011
+date: '2021-08-09'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  from datamodel=Endpoint.Processes where
+
+  `process_rundll32`
+  Processes.process = "*user32.dll*"
+  Processes.process = "*UpdatePerUserSystemParameters*"
+
+  by Processes.action Processes.dest Processes.original_file_name Processes.parent_process
+     Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id
+     Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec
+     Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level
+     Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_rundll32_apply_user_settings_changes_filter`
+splunk_rule_id: b9fb8d97-dbc9-4a09-804c-ff0e3862bb2d
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: user32.dll
+  selection_1:
+    CommandLine|contains: UpdatePerUserSystemParameters
+  condition: selection_0 and selection_1

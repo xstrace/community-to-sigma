@@ -1,0 +1,28 @@
+title: O365 New Email Forwarding Rule Created
+id: 68469fd0-1315-44ba-b7e4-e92847bb76d6
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies the creation of new email forwarding rules in an Office 365 environment. It detects events logged under New-InboxRule and Set-InboxRule operations within the
+  o365_management_activity data source, focusing on parameters like ForwardTo, ForwardAsAttachmentTo, and RedirectTo. This activity is significant as unauthorized email forwarding can lead to data exfiltration
+  and unauthorized access to sensitive information. If confirmed malicious, attackers could intercept and redirect emails, potentially compromising confidential communications and leading to data breaches.
+references:
+- https://attack.mitre.org/techniques/T1114/003/
+tags:
+- attack.t1114.003
+date: '2024-04-17'
+original_spl: '`o365_management_activity` (Operation=New-InboxRule OR Operation=set-InboxRule) | eval match1=mvfind(''Parameters{}.Name'', "ForwardTo") | eval match2=mvfind(''Parameters{}.Name'', "ForwardAsAttachmentTo")
+  | eval match3=mvfind(''Parameters{}.Name'', "RedirectTo") | where match1>= 0 OR match2>= 0 OR match3>= 0 | eval ForwardTo=coalesce(ForwardTo, ForwardAsAttachmentTo, RedirectTo) | fillnull | stats count
+  min(_time) as firstTime max(_time) as lastTime values(Name) as Name by signature dest user src vendor_account vendor_product ForwardTo | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `o365_new_email_forwarding_rule_created_filter`'
+splunk_rule_id: 68469fd0-1315-44ba-b7e4-e92847bb76d6
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Operation: New-InboxRule
+  selection_1:
+    Operation: set-InboxRule
+  condition: selection_0 and selection_1

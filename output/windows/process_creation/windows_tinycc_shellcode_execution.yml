@@ -1,0 +1,63 @@
+title: Windows TinyCC Shellcode Execution
+id: fdb6774e-e465-4912-86e3-63cf9ab91491
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: |
+  Detects abuse of Tiny-C-Compiler (TinyCC) for shellcode execution, where tcc.exe is renamed to masquerade as svchost.exe and used to compile and execute C source files containing shellcode. This technique was observed in the Lotus Blossom Chrysalis backdoor campaign, where attackers renamed tcc.exe to svchost.exe and executed conf.c containing Metasploit block_api shellcode with the flags -nostdlib -run.
+  TinyCC is a legitimate C compiler, but its ability to compile and execute code on-the-fly makes it attractive to attackers seeking to evade detection. The combination of a renamed compiler binary executing from non-standard locations with suspicious flags is a strong indicator of malicious activity.
+references:
+- https://attack.mitre.org/techniques/T1059/003/
+- https://attack.mitre.org/techniques/T1027/
+- https://www.rapid7.com/blog/post/tr-chrysalis-backdoor-dive-into-lotus-blossoms-toolkit/
+- https://github.com/phoenixthrush/Tiny-C-Compiler
+tags:
+- attack.t1059.003
+- attack.t1027
+- attack.t1036
+date: '2026-03-16'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime
+    from datamodel=Endpoint.Processes where
+    Processes.process_name IN ("svchost.exe", "tcc.exe")
+    Processes.process="* -nostdlib*"
+    Processes.process="* -run*"
+    Processes.process IN ("*.c", "*conf.c*")
+    NOT Processes.process_path IN (
+      "*:\\Windows\\System32\\*",
+      "*:\\Windows\\SysWOW64\\*"
+    )
+    by Processes.action Processes.dest Processes.user Processes.process Processes.parent_process
+       Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name
+       Processes.parent_process_path Processes.process_name Processes.process_id
+       Processes.process_exec Processes.process_guid Processes.process_hash
+       Processes.process_integrity_level Processes.process_path
+       Processes.original_file_name Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_tinycc_shellcode_execution_filter`
+splunk_rule_id: fdb6774e-e465-4912-86e3-63cf9ab91491
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image:
+    - svchost.exe
+    - tcc.exe
+  selection_1:
+    CommandLine|contains: ' -nostdlib'
+  selection_2:
+    CommandLine|contains: ' -run'
+  selection_3:
+    CommandLine:
+    - '*.c'
+    - '*conf.c*'
+  filter_4:
+    Image:
+    - '*:\Windows\System32\*'
+    - '*:\Windows\SysWOW64\*'
+  condition: (selection_0 and selection_1 and selection_2 and selection_3) and not (filter_4)

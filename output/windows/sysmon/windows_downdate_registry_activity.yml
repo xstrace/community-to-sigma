@@ -1,0 +1,57 @@
+title: Windows Downdate Registry Activity
+id: d984fca1-ba3a-4f89-aa58-800e235fdf53
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects the setting of a pending.xml file associated with the Windows Downdate attack which forces a Windows downgrade to enable exploitation.
+  Looks for uses of a pending.xml outside of typical locations.
+references:
+- https://www.safebreach.com/blog/downgrade-attacks-using-windows-updates/
+tags:
+- attack.t1112
+- attack.t1689
+date: '2022-09-08'
+original_spl: |-
+  `sysmon`
+  EventID IN (
+      12,
+      13,
+      14
+  )
+  TargetObject IN (
+      "*PoqexecCmdline",
+      "*COMPONENTS\\PendingXmlIdentifier"
+  )
+  NOT ProcessPath="*:\\Windows\\WinSxS\\*"
+
+  | fillnull
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+
+    by EventID TargetObject ProcessPath Computer action process_guid process_id
+       registry_hive registry_path registry_key_name registry_value_data registry_value_name
+       status user vendor_product
+
+  | rename Computer as dest
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_downdate_registry_activity_filter`
+splunk_rule_id: d984fca1-ba3a-4f89-aa58-800e235fdf53
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID:
+    - 12
+    - 13
+    - 14
+  selection_1:
+    TargetObject|endswith:
+    - PoqexecCmdline
+    - COMPONENTS\PendingXmlIdentifier
+  filter_2:
+    ProcessPath|contains: '*:\Windows\WinSxS\*'
+  condition: (selection_0 and selection_1) and not (filter_2)

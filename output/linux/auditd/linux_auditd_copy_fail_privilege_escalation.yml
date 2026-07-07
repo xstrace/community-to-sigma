@@ -1,0 +1,102 @@
+title: Linux Auditd Copy Fail Privilege Escalation
+id: dd16294f-44d2-40b4-a869-542c0b85113a
+status: stable
+level: medium
+author: Raven Tait, Nasreddine Bencherchali, Splunk
+description: |-
+  Detects the exploitation pattern associated with Copy Fail.
+  Copy Fail (CVE-2026-31431) is a logic bug in the Linux kernel's authentication cryptographic template.
+  It lets an unprivileged local user trigger a deterministic, controlled 4-byte write into the page cache of any readable file on the system.
+  A single 732-byte Python script can edit a setuid binary and obtain root on essentially all Linux distributions shipped since 2017.
+  This search relies on the auditd configuration linked in the references section. If you are using a custom configuration, make sure the Key names are the same or adapt the search accordingly.
+references:
+- https://xint.io/blog/copy-fail-linux-distributions
+- https://github.com/theori-io/copy-fail-CVE-2026-31431
+- https://github.com/Neo23x0/auditd/blob/master/audit.rules
+tags:
+- attack.t1068
+date: '2026-05-04'
+original_spl: |-
+  `linux_auditd`
+  type=SYSCALL
+  key IN (
+      "af_alg",
+      "process_creation",
+      "splice_user"
+  )
+  | eval setuid_binary = case(
+      name IN (
+          "/usr/bin/chfn",
+          "/usr/bin/chsh",
+          "/usr/bin/fusermount3",
+          "/usr/bin/gpasswd",
+          "/usr/bin/mount",
+          "/usr/bin/newgrp",
+          "/usr/bin/passwd",
+          "/usr/bin/su",
+          "/usr/bin/sudo",
+          "/usr/bin/umount",
+          "/usr/lib/dbus-1.0/dbus-daemon-launch-helper",
+          "/usr/lib/landscape/apt-update",
+          "/usr/lib/openssh/ssh-keysign",
+          "/usr/lib/polkit-1/polkit-agent-helper-1"
+      ), name,
+      exe IN (
+          "/usr/bin/chfn",
+          "/usr/bin/chsh",
+          "/usr/bin/fusermount3",
+          "/usr/bin/gpasswd",
+          "/usr/bin/mount",
+          "/usr/bin/newgrp",
+          "/usr/bin/passwd",
+          "/usr/bin/su",
+          "/usr/bin/sudo",
+          "/usr/bin/umount",
+          "/usr/lib/dbus-1.0/dbus-daemon-launch-helper",
+          "/usr/lib/landscape/apt-update",
+          "/usr/lib/openssh/ssh-keysign",
+          "/usr/lib/polkit-1/polkit-agent-helper-1"
+      ), exe,
+      true(), null()
+  )
+  | eval indicator = case(
+      key="af_alg",        "AF_ALG socket",
+      key="splice_user",   "splice syscall",
+      isnotnull(setuid_binary), "setuid_exec:" . setuid_binary,
+      true(),              null()
+  )
+  | where isnotnull(indicator)
+  | stats
+      dc(indicator) as unique_signals
+      max(_time) as lastTime
+      min(_time) as firstTime
+      values(comm) as comm
+      values(exe) as exe
+      values(name) as name
+      values(host) as dest
+      values(indicator) as signals
+      values(setuid_binary) as setuid_binaries
+      values(pid) as pid
+      values(ppid) as ppid
+      values(uid) as uid
+      by auid
+  | where unique_signals >= 3
+  | eval risk_score_factor = unique_signals * 25
+  | sort - risk_score_factor
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_auditd_copy_fail_privilege_escalation_filter`
+splunk_rule_id: dd16294f-44d2-40b4-a869-542c0b85113a
+splunk_rule_type: TTP
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    type: SYSCALL
+  selection_1:
+    key:
+    - af_alg
+    - process_creation
+    - splice_user
+  condition: selection_0 and selection_1

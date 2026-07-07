@@ -1,0 +1,31 @@
+title: Windows Process With NamedPipe CommandLine
+id: e64399d4-94a8-11ec-a9da-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects processes with command lines containing named pipes. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process command-line executions.
+  This behavior is significant as it is often used by adversaries, such as those behind the Olympic Destroyer malware, for inter-process communication post-injection, aiding in defense evasion and privilege
+  escalation. If confirmed malicious, this activity could allow attackers to maintain persistence, escalate privileges, or evade defenses, potentially leading to further compromise of the system.
+references:
+- https://blog.talosintelligence.com/2018/02/olympic-destroyer.html
+tags:
+- attack.t1055
+date: '2022-02-23'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime from datamodel=Endpoint.Processes where Processes.process = "*\\\\.\\pipe\\*" NOT Processes.process_path
+  IN ("C:\\Program Files\\*", "C:\\Program Files (x86)\\*") by Processes.action Processes.dest Processes.original_file_name Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+  Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level
+  Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product | `drop_dm_object_name(Processes)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_process_with_namedpipe_commandline_filter`'
+splunk_rule_id: e64399d4-94a8-11ec-a9da-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: \\.\pipe\
+  filter_1:
+    Image:
+    - C:\Program Files\*
+    - C:\Program Files (x86)\*
+  condition: (selection_0) and not (filter_1)

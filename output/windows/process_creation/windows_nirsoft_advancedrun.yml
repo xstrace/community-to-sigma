@@ -1,0 +1,51 @@
+title: Windows NirSoft AdvancedRun
+id: bb4f3090-7ae4-11ec-897f-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of AdvancedRun.exe, a tool with capabilities similar to remote administration programs like PsExec. It identifies the process by its name or original
+  file name and flags common command-line arguments. This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on process and command-line telemetry. Monitoring this activity
+  is crucial as AdvancedRun can be used for remote code execution and configuration-based automation. If malicious, this could allow attackers to execute arbitrary commands, escalate privileges, or maintain
+  persistence within the environment.
+references:
+- http://www.nirsoft.net/utils/advanced_run.html
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+tags:
+- attack.t1588.002
+date: '2022-01-24'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name=advancedrun.exe
+          OR
+          Processes.original_file_name=advancedrun.exe
+      )
+      Processes.process IN ("*EXEFilename*","*/cfg*","*RunAs*", "*WindowState*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_nirsoft_advancedrun_filter`
+splunk_rule_id: bb4f3090-7ae4-11ec-897f-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: advancedrun.exe
+  selection_1:
+    OriginalFileName: advancedrun.exe
+  selection_2:
+    CommandLine|contains:
+    - EXEFilename
+    - /cfg
+    - RunAs
+    - WindowState
+  condition: selection_0 and selection_1 and selection_2

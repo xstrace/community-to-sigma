@@ -1,0 +1,56 @@
+title: Windows New Service Security Descriptor Set Via Sc.EXE
+id: cde00c31-042a-4307-bf70-25e471da56e9
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Michael Haag, Splunk
+description: |-
+  The following analytic detects changes in a service security descriptor.
+  It leverages data from Endpoint Detection and Response (EDR) agents, specifically searching for any process execution involving the "sc.exe" binary with the "sdset" flag targeting any service.
+  This behavior can be legitimate, such as when a user or administrator is configuring a service's security settings.
+  Investigate appropariate services to determine if the behavior is malicious.
+  If confirmed malicious, this could allow an attacker to escalate their privileges, blind defenses and more.
+references:
+- https://www.sans.org/blog/red-team-tactics-hiding-windows-services/
+- https://news.sophos.com/wp-content/uploads/2020/06/glupteba_final-1.pdf
+- https://attack.mitre.org/techniques/T1564/
+tags:
+- attack.t1564
+date: '2022-06-17'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+          values(Processes.process) as process
+
+  FROM datamodel=Endpoint.Processes WHERE
+  (
+      Processes.process_name=sc.exe
+      OR
+      Processes.original_file_name=sc.exe
+  )
+  Processes.process="*sdset *"
+  BY Processes.action Processes.dest Processes.original_file_name
+     Processes.parent_process Processes.parent_process_exec
+     Processes.parent_process_guid Processes.parent_process_id
+     Processes.parent_process_name Processes.parent_process_path
+     Processes.process Processes.process_exec Processes.process_guid
+     Processes.process_hash Processes.process_id Processes.process_integrity_level
+     Processes.process_name Processes.process_path Processes.user
+     Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_new_service_security_descriptor_set_via_sc_exe_filter`
+splunk_rule_id: cde00c31-042a-4307-bf70-25e471da56e9
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: sc.exe
+  selection_1:
+    OriginalFileName: sc.exe
+  selection_2:
+    CommandLine|contains: 'sdset '
+  condition: selection_0 and selection_1 and selection_2

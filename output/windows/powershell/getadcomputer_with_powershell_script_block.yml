@@ -1,0 +1,36 @@
+title: GetAdComputer with PowerShell Script Block
+id: a9a1da02-8e27-4bf7-a348-f4389c9da487
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of the `Get-AdComputer` PowerShell commandlet using PowerShell Script Block Logging (EventCode=4104). This detection leverages script block text
+  to identify when this commandlet is run. The `Get-AdComputer` commandlet is significant as it can be used by adversaries to enumerate all domain computers, aiding in situational awareness and Active Directory
+  discovery. If confirmed malicious, this activity could allow attackers to map the network, identify targets, and plan further attacks, potentially leading to unauthorized access and data exfiltration.
+references:
+- https://attack.mitre.org/techniques/T1018/
+- https://docs.microsoft.com/en-us/powershell/module/activedirectory/get-adgroup?view=windowsserver2019-ps
+tags:
+- attack.t1018
+date: '2021-09-01'
+original_spl: |-
+  `powershell` EventCode=4104 (ScriptBlockText = "*Get-AdComputer*")
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest signature signature_id
+         user_id vendor_product EventID
+         Guid Opcode Name
+         Path ProcessID ScriptBlockId
+         ScriptBlockText
+    | `security_content_ctime(firstTime)`
+    | `getadcomputer_with_powershell_script_block_filter`
+splunk_rule_id: a9a1da02-8e27-4bf7-a348-f4389c9da487
+splunk_rule_type: Hunting
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: Get-AdComputer
+  condition: selection_0 and selection_1

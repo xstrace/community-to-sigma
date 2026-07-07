@@ -1,0 +1,46 @@
+title: Cisco Network Interface Modifications
+id: 61ae09c2-079e-44b1-8be0-74e35c5a679e
+status: stable
+level: medium
+author: Bhavin Patel, Michael Haag, Splunk
+description: This analytic detects the creation or modification of network interfaces on Cisco devices, which could indicate an attacker establishing persistence or preparing for lateral movement. After
+  gaining initial access to network devices, threat actors like Static Tundra often create new interfaces (particularly loopback interfaces) to establish covert communication channels or maintain persistence.
+  This detection specifically looks for the configuration of new interfaces, interface state changes, and the assignment of IP addresses to interfaces. These activities are particularly concerning when
+  they involve unusual interface names or descriptions containing suspicious terms.
+references:
+- https://blog.talosintelligence.com/static-tundra/
+- https://tools.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-20180328-smi2
+- https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/interface/command/ir-cr-book/ir-i1.html#wp1389942834
+tags:
+- attack.t1556
+- attack.t1021
+- attack.t1133
+date: '2025-08-21'
+original_spl: |-
+  | tstats `security_content_summariesonly` count values(All_Changes.command) as command min(_time) as firstTime max(_time) as lastTime FROM datamodel=Change.All_Changes
+    WHERE (
+          (All_Changes.command="*interface*")
+          OR
+          (All_Changes.command="*LINEPROTO-5-UPDOWN*")
+          OR
+          (All_Changes.command="*ip address*")
+      )
+    BY All_Changes.dvc All_Changes.user
+  | `drop_dm_object_name("All_Changes")`
+  | rename dvc as dest
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_network_interface_modifications_filter`
+splunk_rule_id: 61ae09c2-079e-44b1-8be0-74e35c5a679e
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: cisco
+detection:
+  selection_0:
+    CommandLine|contains: interface
+  selection_1:
+    CommandLine|contains: LINEPROTO-5-UPDOWN
+  selection_2:
+    CommandLine|contains: ip address
+  condition: selection_0 and selection_1 and selection_2

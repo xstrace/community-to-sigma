@@ -1,0 +1,30 @@
+title: Windows Impair Defense Disable Win Defender Report Infection
+id: 201946c6-b1d5-42bb-a7e0-5f7123f47fc4
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects modifications to the Windows registry that disable Windows Defender's infection reporting. It leverages data from the Endpoint.Registry datamodel, specifically
+  monitoring changes to the "DontReportInfectionInformation" registry key. This activity is significant because it can prevent Windows Defender from reporting detailed threat information to Microsoft, potentially
+  allowing malware to evade detection. If confirmed malicious, this action could enable attackers to bypass security measures, maintain persistence, and avoid detection, leading to prolonged unauthorized
+  access and potential data breaches.
+references:
+- https://x.com/malmoeb/status/1742604217989415386?s=20
+- https://github.com/undergroundwires/privacy.sexy
+tags:
+- attack.t1685
+date: '2024-01-30'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry where Registry.registry_path= "*\\Microsoft\\MRT\\DontReportInfectionInformation"
+  Registry.registry_value_data="0x00000001" by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `windows_impair_defense_disable_win_defender_report_infection_filter`'
+splunk_rule_id: 201946c6-b1d5-42bb-a7e0-5f7123f47fc4
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \Microsoft\MRT\DontReportInfectionInformation
+  selection_1:
+    Details: '0x00000001'
+  condition: selection_0 and selection_1

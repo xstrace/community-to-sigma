@@ -1,0 +1,33 @@
+title: Windows App Layer Protocol Wermgr Connect To NamedPipe
+id: 2f3a4092-548b-421c-9caa-84918e1787ef
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the wermgr.exe process creating or connecting to a named pipe. It leverages Sysmon EventCodes 17 and 18 to identify these actions. This activity is significant
+  because wermgr.exe, a legitimate Windows OS Problem Reporting application, is often abused by malware such as Trickbot and Qakbot to execute malicious code. If confirmed malicious, this behavior could
+  indicate that an attacker has injected code into wermgr.exe, potentially allowing them to communicate covertly, escalate privileges, or persist within the environment.
+references:
+- https://strontic.github.io/xcyclopedia/library/wermgr.exe-0F652BF7ADA772981E8AAB0D108FCC92.html
+- https://www.trellix.com/en-us/about/newsroom/stories/research/demystifying-qbot-malware.html
+tags:
+- attack.t1071
+date: '2022-10-28'
+original_spl: '`sysmon` EventCode IN (17, 18) Image= "*\\wermgr.exe" EventType IN ( "CreatePipe", "ConnectPipe") | stats  min(_time) as firstTime max(_time) as lastTime count by dest dvc pipe_name process_exec
+  process_guid process_id process_name process_path signature signature_id user_id vendor_product Image PipeName | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_app_layer_protocol_wermgr_connect_to_namedpipe_filter`'
+splunk_rule_id: 2f3a4092-548b-421c-9caa-84918e1787ef
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID:
+    - 17
+    - 18
+  selection_1:
+    Image|endswith: \wermgr.exe
+  selection_2:
+    EventType:
+    - CreatePipe
+    - ConnectPipe
+  condition: selection_0 and selection_1 and selection_2

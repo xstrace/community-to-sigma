@@ -1,0 +1,33 @@
+title: Crowdstrike Multiple LOW Severity Alerts
+id: 5c2c02d8-bee7-4f5c-9dea-e3e1012daddb
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects multiple CrowdStrike LOW severity alerts, indicating a series of minor suspicious activities or policy violations. These alerts are not immediately critical but
+  should be reviewed to prevent potential threats. They often highlight unusual behavior or low-level risks that, if left unchecked, could escalate into more significant security issues. Regular monitoring
+  and analysis of these alerts are essential for maintaining robust security.
+references:
+- https://www.crowdstrike.com/wp-content/uploads/2022/12/CrowdStrike-Falcon-Event-Streams-Add-on-Guide-v3.pdf
+tags:
+- attack.t1110
+date: '2024-07-31'
+original_spl: |-
+  `crowdstrike_stream` tag=alert event.SeverityName= LOW
+    | rename event.EndpointIp as src_ip, event.EndpointName as src_host, event.UserName as user, event.IncidentDescription as description, event.IncidentType as type, event.NumbersOfAlerts as count_alerts, event.SeverityName as severity
+    | stats dc(type) as type_count, values(user) as users, values(description) as descriptions, values(type) as types, values(severity) count min(_time) as firstTime max(_time) as lastTime
+      BY src_ip src_host
+    | where type_count >= 3
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `crowdstrike_multiple_low_severity_alerts_filter`
+splunk_rule_id: 5c2c02d8-bee7-4f5c-9dea-e3e1012daddb
+splunk_rule_type: Anomaly
+logsource:
+  product: crowdstrike
+  service: crowdstrike
+detection:
+  selection_0:
+    tag: alert
+  selection_1:
+    event.SeverityName: LOW
+  condition: selection_0 and selection_1

@@ -1,0 +1,48 @@
+title: Linux Possible Append Command To Profile Config File
+id: 9c94732a-61af-11ec-91e3-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects suspicious command-lines that modify user profile files to automatically execute scripts or executables upon system reboot. It leverages data from Endpoint Detection
+  and Response (EDR) agents, focusing on command-line executions involving profile files like ~/.bashrc and /etc/profile. This activity is significant as it indicates potential persistence mechanisms used
+  by adversaries to maintain access to compromised hosts. If confirmed malicious, this could allow attackers to execute arbitrary code upon reboot, leading to persistent control over the system and potential
+  further exploitation.
+references:
+- https://unix.stackexchange.com/questions/129143/what-is-the-purpose-of-bashrc-and-how-does-it-work
+- https://attack.mitre.org/techniques/T1546/004/
+tags:
+- attack.t1546.004
+date: '2022-01-11'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process = "*echo*"
+      AND
+      Processes.process IN("*~/.bashrc", "*~/.bash_profile", "*/etc/profile", "~/.bash_login", "*~/.profile", "~/.bash_logout")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_possible_append_command_to_profile_config_file_filter`
+splunk_rule_id: 9c94732a-61af-11ec-91e3-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: echo
+  selection_1:
+    CommandLine|endswith:
+    - ~/.bashrc
+    - ~/.bash_profile
+    - /etc/profile
+    - ~/.bash_login
+    - ~/.profile
+    - ~/.bash_logout
+  condition: selection_0 and selection_1

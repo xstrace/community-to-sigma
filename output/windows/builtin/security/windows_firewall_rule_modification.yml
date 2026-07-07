@@ -1,0 +1,30 @@
+title: Windows Firewall Rule Modification
+id: fe7efbf7-5f82-44b9-8c33-316189ab2393
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: This detection identifies instances where a Windows Firewall rule has been modified, which may indicate an attempt to alter security policies. Unauthorized modifications can weaken firewall
+  protections, allowing malicious traffic or preventing legitimate communications. The event logs details such as the modified rule name, protocol, ports, application path, and the user responsible for
+  the change. Security teams should monitor unexpected modifications, correlate them with related events, and investigate anomalies to prevent unauthorized access and maintain network security integrity.
+references:
+- https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4947
+tags:
+- attack.t1686
+date: '2025-03-21'
+original_spl: |-
+  `wineventlog_security` EventCode=4947
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY RuleName signature subject
+         status dest ProcessID
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_firewall_rule_modification_filter`
+splunk_rule_id: fe7efbf7-5f82-44b9-8c33-316189ab2393
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4947
+  condition: selection_0

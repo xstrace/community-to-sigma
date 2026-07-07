@@ -1,0 +1,32 @@
+title: Windows AppX Deployment Package Installation Success
+id: 1234abcd-5678-90ef-1234-56789abcdef0
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: This analytic detects successful MSIX/AppX package installations on Windows systems by monitoring EventID 854 in the Microsoft-Windows-AppXDeployment-Server/Operational log. This event is generated
+  when an MSIX/AppX package has been successfully installed on a system. While most package installations are legitimate, monitoring these events can help identify unauthorized or suspicious package installations,
+  especially when correlated with other events such as unsigned package installations (EventID 603 with Flags=8388608) or full trust package installations (EventID 400 with HasFullTrust=true).
+references:
+- https://learn.microsoft.com/en-us/windows/win32/appxpkg/troubleshooting
+- https://www.appdeploynews.com/packaging-types/msix/troubleshooting-an-msix-package/
+- https://www.advancedinstaller.com/msix-installation-or-launching-errors-and-fixes.html
+tags:
+- attack.t1204.002
+date: '2025-08-18'
+original_spl: |-
+  `wineventlog_appxdeploymentserver` EventCode=854
+    | stats count min(_time) as firstTime max(_time) as lastTime values(Path) as PackagePath
+      BY dvc EventCode user_id
+    | rename dvc as dest
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_appx_deployment_package_installation_success_filter`
+splunk_rule_id: 1234abcd-5678-90ef-1234-56789abcdef0
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    EventID: 854
+  condition: selection_0

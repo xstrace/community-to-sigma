@@ -1,0 +1,51 @@
+title: Windows Findstr GPP Discovery
+id: 1631ac2d-f2a9-42fa-8a59-d6e210d472f5
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the use of the findstr command to search for unsecured credentials in Group Policy Preferences (GPP). It leverages data from Endpoint Detection and Response (EDR)
+  agents, focusing on command-line executions involving findstr.exe with references to SYSVOL and cpassword. This activity is significant because it indicates an attempt to locate and potentially decrypt
+  embedded credentials in GPP, which could lead to unauthorized access. If confirmed malicious, this could allow an attacker to escalate privileges or gain access to sensitive systems and data within the
+  domain.
+references:
+- https://attack.mitre.org/techniques/T1552/006/
+- https://pentestlab.blog/2017/03/20/group-policy-preferences/
+- https://adsecurity.org/?p=2288
+- https://www.hackingarticles.in/credential-dumping-group-policy-preferences-gpp/
+- https://support.microsoft.com/en-us/topic/ms14-025-vulnerability-in-group-policy-preferences-could-allow-elevation-of-privilege-may-13-2014-60734e15-af79-26ca-ea53-8cd617073c30
+tags:
+- attack.t1552.006
+date: '2023-03-17'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE (
+          Processes.process_name=findstr.exe
+          AND
+          Processes.process=*sysvol*
+          AND
+          Processes.process=*cpassword*
+      )
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_findstr_gpp_discovery_filter`
+splunk_rule_id: 1631ac2d-f2a9-42fa-8a59-d6e210d472f5
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: findstr.exe
+  selection_1:
+    CommandLine|contains: sysvol
+  selection_2:
+    CommandLine|contains: cpassword
+  condition: selection_0 and selection_1 and selection_2

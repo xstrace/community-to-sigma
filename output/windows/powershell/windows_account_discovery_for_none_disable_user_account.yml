@@ -1,0 +1,44 @@
+title: Windows Account Discovery for None Disable User Account
+id: eddbf5ba-b89e-47ca-995e-2d259804e55e
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of the PowerView PowerShell cmdlet Get-NetUser with the UACFilter parameter set to NOT_ACCOUNTDISABLE, indicating an attempt to enumerate Active
+  Directory user accounts that are not disabled. This detection leverages PowerShell Script Block Logging (EventCode 4104) to identify the specific script block text. Monitoring this activity is significant
+  as it may indicate reconnaissance efforts by an attacker to identify active user accounts for further exploitation. If confirmed malicious, this activity could lead to unauthorized access, privilege escalation,
+  or lateral movement within the network.
+references:
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-347a
+- https://powersploit.readthedocs.io/en/stable/Recon/README/
+- https://book.hacktricks.xyz/windows-hardening/basic-powershell-for-pentesters/powerview
+- https://atomicredteam.io/discovery/T1087.001/
+tags:
+- attack.t1087.001
+date: '2024-01-10'
+original_spl: |-
+  `powershell` EventCode=4104  ScriptBlockText = "*Get-NetUser*" ScriptBlockText = "*NOT_ACCOUNTDISABLE*" ScriptBlockText = "*-UACFilter*"
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest signature signature_id
+         user_id vendor_product EventID
+         Guid Opcode Name
+         Path ProcessID ScriptBlockId
+         ScriptBlockText
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_account_discovery_for_none_disable_user_account_filter`
+splunk_rule_id: eddbf5ba-b89e-47ca-995e-2d259804e55e
+splunk_rule_type: Hunting
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: Get-NetUser
+  selection_2:
+    ScriptBlockText|contains: NOT_ACCOUNTDISABLE
+  selection_3:
+    ScriptBlockText|contains: -UACFilter
+  condition: selection_0 and selection_1 and selection_2 and selection_3

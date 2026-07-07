@@ -1,0 +1,59 @@
+title: Rundll32 with no Command Line Arguments with Network
+id: 35307032-a12d-11eb-835f-acde48001122
+status: stable
+level: medium
+author: Steven Dick, Michael Haag, Splunk
+description: The following analytic detects the execution of rundll32.exe without command line arguments, followed by a network connection. This behavior is identified using Endpoint Detection and Response
+  (EDR) telemetry and network traffic data. It is significant because rundll32.exe typically requires arguments to function, and its absence is often associated with malicious activity, such as Cobalt Strike.
+  If confirmed malicious, this activity could indicate an attempt to establish unauthorized network connections, potentially leading to data exfiltration or further compromise of the system.
+references:
+- https://attack.mitre.org/techniques/T1218/011/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218.011/T1218.011.md
+- https://lolbas-project.github.io/lolbas/Binaries/Rundll32/
+- https://bohops.com/2018/02/26/leveraging-inf-sct-fetch-execute-techniques-for-bypass-evasion-persistence/
+tags:
+- attack.t1218.011
+date: '2021-04-19'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time)
+  as lastTime FROM datamodel=Endpoint.Processes where
+  `process_rundll32`
+  Processes.process IN (
+    "*rundll32",
+    "*rundll32.exe",
+    "*rundll32.exe\""
+  )
+  by host _time span=1h Processes.action Processes.dest Processes.original_file_name
+     Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+     Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+     Processes.process Processes.process_exec Processes.process_guid Processes.process_hash
+     Processes.process_id Processes.process_integrity_level Processes.process_name Processes.process_path
+     Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | rename dest as src
+  | join host process_id
+  [
+    | tstats `security_content_summariesonly` count
+    FROM datamodel=Network_Traffic.All_Traffic where
+    All_Traffic.dest_port != 0
+    by host All_Traffic.action All_Traffic.app All_Traffic.bytes All_Traffic.bytes_in All_Traffic.bytes_out
+       All_Traffic.dest  All_Traffic.dest_ip All_Traffic.dest_port All_Traffic.dvc All_Traffic.protocol
+       All_Traffic.protocol_version All_Traffic.src All_Traffic.src_ip All_Traffic.src_port
+       All_Traffic.transport All_Traffic.user All_Traffic.vendor_product All_Traffic.direction
+       All_Traffic.process_id
+    | `drop_dm_object_name(All_Traffic)`
+  ]
+  | `rundll32_with_no_command_line_arguments_with_network_filter`
+splunk_rule_id: 35307032-a12d-11eb-835f-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: all_traffic
+detection:
+  selection_0:
+    CommandLine|endswith:
+    - rundll32
+    - rundll32.exe
+    - rundll32.exe\"
+  condition: selection_0

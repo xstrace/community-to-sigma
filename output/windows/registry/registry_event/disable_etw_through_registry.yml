@@ -1,0 +1,29 @@
+title: Disable ETW Through Registry
+id: f0eacfa4-d33f-11eb-8f9d-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic detects modifications to the registry that disable the Event Tracing for Windows (ETW) feature. It leverages data from the Endpoint.Registry data model, specifically
+  monitoring changes to the registry path "*\\SOFTWARE\\Microsoft\\.NETFramework\\ETWEnabled" with a value set to "0x00000000". This activity is significant because disabling ETW can allow attackers to
+  evade detection mechanisms, making it harder for security tools to monitor malicious activities. If confirmed malicious, this could enable attackers to execute payloads with minimal alerts, impairing
+  defenses and potentially leading to further compromise of the system.
+references:
+- https://app.any.run/tasks/c0f98850-af65-4352-9746-fbebadee4f05/
+tags:
+- attack.t1685
+date: '2021-06-23'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry WHERE (Registry.registry_path= "*\\SOFTWARE\\Microsoft\\.NETFramework\\ETWEnabled"
+  Registry.registry_value_data = "0x00000000") by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | where isnotnull(registry_value_data) | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `disable_etw_through_registry_filter`'
+splunk_rule_id: f0eacfa4-d33f-11eb-8f9d-acde48001122
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \SOFTWARE\Microsoft\.NETFramework\ETWEnabled
+  selection_1:
+    Details: '0x00000000'
+  condition: selection_0 and selection_1

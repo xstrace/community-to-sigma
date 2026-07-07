@@ -1,0 +1,43 @@
+title: Powershell Remove Windows Defender Directory
+id: adf47620-79fa-11ec-b248-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |-
+  The following analytic detects a suspicious PowerShell command attempting to delete the Windows Defender directory.
+  It leverages PowerShell Script Block Logging to identify commands containing "rmdir" and targeting the Windows Defender path.
+  This activity is significant as it may indicate an attempt to disable or corrupt Windows Defender, a key security component.
+  If confirmed malicious, this action could allow an attacker to bypass endpoint protection, facilitating further malicious activities without detection.
+references:
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+tags:
+- attack.t1685
+date: '2022-01-20'
+original_spl: |-
+  `powershell`
+  EventCode=4104
+  ScriptBlockText = "*rmdir *"
+  ScriptBlockText = "*\\Microsoft\\Windows Defender*"
+  | fillnull
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+    by dest signature signature_id user_id
+       vendor_product EventID Guid Opcode
+       Name Path ProcessID
+       ScriptBlockId ScriptBlockText
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `powershell_remove_windows_defender_directory_filter`
+splunk_rule_id: adf47620-79fa-11ec-b248-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: 'rmdir '
+  selection_2:
+    ScriptBlockText|contains: \Microsoft\Windows Defender
+  condition: selection_0 and selection_1 and selection_2

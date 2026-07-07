@@ -1,0 +1,44 @@
+title: Windows PowerSploit GPP Discovery
+id: 0130a0df-83a1-4647-9011-841e950ff302
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of the Get-GPPPassword PowerShell cmdlet, which is used to search for unsecured credentials in Group Policy Preferences (GPP). This detection leverages
+  PowerShell Script Block Logging to identify specific script block text associated with this cmdlet. Monitoring this activity is crucial as it can indicate an attempt to retrieve and decrypt stored credentials
+  from SYSVOL, potentially leading to unauthorized access. If confirmed malicious, this activity could allow an attacker to escalate privileges or move laterally within the network by exploiting exposed
+  credentials.
+references:
+- https://attack.mitre.org/techniques/T1552/006/
+- https://pentestlab.blog/2017/03/20/group-policy-preferences/
+- https://adsecurity.org/?p=2288
+- https://www.hackingarticles.in/credential-dumping-group-policy-preferences-gpp/
+- https://adsecurity.org/?p=2288
+- https://support.microsoft.com/en-us/topic/ms14-025-vulnerability-in-group-policy-preferences-could-allow-elevation-of-privilege-may-13-2014-60734e15-af79-26ca-ea53-8cd617073c30
+tags:
+- attack.t1552.006
+date: '2023-03-16'
+original_spl: |-
+  `powershell` EventCode=4104  (ScriptBlockText=Get-GPPPassword OR ScriptBlockText=Get-CachedGPPPassword)
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest signature signature_id
+         user_id vendor_product EventID
+         Guid Opcode Name
+         Path ProcessID ScriptBlockId
+         ScriptBlockText
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_powersploit_gpp_discovery_filter`
+splunk_rule_id: 0130a0df-83a1-4647-9011-841e950ff302
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText: Get-GPPPassword
+  selection_2:
+    ScriptBlockText: Get-CachedGPPPassword
+  condition: selection_0 and selection_1 and selection_2

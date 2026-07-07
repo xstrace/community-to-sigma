@@ -1,0 +1,44 @@
+title: Linux Install Kernel Module Using Modprobe Utility
+id: 387b278a-6326-11ec-aa2c-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the installation of a Linux kernel module using the modprobe utility. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process
+  names and command-line executions. This activity is significant because installing a kernel module can indicate an attempt to deploy a rootkit or other malicious kernel-level code, potentially leading
+  to elevated privileges and bypassing security detections. If confirmed malicious, this could allow an attacker to gain persistent, high-level access to the system, compromising its integrity and security.
+references:
+- https://docs.fedoraproject.org/en-US/fedora/rawhide/system-administrators-guide/kernel-module-driver-configuration/Working_with_Kernel_Modules/
+- https://security.stackexchange.com/questions/175953/how-to-load-a-malicious-lkm-at-startup
+- https://0x00sec.org/t/kernel-rootkits-getting-your-hands-dirty/1485
+tags:
+- attack.t1547.006
+date: '2022-01-05'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name IN("kmod", "sudo")
+      AND
+      Processes.process = *modprobe*
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `linux_install_kernel_module_using_modprobe_utility_filter`
+splunk_rule_id: 387b278a-6326-11ec-aa2c-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image:
+    - kmod
+    - sudo
+  selection_1:
+    CommandLine|contains: modprobe
+  condition: selection_0 and selection_1

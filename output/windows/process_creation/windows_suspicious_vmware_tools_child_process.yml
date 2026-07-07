@@ -1,0 +1,61 @@
+title: Windows Suspicious VMWare Tools Child Process
+id: 1f77661a-0fe3-4b8d-a62c-7dff06906d26
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: The following analytic identifies child processes spawned by vmtoolsd.exe, the VMWare Tools service in Windows, which typically runs with SYSTEM privileges. This detection leverages data from
+  Endpoint Detection and Response (EDR) agents, focusing on process and parent process relationships. Monitoring this activity is crucial as it can indicate exploitation attempts, such as CVE-2023-20867.
+  If confirmed malicious, attackers could gain SYSTEM-level access, allowing them to execute arbitrary code, escalate privileges, and potentially compromise the entire system.
+references:
+- https://cloud.google.com/blog/topics/threat-intelligence/vmware-esxi-zero-day-bypass/
+tags:
+- attack.t1059
+date: '2022-02-09'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name=vmtoolsd.exe
+      AND
+      Processes.process_name IN ("powershell.exe","cmd.exe", "msbuild.exe", "microsoft.workflow.compiler.exe", "searchprotocolhost.exe", "scrcons.exe", "cscript.exe", "wscript.exe","bitsadmin.exe", "rundll32.exe", "wmic.exe", "mshta.exe", "certutil.exe", "schtasks.exe")
+      AND NOT
+      (Processes.process_name="cmd.exe" AND Processes.process IN ("*\\VMware Tools\\poweroff-vm-default.bat*","*\\VMware Tools\\poweron-vm-default.bat*"))
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_suspicious_vmware_tools_child_process_filter`
+splunk_rule_id: 1f77661a-0fe3-4b8d-a62c-7dff06906d26
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: vmtoolsd.exe
+  selection_1:
+    Image:
+    - powershell.exe
+    - cmd.exe
+    - msbuild.exe
+    - microsoft.workflow.compiler.exe
+    - searchprotocolhost.exe
+    - scrcons.exe
+    - cscript.exe
+    - wscript.exe
+    - bitsadmin.exe
+    - rundll32.exe
+    - wmic.exe
+    - mshta.exe
+    - certutil.exe
+    - schtasks.exe
+  filter_2:
+    Image: cmd.exe
+    CommandLine:
+    - '*\VMware Tools\poweroff-vm-default.bat*'
+    - '*\VMware Tools\poweron-vm-default.bat*'
+  condition: (selection_0 and selection_1) and not (filter_2)

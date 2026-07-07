@@ -1,0 +1,32 @@
+title: Windows Njrat Fileless Storage via Registry
+id: a5fffbbd-271f-4980-94ed-4fbf17f0af1c
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects suspicious registry modifications indicative of NjRat's fileless storage technique. It leverages the Endpoint.Registry data model to identify specific registry
+  paths and values commonly used by NjRat for keylogging and executing DLL plugins. This activity is significant as it helps evade traditional file-based detection systems, making it crucial for SOC analysts
+  to monitor. If confirmed malicious, this behavior could allow attackers to persist on the host, execute arbitrary code, and capture sensitive keystrokes, leading to potential data breaches and further
+  system compromise.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.njrat
+tags:
+- attack.t1027.011
+date: '2023-04-26'
+original_spl: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime from datamodel=Endpoint.Registry where Registry.registry_path="*\\[kl]" OR  Registry.registry_value_data
+  IN ("*[ENTER]*", "*[TAP]*", "*[Back]*") by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data
+  Registry.registry_value_name Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `drop_dm_object_name(Registry)` | `security_content_ctime(lastTime)` | `security_content_ctime(firstTime)`
+  | `windows_njrat_fileless_storage_via_registry_filter`'
+splunk_rule_id: a5fffbbd-271f-4980-94ed-4fbf17f0af1c
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|endswith: \[kl]
+  selection_1:
+    Details|contains:
+    - '[ENTER]'
+    - '[TAP]'
+    - '[Back]'
+  condition: selection_0 and selection_1

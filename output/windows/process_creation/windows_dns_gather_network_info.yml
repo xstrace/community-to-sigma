@@ -1,0 +1,39 @@
+title: Windows DNS Gather Network Info
+id: 347e0892-e8f3-4512-afda-dc0e3fa996f3
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the use of the dnscmd.exe command to enumerate DNS records. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process command-line
+  executions. This activity is significant as it may indicate an adversary gathering network information, a common precursor to more targeted attacks. If confirmed malicious, this behavior could enable
+  attackers to map the network, identify critical assets, and plan subsequent actions, potentially leading to data exfiltration or further compromise of the network.
+references:
+- https://cert.gov.ua/article/3718487
+- https://media.defense.gov/2023/May/24/2003229517/-1/-1/0/CSA_Living_off_the_Land.PDF
+tags:
+- attack.t1590.002
+date: '2023-04-12'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name = "dnscmd.exe" Processes.process = "* /enumrecords *"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name("Processes")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_dns_gather_network_info_filter`
+splunk_rule_id: 347e0892-e8f3-4512-afda-dc0e3fa996f3
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: dnscmd.exe
+  selection_1:
+    CommandLine|contains: ' /enumrecords '
+  condition: selection_0 and selection_1

@@ -1,0 +1,68 @@
+title: Linux Proxy Socks Curl
+id: bd596c22-ad1e-44fc-b242-817253ce8b08
+status: stable
+level: medium
+author: Michael Haag, Splunk, 0xC0FFEEEE, Github Community
+description: |-
+  The following analytic detects the use of the `curl` command with proxy-related arguments such as `-x`, `socks`, `--preproxy`, and `--proxy`.
+  This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on command-line executions and process details.
+  This activity is significant as it may indicate an adversary attempting to use a proxy to evade network monitoring and obscure their actions.
+  If confirmed malicious, this behavior could allow attackers to bypass security controls, making it difficult to track their activities and potentially leading to unauthorized data access or exfiltration.
+references:
+- https://www.offensive-security.com/metasploit-unleashed/proxytunnels/
+- https://curl.se/docs/manpage.html
+- https://en.wikipedia.org/wiki/SOCKS
+- https://oxylabs.io/blog/curl-with-proxy
+- https://reqbin.com/req/c-ddxflki5/curl-proxy-server#:~:text=To%20use%20a%20proxy%20with,be%20URL%20decoded%20by%20Curl.
+- https://gtfobins.github.io/gtfobins/curl/
+tags:
+- attack.t1090
+- attack.t1095
+date: '2022-07-29'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+  FROM datamodel=Endpoint.Processes WHERE
+
+  Processes.process_name=curl
+  Processes.process IN (
+      "*--preproxy *",
+      "*--proxy*",
+      "*-x *",
+      "*socks4://*",
+      "*socks4a://*",
+      "*socks5://*",
+      "*socks5h://*"
+  )
+
+  BY Processes.action Processes.dest Processes.original_file_name
+      Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+      Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+      Processes.process Processes.process_exec Processes.process_guid
+      Processes.process_hash Processes.process_id Processes.process_integrity_level
+      Processes.process_name Processes.process_path Processes.user
+      Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | where match(process, "-x\s") OR match(process, "(?i)(socks\d\w?:\/\/|--(pre)?proxy)")
+  | `linux_proxy_socks_curl_filter`
+splunk_rule_id: bd596c22-ad1e-44fc-b242-817253ce8b08
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image: curl
+  selection_1:
+    CommandLine|contains:
+    - '--preproxy '
+    - --proxy
+    - '-x '
+    - socks4://
+    - socks4a://
+    - socks5://
+    - socks5h://
+  condition: selection_0 and selection_1

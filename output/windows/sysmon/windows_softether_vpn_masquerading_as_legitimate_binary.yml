@@ -1,0 +1,51 @@
+title: Windows SoftEther VPN Masquerading as Legitimate Binary
+id: 69fe4cb7-807e-4012-a17f-cd288215b038
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Flax Typhoon actors have been identified downloading and using SoftEther VPN software to obfuscate their activity.
+  This searches for the SoftEther VPN binary running with the obfuscated binary names they use for the process.
+references:
+- https://www.microsoft.com/en-us/security/blog/2023/08/24/flax-typhoon-using-legitimate-software-to-quietly-access-taiwanese-organizations/
+tags:
+- attack.t1036
+- attack.t1572
+date: '2026-05-05'
+original_spl: |-
+  `sysmon`
+  EventID=1
+  process IN (
+      "*conhost.exe*",
+      "*dllhost.exe*"
+  )
+  AND
+  (
+      Company="*SoftEther*"
+      OR
+      OriginalFileName="vpnbridge*.exe"
+  )
+  | fillnull
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+    by Computer EventID Company process action dest original_file_name
+       parent_process parent_process_exec parent_process_guid parent_process_id
+       parent_process_name parent_process_path process_hash process_integrity_level user
+       user_id vendor_product
+
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_softether_vpn_masquerading_as_legitimate_binary_filter`
+splunk_rule_id: 69fe4cb7-807e-4012-a17f-cd288215b038
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 1
+  selection_1:
+    process|contains:
+    - conhost.exe
+    - dllhost.exe
+  condition: selection_0 and selection_1

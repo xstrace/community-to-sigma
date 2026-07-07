@@ -1,0 +1,73 @@
+title: Windows Time Based Evasion
+id: 34502357-deb1-499a-8261-ffe144abf561
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |-
+  The following analytic detects potentially malicious processes that initiate a ping delay using an invalid IP address.
+  It leverages data from Endpoint Detection and Response (EDR) agents, focusing on command-line executions involving "ping 0 -n".
+  Malware like NJRAT was observed using this technique to introduce time delays for evasion tactics, such as delaying self-deletion.
+  If confirmed malicious, this activity could indicate an active infection attempting to evade detection, potentially leading to further compromise and persistence within the environment.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.njrat
+tags:
+- attack.t1497.003
+date: '2023-09-19'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+    count min(_time) as firstTime
+          max(_time) as lastTime
+
+  FROM datamodel=Endpoint.Processes WHERE
+
+  Processes.process_name = "ping.exe"
+  (
+      Processes.parent_process IN (
+          "*ping  0 -n *",
+          "*ping 0 -n *",
+          "*ping.exe  0 -n *",
+          "*ping.exe 0 -n *"
+      )
+      OR
+      Processes.process IN (
+          "*ping  0 -n *",
+          "*ping 0 -n *",
+          "*ping.exe  0 -n *",
+          "*ping.exe 0 -n *"
+      )
+  )
+
+  BY Processes.action Processes.dest Processes.original_file_name
+     Processes.parent_process Processes.parent_process_exec
+     Processes.parent_process_guid Processes.parent_process_id
+     Processes.parent_process_name Processes.parent_process_path
+     Processes.process Processes.process_exec Processes.process_guid
+     Processes.process_hash Processes.process_id Processes.process_integrity_level
+     Processes.process_name Processes.process_path Processes.user
+     Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name("Processes")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_time_based_evasion_filter`
+splunk_rule_id: 34502357-deb1-499a-8261-ffe144abf561
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: ping.exe
+  selection_1:
+    ParentCommandLine|contains:
+    - 'ping  0 -n '
+    - 'ping 0 -n '
+    - 'ping.exe  0 -n '
+    - 'ping.exe 0 -n '
+  selection_2:
+    CommandLine|contains:
+    - 'ping  0 -n '
+    - 'ping 0 -n '
+    - 'ping.exe  0 -n '
+    - 'ping.exe 0 -n '
+  condition: selection_0 and selection_1 and selection_2

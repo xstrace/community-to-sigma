@@ -1,0 +1,48 @@
+title: Windows SQL Spawning CertUtil
+id: dfc18a5a-946e-44ee-a373-c0f60d06e676
+status: experimental
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of certutil to download software, specifically when spawned by SQL-related processes. This detection leverages Endpoint Detection and Response (EDR) data,
+  focusing on command-line executions involving certutil with parameters like *urlcache* and *split*. This activity is significant as it may indicate a compromise by threat actors, such as Flax Typhoon,
+  who use certutil to establish persistent VPN connections. If confirmed malicious, this behavior could allow attackers to maintain access, monitor system availability, and potentially escalate to data
+  theft or ransomware deployment.
+references:
+- https://www.microsoft.com/en-us/security/blog/2023/08/24/flax-typhoon-using-legitimate-software-to-quietly-access-taiwanese-organizations/
+tags:
+- attack.t1105
+date: '2023-08-25'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name IN ("sqlservr.exe", "sqlagent.exe", "sqlps.exe", "launchpad.exe", "sqldumper.exe") `process_certutil` (Processes.process="*urlcache*"
+      OR
+      Processes.process="*verifyctl*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_sql_spawning_certutil_filter`
+splunk_rule_id: dfc18a5a-946e-44ee-a373-c0f60d06e676
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage:
+    - sqlservr.exe
+    - sqlagent.exe
+    - sqlps.exe
+    - launchpad.exe
+    - sqldumper.exe
+  selection_1:
+    CommandLine|contains: urlcache
+  selection_2:
+    CommandLine|contains: verifyctl
+  condition: selection_0 and selection_1 and selection_2

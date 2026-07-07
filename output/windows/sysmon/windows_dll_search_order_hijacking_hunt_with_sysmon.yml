@@ -1,0 +1,31 @@
+title: Windows DLL Search Order Hijacking Hunt with Sysmon
+id: 79c7d1fc-64c7-91be-a616-ccda752efe81
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies potential DLL search order hijacking or DLL sideloading by detecting known Windows libraries loaded from non-standard directories. It leverages Sysmon EventCode
+  7 to monitor DLL loads and cross-references them with a lookup of known hijackable libraries. This activity is significant as it may indicate an attempt to execute malicious code by exploiting DLL search
+  order vulnerabilities. If confirmed malicious, this could allow attackers to gain code execution, escalate privileges, or maintain persistence within the environment.
+references:
+- https://hijacklibs.net
+tags:
+- attack.t1574.001
+date: '2022-08-19'
+original_spl: '`sysmon` EventCode=7 NOT (process_path IN ("*\\system32\\*", "*\\syswow64\\*","*\\winsxs\\*","*\\wbem\\*")) | lookup hijacklibs library AS loaded_file OUTPUT islibrary | search islibrary
+  = True | stats count min(_time) as firstTime max(_time) as lastTime by Image ImageLoaded dest loaded_file loaded_file_path original_file_name process_exec process_guid process_hash process_id process_name
+  process_path service_dll_signature_exists service_dll_signature_verified signature signature_id user_id vendor_product | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `windows_dll_search_order_hijacking_hunt_with_sysmon_filter`'
+splunk_rule_id: 79c7d1fc-64c7-91be-a616-ccda752efe81
+splunk_rule_type: Hunting
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 7
+  filter_1:
+    process_path:
+    - '*\system32\*'
+    - '*\syswow64\*'
+    - '*\winsxs\*'
+    - '*\wbem\*'
+  condition: (selection_0) and not (filter_1)

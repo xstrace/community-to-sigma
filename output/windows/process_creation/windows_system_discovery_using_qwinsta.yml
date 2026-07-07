@@ -1,0 +1,42 @@
+title: Windows System Discovery Using Qwinsta
+id: 2e765c1b-144a-49f0-93d0-1df4287cca04
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of "qwinsta.exe" on a Windows operating system. This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on process
+  execution logs. The "qwinsta.exe" tool is significant because it can display detailed session information on a remote desktop session host server. This behavior is noteworthy as it is commonly abused
+  by Qakbot malware to gather system information and send it back to its Command and Control (C2) server. If confirmed malicious, this activity could lead to unauthorized data exfiltration and further compromise
+  of the host.
+references:
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/qwinsta
+- https://securelist.com/qakbot-technical-analysis/103931/
+tags:
+- attack.t1033
+date: '2022-10-21'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process_name = "qwinsta.exe"
+      OR
+      Processes.original_file_name = "qwinsta.exe"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name("Processes")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_system_discovery_using_qwinsta_filter`
+splunk_rule_id: 2e765c1b-144a-49f0-93d0-1df4287cca04
+splunk_rule_type: Hunting
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: qwinsta.exe
+  selection_1:
+    OriginalFileName: qwinsta.exe
+  condition: selection_0 and selection_1

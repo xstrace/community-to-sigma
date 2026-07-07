@@ -1,0 +1,44 @@
+title: Linux GNU Awk Privilege Escalation
+id: 0dcf43b9-50d8-42a6-acd9-d1c9201fe6ae
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Splunk
+description: The following analytic detects the execution of the 'gawk' command with elevated privileges on a Linux system. It leverages Endpoint Detection and Response (EDR) telemetry to identify command-line
+  executions where 'gawk' is used with 'sudo' and 'BEGIN{system' patterns. This activity is significant because it indicates a potential privilege escalation attempt, allowing a user to execute system commands
+  as root. If confirmed malicious, this could lead to full root access, enabling the attacker to control the system, modify critical files, and maintain persistent access.
+references:
+- https://gtfobins.github.io/gtfobins/gawk/
+- https://www.geeksforgeeks.org/gawk-command-in-linux-with-examples/
+tags:
+- attack.t1548.003
+date: '2022-08-10'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process="*gawk*"
+      AND
+      Processes.process="*BEGIN*{system*"
+      AND
+      Processes.process="*sudo*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `linux_gnu_awk_privilege_escalation_filter`
+splunk_rule_id: 0dcf43b9-50d8-42a6-acd9-d1c9201fe6ae
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: gawk
+  selection_1:
+    CommandLine|contains: BEGIN*{system
+  selection_2:
+    CommandLine|contains: sudo
+  condition: selection_0 and selection_1 and selection_2

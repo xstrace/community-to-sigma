@@ -1,0 +1,49 @@
+title: Remote Process Instantiation via WMI
+id: d25d2c3d-d9d8-40ec-8fdf-e86fe155a3da
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of wmic.exe with parameters to spawn a process on a remote system. It leverages data from Endpoint Detection and Response (EDR) agents, focusing
+  on command-line executions and process telemetry mapped to the `Processes` node of the `Endpoint` data model. This activity is significant as WMI can be abused for lateral movement and remote code execution,
+  often used by adversaries and Red Teams. If confirmed malicious, this could allow attackers to execute arbitrary code on remote systems, facilitating further compromise and lateral spread within the network.
+references:
+- https://attack.mitre.org/techniques/T1047/
+- https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/create-method-in-class-win32-process
+tags:
+- attack.t1047
+date: '2020-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_wmic` (Processes.process="*/node:*"
+      AND
+      Processes.process="*process*"
+      AND
+      Processes.process="*call*"
+      AND
+      Processes.process="*create*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `remote_process_instantiation_via_wmi_filter`
+splunk_rule_id: d25d2c3d-d9d8-40ec-8fdf-e86fe155a3da
+splunk_rule_type: TTP
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '/node:'
+  selection_1:
+    CommandLine|contains: process
+  selection_2:
+    CommandLine|contains: call
+  selection_3:
+    CommandLine|contains: create
+  condition: selection_0 and selection_1 and selection_2 and selection_3

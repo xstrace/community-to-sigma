@@ -1,0 +1,40 @@
+title: Windows MpCmdRun RemoveDefinitions Execution
+id: b2442e49-bd3f-4685-a2dc-2bdc292563bf
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  This detection identifies the execution of MpCmdRun.exe with the "-RemoveDefinitions" argument, which is used to remove definitions from the Windows Malware Protection Engine.
+  This behavior can be significant as it might indicate potential malware activity or attempts to bypass security measures.
+references:
+- https://cert.gov.ua/article/6284730
+tags:
+- attack.t1685
+date: '2026-03-16'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime
+    from datamodel=Endpoint.Processes where
+    (Processes.process_name ="MpCmdRun.exe" OR Processes.original_file_name = MpCmdRun.exe)
+    Processes.process = "*-RemoveDefinitions *"
+    by Processes.action Processes.dest Processes.original_file_name Processes.parent_process
+       Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id
+       Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec
+       Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_mpcmdrun_removedefinitions_execution_filter`
+splunk_rule_id: b2442e49-bd3f-4685-a2dc-2bdc292563bf
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: MpCmdRun.exe
+  selection_1:
+    OriginalFileName: MpCmdRun.exe
+  selection_2:
+    CommandLine|contains: '-RemoveDefinitions '
+  condition: selection_0 and selection_1 and selection_2

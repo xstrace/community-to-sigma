@@ -1,0 +1,58 @@
+title: Windows Symlink Evaluation Change via Fsutil
+id: 9777e7e3-2499-4a16-a519-ebe33630c1e8
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects the execution of the Windows built-in tool Fsutil.exe with
+  the "behavior", "set" and "SymlinkEvaluation" parameters.
+  Attackers can abuse this to alter symlink evaluation behavior on Windows, potentially enabling remote traversal over SMB shares or evading defenses.
+  Such changes should be uncommon or even rare in enterprise environments and should be investigated.
+references:
+- https://learn.microsoft.com/windows-server/administration/windows-commands/fsutil-behavior
+- https://www.group-ib.com/blog/blackcat/
+- https://www.intrinsec.com/alphv-ransomware-gang-analysis/
+tags:
+- attack.t1222.001
+date: '2025-10-13'
+original_spl: |-
+  | tstats `security_content_summariesonly`
+      count min(_time) as firstTime max(_time) as lastTime
+    from datamodel=Endpoint.Processes where
+
+    (
+      Processes.process_name="fsutil.exe"
+      OR Processes.original_file_name="fsutil.exe"
+    )
+
+    Processes.process="*behavior*"
+    Processes.process="*set*"
+    Processes.process="*SymlinkEvaluation*"
+
+    by Processes.action Processes.dest Processes.original_file_name Processes.parent_process
+    Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id
+    Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec
+    Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level
+    Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_symlink_evaluation_change_via_fsutil_filter`
+splunk_rule_id: 9777e7e3-2499-4a16-a519-ebe33630c1e8
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: fsutil.exe
+  selection_1:
+    OriginalFileName: fsutil.exe
+  selection_2:
+    CommandLine|contains: behavior
+  selection_3:
+    CommandLine|contains: set
+  selection_4:
+    CommandLine|contains: SymlinkEvaluation
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

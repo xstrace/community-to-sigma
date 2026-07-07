@@ -117,6 +117,15 @@ def tokenize(text: str) -> list[Token]:
             tokens.append(Token(TokenType.LE, "<=", i))
             i += 2
             continue
+        # SPL accepts ! as the unary form of NOT (most commonly in eval/where
+        # expressions such as !match(...) or !(a=b)).  It must be handled
+        # before the generic word scanner because ! is also a word delimiter.
+        # Previously the scanner produced an empty token without advancing i,
+        # growing `tokens` forever until the process exhausted system memory.
+        if ch == "!":
+            tokens.append(Token(TokenType.WORD, "NOT", i))
+            i += 1
+            continue
         if ch == "=":
             tokens.append(Token(TokenType.EQ, "=", i))
             i += 1
@@ -182,6 +191,11 @@ def tokenize(text: str) -> list[Token]:
             if j > i and text[j] in "=><!":  # stop before operators
                 break
             j += 1
+        # Every tokenizer branch must consume input. Keep this guard close to
+        # the generic scanner so an unsupported delimiter can never turn into
+        # another unbounded empty-token loop.
+        if j == i:
+            raise SyntaxError(f"Unexpected character {ch!r} at pos {i}")
         word = text[i:j]
         # Words containing * anywhere are actually wildcard patterns
         tok_type = TokenType.WILDCARD if "*" in word else TokenType.WORD

@@ -1,0 +1,53 @@
+title: Modify ACL permission To Files Or Folder
+id: 7e8458cc-acca-11eb-9e3f-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the modification of ACL permissions to files or folders, making them accessible to everyone or to system account. It leverages data from Endpoint Detection and
+  Response (EDR) agents, focusing on processes like "cacls.exe," "icacls.exe," and "xcacls.exe" with specific command-line arguments. This activity is significant as it may indicate an adversary attempting
+  to evade ACLs or access protected files. If confirmed malicious, this could allow unauthorized access to sensitive data, potentially leading to data breaches or further system compromise.
+references:
+- https://thedfirreport.com/2020/04/20/sqlserver-or-the-miner-in-the-basement/
+tags:
+- attack.t1222
+date: '2021-05-07'
+original_spl: |-
+  | tstats `security_content_summariesonly` count
+    min(_time) as firstTime
+    max(_time) as lastTime
+    values(Processes.process) as process
+    values(Processes.process_id) as process_id
+  from datamodel=Endpoint.Processes where
+    Processes.process_name IN ("icacls.exe", "cacls.exe", "xcacls.exe")
+    Processes.process IN ("*/grant*", "*/g:*", "*/g *")
+    Processes.process IN ("* SYSTEM:*", "* S-1-1-0:*")
+  by Processes.action Processes.dest Processes.original_file_name Processes.parent_process
+  Processes.parent_process_exec Processes.parent_process_guid Processes.parent_process_id
+  Processes.parent_process_name Processes.parent_process_path Processes.process Processes.process_exec
+  Processes.process_guid Processes.process_hash Processes.process_id Processes.process_integrity_level
+  Processes.process_name Processes.process_path Processes.user Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `modify_acl_permission_to_files_or_folder_filter`
+splunk_rule_id: 7e8458cc-acca-11eb-9e3f-acde48001122
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image:
+    - icacls.exe
+    - cacls.exe
+    - xcacls.exe
+  selection_1:
+    CommandLine|contains:
+    - /grant
+    - '/g:'
+    - '/g '
+  selection_2:
+    CommandLine|contains:
+    - ' SYSTEM:'
+    - ' S-1-1-0:'
+  condition: selection_0 and selection_1 and selection_2

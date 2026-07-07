@@ -1,0 +1,46 @@
+title: Cisco SNMP Community String Configuration Changes
+id: b0ce5521-2533-4f24-b8d5-c2ff977aae08
+status: stable
+level: medium
+author: Bhavin Patel, Michael Haag, Splunk
+description: This analytic detects changes to SNMP community strings on Cisco devices, which could indicate an attacker establishing persistence or attempting to extract credentials. After gaining initial
+  access to network devices, threat actors like Static Tundra often modify SNMP configurations to enable unauthorized monitoring and data collection. This detection specifically looks for the configuration
+  of SNMP community strings with read-write (rw) or read-only (ro) permissions, as well as the configuration of SNMP hosts that may be used to exfiltrate data. These activities are particularly concerning
+  as they may represent attempts to establish persistent access or extract sensitive information from compromised devices.
+references:
+- https://blog.talosintelligence.com/static-tundra/
+- https://tools.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-20180328-smi2
+- https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/snmp/command/snmp-cr-book/snmp-s1.html#wp1307296356
+tags:
+- attack.t1685
+- attack.t1040
+- attack.t1552
+date: '2025-08-21'
+original_spl: |-
+  | tstats `security_content_summariesonly` count values(All_Changes.command) as command min(_time) as firstTime max(_time) as lastTime FROM datamodel=Change.All_Changes
+    WHERE (
+          (All_Changes.command="*snmp-server community*rw*")
+          OR
+          (All_Changes.command="*snmp-server community*ro*")
+          OR
+          (All_Changes.command="*snmp-server host*")
+      )
+    BY All_Changes.dvc All_Changes.user
+  | `drop_dm_object_name("All_Changes")`
+  | rename dvc as dest
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_snmp_community_string_configuration_changes_filter`
+splunk_rule_id: b0ce5521-2533-4f24-b8d5-c2ff977aae08
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: cisco
+detection:
+  selection_0:
+    CommandLine|contains: snmp-server community*rw
+  selection_1:
+    CommandLine|contains: snmp-server community*ro
+  selection_2:
+    CommandLine|contains: snmp-server host
+  condition: selection_0 and selection_1 and selection_2

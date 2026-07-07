@@ -1,0 +1,36 @@
+title: O365 PST export alert
+id: 5f694cc4-a678-4a60-9410-bffca1b647dc
+status: stable
+level: medium
+author: Rod Soto, Splunk
+description: The following analytic detects instances where a user has initiated an eDiscovery search or exported a PST file in an Office 365 environment. It leverages Office 365 management activity logs,
+  specifically filtering for events under ThreatManagement with the name "eDiscovery search started or exported." This activity is significant as it may indicate data exfiltration attempts or unauthorized
+  access to sensitive information. If confirmed malicious, it suggests an attacker or insider threat is attempting to gather or exfiltrate data, potentially leading to data breaches, loss of intellectual
+  property, or unauthorized access to confidential communications. Immediate investigation is required.
+references:
+- https://attack.mitre.org/techniques/T1114/
+tags:
+- attack.t1114
+date: '2020-12-16'
+original_spl: |-
+  `o365_management_activity` Category=ThreatManagement Name="eDiscovery search started or exported"
+    | fillnull
+    | stats count earliest(_time) as firstTime latest(_time) as lastTime
+      BY Source Severity AlertEntityId
+         Name user src
+         vendor_account vendor_product dest
+         signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `o365_pst_export_alert_filter`
+splunk_rule_id: 5f694cc4-a678-4a60-9410-bffca1b647dc
+splunk_rule_type: TTP
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Category: ThreatManagement
+  selection_1:
+    Name: eDiscovery search started or exported
+  condition: selection_0 and selection_1

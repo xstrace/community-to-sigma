@@ -1,0 +1,37 @@
+title: High Number of Login Failures from a single source
+id: 7f398cfb-918d-41f4-8db8-2e2474e02222
+status: stable
+level: medium
+author: Bhavin Patel, Mauricio Velazco, Splunk
+description: The following analytic detects multiple failed login attempts in Office365 Azure Active Directory from a single source IP address. It leverages Office365 management activity logs, specifically
+  AzureActiveDirectoryStsLogon records, aggregating these logs in 5-minute intervals to count failed login attempts. This activity is significant as it may indicate brute-force attacks or password spraying,
+  which are critical to monitor. If confirmed malicious, an attacker could gain unauthorized access to Office365 accounts, leading to potential data breaches, lateral movement within the organization, or
+  further malicious activities using the compromised account.
+references:
+- https://attack.mitre.org/techniques/T1110/001/
+- https://docs.microsoft.com/en-us/security/compass/incident-response-playbook-password-spray
+- https://www.cisa.gov/uscert/ncas/alerts/aa21-008a
+- https://docs.microsoft.com/azure/active-directory/reports-monitoring/reference-sign-ins-error-codes
+tags:
+- attack.t1110.001
+date: '2020-12-16'
+original_spl: |-
+  `o365_management_activity` Workload=AzureActiveDirectory Operation=UserLoginFailed record_type=AzureActiveDirectoryStsLogon
+    | bucket span=5m _time
+    | stats dc(_raw) AS failed_attempts values(user) as user values(LogonError) as LogonError values(signature) as signature values(UserAgent) as UserAgent values(dest) as dest values(vendor_account) as vendor_account values(vendor_product) as vendor_product
+      BY _time, src_ip
+    | where failed_attempts > 10
+    | `high_number_of_login_failures_from_a_single_source_filter`
+splunk_rule_id: 7f398cfb-918d-41f4-8db8-2e2474e02222
+splunk_rule_type: Anomaly
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: UserLoginFailed
+  selection_2:
+    record_type: AzureActiveDirectoryStsLogon
+  condition: selection_0 and selection_1 and selection_2

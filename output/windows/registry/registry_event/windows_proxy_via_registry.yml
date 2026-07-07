@@ -1,0 +1,26 @@
+title: Windows Proxy Via Registry
+id: 0270455b-1385-4579-9ac5-e77046c508ae
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the modification of registry keys related to the Windows Proxy settings via netsh.exe. It leverages data from the Endpoint.Registry data model, focusing on changes
+  to the registry path "*\\System\\CurrentControlSet\\Services\\PortProxy\\v4tov4\\tcp*". This activity is significant because netsh.exe can be used to establish a persistent proxy, potentially allowing
+  an attacker to execute a helper DLL whenever netsh.exe runs. If confirmed malicious, this could enable the attacker to maintain persistence, manipulate network configurations, and potentially exfiltrate
+  data or further compromise the system.
+references:
+- https://www.microsoft.com/en-us/security/blog/2023/05/24/volt-typhoon-targets-us-critical-infrastructure-with-living-off-the-land-techniques/
+tags:
+- attack.t1090.001
+date: '2023-05-25'
+original_spl: '| tstats `security_content_summariesonly` count  min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry where Registry.registry_path ="*\\System\\CurrentControlSet\\Services\\PortProxy\\v4tov4\\tcp*"
+  by Registry.action Registry.dest Registry.process_guid Registry.process_id Registry.registry_hive Registry.registry_path Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name
+  Registry.registry_value_type Registry.status Registry.user Registry.vendor_product | `security_content_ctime(lastTime)` | `security_content_ctime(firstTime)` | `drop_dm_object_name(Registry)` | `windows_proxy_via_registry_filter`'
+splunk_rule_id: 0270455b-1385-4579-9ac5-e77046c508ae
+splunk_rule_type: Anomaly
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: \System\CurrentControlSet\Services\PortProxy\v4tov4\tcp
+  condition: selection_0

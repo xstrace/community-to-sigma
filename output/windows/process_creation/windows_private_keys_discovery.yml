@@ -1,0 +1,61 @@
+title: Windows Private Keys Discovery
+id: 5c1c2877-06c0-40ee-a1a2-db71f1372b5b
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies processes that retrieve information related to private key files, often used by post-exploitation tools like winpeas. This detection leverages data from Endpoint
+  Detection and Response (EDR) agents, focusing on command-line executions that search for private key certificates. This activity is significant as it indicates potential attempts to locate insecurely
+  stored credentials, which adversaries can exploit for privilege escalation, persistence, or remote service authentication. If confirmed malicious, this behavior could allow attackers to access sensitive
+  information, escalate privileges, or maintain persistence within the compromised environment.
+references:
+- https://attack.mitre.org/techniques/T1552/004/
+- https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS
+- https://www.microsoft.com/en-us/security/blog/2022/10/14/new-prestige-ransomware-impacts-organizations-in-ukraine-and-poland/
+tags:
+- attack.t1552.004
+date: '2022-12-06'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.process = "*dir *"
+      OR
+      Processes.process = "*findstr*"
+      AND
+      Processes.process IN ( "*.rdg*", "*.gpg*", "*.pgp*", "*.p12*", "*.der*", "*.csr*", "*.cer*", "*.ovpn*", "*.key*",  "*.ppk*", "*.p12*", "*.pem*", "*.pfx*", "*.p7b*", "*.asc*")
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_private_keys_discovery_filter`
+splunk_rule_id: 5c1c2877-06c0-40ee-a1a2-db71f1372b5b
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: 'dir '
+  selection_1:
+    CommandLine|contains: '*findstr*'
+    CommandLine:
+    - '*.rdg*'
+    - '*.gpg*'
+    - '*.pgp*'
+    - '*.p12*'
+    - '*.der*'
+    - '*.csr*'
+    - '*.cer*'
+    - '*.ovpn*'
+    - '*.key*'
+    - '*.ppk*'
+    - '*.p12*'
+    - '*.pem*'
+    - '*.pfx*'
+    - '*.p7b*'
+    - '*.asc*'
+  condition: selection_0 and selection_1

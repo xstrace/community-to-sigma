@@ -1,0 +1,40 @@
+title: Windows DNS Query Request by Telegram Bot API
+id: 86f66f44-94d9-412d-a71d-5d8ed0fef72e
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of a DNS query by a process to the associated Telegram API domain, which could indicate access via a Telegram bot commonly used by malware for command
+  and control (C2) communications. By monitoring DNS queries related to Telegram's infrastructure, the detection identifies potential attempts to establish covert communication channels between a compromised
+  system and external malicious actors. This behavior is often observed in cyberattacks where Telegram bots are used to receive commands or exfiltrate data, making it a key indicator of suspicious or malicious
+  activity within a network.
+references:
+- https://www.splunk.com/en_us/blog/security/threat-advisory-telegram-crypto-botnet-strt-ta01.html
+tags:
+- attack.t1071.004
+- attack.t1102.002
+date: '2021-08-03'
+original_spl: |-
+  `sysmon` EventCode=22  query = "api.telegram.org" process_name != "telegram.exe"
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY answer answer_count dvc
+         process_exec process_guid process_name
+         query query_count reply_code_id
+         signature signature_id src
+         user_id vendor_product QueryName
+         QueryResults QueryStatus
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_dns_query_request_by_telegram_bot_api_filter`
+splunk_rule_id: 86f66f44-94d9-412d-a71d-5d8ed0fef72e
+splunk_rule_type: Anomaly
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 22
+  selection_1:
+    query: api.telegram.org
+  selection_2:
+    process_name: telegram.exe
+  condition: selection_0 and selection_1 and selection_2

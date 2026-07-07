@@ -1,0 +1,38 @@
+title: Windows Visual Basic Commandline Compiler DNSQuery
+id: 8976744a-ae7a-46a4-8128-690df85c2af4
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects instances where vbc.exe, the Visual Basic Command Line Compiler, initiates DNS queries. Normally, vbc.exe operates locally to compile Visual Basic code and does
+  not require internet access or to perform DNS lookups. Therefore, any observed DNS activity originating from vbc.exe is highly suspicious and indicative of potential malicious activity. This behavior
+  often suggests that a malicious payload is masquerading as the legitimate vbc.exe process to establish command-and-control (C2) communication, resolve domains for data exfiltration, or download additional
+  stages of malware. Security teams should investigate the process's parent, command-line arguments, and the resolved domains for further indicators of compromise.
+references:
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-266a
+tags:
+- attack.t1071.004
+date: '2025-08-28'
+original_spl: |-
+  `sysmon` EventCode=22 process_name="vbc.exe"
+    | rename dvc as dest
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY answer answer_count dest
+         process_exec process_guid process_name
+         query query_count reply_code_id
+         signature signature_id src
+         user_id vendor_product QueryName
+         QueryResults QueryStatus
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `windows_visual_basic_commandline_compiler_dnsquery_filter`
+splunk_rule_id: 8976744a-ae7a-46a4-8128-690df85c2af4
+splunk_rule_type: TTP
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 22
+  selection_1:
+    process_name: vbc.exe
+  condition: selection_0 and selection_1

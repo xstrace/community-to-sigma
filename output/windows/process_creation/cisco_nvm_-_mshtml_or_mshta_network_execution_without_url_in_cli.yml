@@ -1,0 +1,73 @@
+title: Cisco NVM - MSHTML or MSHTA Network Execution Without URL in CLI
+id: f2a9df84-9b01-4a21-9e3a-7aa1a217f69e
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects suspicious use of 'mshta.exe' or 'rundll32.exe' invoking 'mshtml.dll'
+  or the 'RunHTMLApplication' export without including a direct HTTP/HTTPS URL in the command line.
+  This pattern could be associated with obfuscated script execution used by threat actors during
+  initial access or payload staging. The absence of a visible URL may indicate attempts to evade static
+  detections by embedding the URL via string concatenation, encoding (e.g., hex), or indirect script loaders
+  like 'GetObject()'.
+references:
+- https://attack.mitre.org/techniques/T1218/005/
+- https://redcanary.com/blog/mshta-attack-technique/
+- https://lolbas-project.github.io/lolbas/Binaries/Rundll32/
+- https://learn.microsoft.com/en-us/windows/win32/api/mshtml/nf-mshtml-mshtml_runhtmlapplication
+tags:
+- attack.t1218.005
+- attack.t1059.005
+date: '2025-07-01'
+original_spl: |-
+  `cisco_network_visibility_module_flowdata`
+  (
+    (
+      process_name = "mshta.exe"
+      process_arguments IN ("*javascript*", "*vbscript*")
+    )
+    OR
+    ( process_name = "rundll32.exe" AND
+      process_arguments = "*mshtml*" AND
+      process_arguments = "*RunHTMLApplication*"
+    )
+  )
+  NOT process_arguments IN ("*http://*", "*https://*")
+  | stats count min(_time) as firstTime max(_time) as lastTime
+          values(parent_process_arguments) as parent_process_arguments
+          values(process_arguments) as process_arguments
+          values(parent_process_hash) as parent_process_hash
+          values(process_hash) as process_hash
+          values(module_name_list) as module_name_list
+          values(module_hash_list) as module_hash_list
+          values(dest_port) as dest_port
+          values(aliul) as additional_logged_in_users_list
+          values(dest_hostname) as dest_hostname
+          by src dest parent_process_path parent_process_integrity_level process_path process_name process_integrity_level process_id transport
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | table
+    parent_process_integrity_level parent_process_path parent_process_arguments parent_process_hash
+    process_integrity_level process_path process_name process_arguments process_hash process_id
+    additional_logged_in_users_list module_name_list module_hash_list
+    src dest_hostname dest dest_port transport firstTime lastTime
+  | `cisco_nvm___mshtml_or_mshta_network_execution_without_url_in_cli_filter`
+splunk_rule_id: f2a9df84-9b01-4a21-9e3a-7aa1a217f69e
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    process_name: mshta.exe
+    process_arguments:
+    - '*javascript*'
+    - '*vbscript*'
+  selection_1:
+    process_name: rundll32.exe
+    process_arguments|contains: '*mshtml*'
+  filter_2:
+    process_arguments:
+    - '*http://*'
+    - '*https://*'
+  condition: (selection_0 and selection_1) and not (filter_2)

@@ -1,0 +1,46 @@
+title: Windows Audit Policy Excluded Category via Auditpol
+id: 083708d4-d763-4ba2-87ac-105b526de81a
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: The following analytic identifies the execution of `auditpol.exe` with the "/set" and "/exclude" command-line arguments which indicates that the user's per-user policy will cause audit to be
+  suppressed regardless of the system audit policy. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line executions. This activity can be significant
+  as it indicates potential defense evasion by adversaries or Red Teams, aiming to exclude specific users events from log data. If confirmed malicious, this behavior could allow attackers to bypass defenses,
+  and plan further attacks, potentially leading to full machine compromise or lateral movement.
+references:
+- https://www.microsoft.com/en-us/security/blog/2021/01/20/deep-dive-into-the-solorigate-second-stage-activation-from-sunburst-to-teardrop-and-raindrop/
+- https://www.cybereason.com/blog/research/prometei-botnet-exploiting-microsoft-exchange-vulnerabilities
+- https://attack.mitre.org/techniques/T1562/002/
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/auditpol-set
+tags:
+- attack.t1685.001
+date: '2025-02-19'
+original_spl: |-
+  | tstats `security_content_summariesonly` values(Processes.process) as process min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_auditpol` Processes.process="*/set*" Processes.process="*/exclude*"
+      AND
+      NOT Processes.process="*/?*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_audit_policy_excluded_category_via_auditpol_filter`
+splunk_rule_id: 083708d4-d763-4ba2-87ac-105b526de81a
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: /set
+  selection_1:
+    CommandLine|contains: /exclude
+  filter_2:
+    CommandLine|contains: '*/?*'
+  condition: (selection_0 and selection_1) and not (filter_2)

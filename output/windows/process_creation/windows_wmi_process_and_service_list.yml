@@ -1,0 +1,41 @@
+title: Windows WMI Process And Service List
+id: ef3c5ef2-3f6d-4087-aa75-49bf746dc907
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies suspicious WMI command lines querying for running processes or services. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on specific
+  process and command-line events. This activity is significant as adversaries often use WMI to gather system information and identify services on compromised machines. If confirmed malicious, this behavior
+  could allow attackers to map out the system, identify critical services, and plan further attacks, potentially leading to privilege escalation or persistence within the environment.
+references:
+- https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS
+- https://www.microsoft.com/en-us/security/blog/2022/10/14/new-prestige-ransomware-impacts-organizations-in-ukraine-and-poland/
+tags:
+- attack.t1047
+date: '2022-12-13'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE `process_wmic` Processes.process IN ("*process*", "*service*") Processes.process = "*list*"
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_wmi_process_and_service_list_filter`
+splunk_rule_id: ef3c5ef2-3f6d-4087-aa75-49bf746dc907
+splunk_rule_type: Anomaly
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - process
+    - service
+  selection_1:
+    CommandLine|contains: list
+  condition: selection_0 and selection_1

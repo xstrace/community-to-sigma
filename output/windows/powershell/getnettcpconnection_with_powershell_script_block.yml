@@ -1,0 +1,37 @@
+title: GetNetTcpconnection with PowerShell Script Block
+id: 091712ff-b02a-4d43-82ed-34765515d95d
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of the `Get-NetTcpconnection` PowerShell cmdlet using PowerShell Script Block Logging (EventCode=4104). This cmdlet lists network connections on
+  a system, which adversaries may use for situational awareness and Active Directory discovery. Monitoring this activity is crucial as it can indicate reconnaissance efforts by an attacker. If confirmed
+  malicious, this behavior could allow an attacker to map the network, identify critical systems, and plan further attacks, potentially leading to data exfiltration or lateral movement within the network.
+references:
+- https://attack.mitre.org/techniques/T1049/
+- https://docs.microsoft.com/en-us/powershell/module/nettcpip/get-nettcpconnection?view=windowsserver2019-ps
+tags:
+- attack.t1049
+date: '2021-08-24'
+original_spl: |-
+  `powershell` EventCode=4104 (ScriptBlockText = "*Get-NetTcpconnection*")
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest signature signature_id
+         user_id vendor_product EventID
+         Guid Opcode Name
+         Path ProcessID ScriptBlockId
+         ScriptBlockText
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `getnettcpconnection_with_powershell_script_block_filter`
+splunk_rule_id: 091712ff-b02a-4d43-82ed-34765515d95d
+splunk_rule_type: Hunting
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: Get-NetTcpconnection
+  condition: selection_0 and selection_1

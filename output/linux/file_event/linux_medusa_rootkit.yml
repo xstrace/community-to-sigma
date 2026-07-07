@@ -1,0 +1,49 @@
+title: Linux Medusa Rootkit
+id: 7add8520-71d5-43aa-b262-ee082b1f0238
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: This detection identifies file creation events associated with the installation of the Medusa rootkit, a userland LD_PRELOAD-based rootkit known for deploying shared objects, loader binaries,
+  and configuration files into specific system directories. These files typically facilitate process hiding, credential theft, and backdoor access. Monitoring for such file creation patterns enables early
+  detection of rootkit deployment before full compromise.
+references:
+- https://cloud.google.com/blog/topics/threat-intelligence/uncovering-unc3886-espionage-operations
+tags:
+- attack.t1014
+- attack.t1589.001
+date: '2022-04-26'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Filesystem
+    WHERE Filesystem.file_path IN ("*/lib/libseconf", "*.backup_ld.so", "*.boot.sh", "*.logpam", "*sshpass.txt", "*sshpass2.txt", "*/lib/libdsx.so", "*rkload", "*/lib/libseconf/local.txt", "*/lib/locate/local.txt", "*/var/log/remote.txt", "*/lib/libseconf/.pts", "*/lib/locate /.pts", "*/libseconf/.ports")
+    BY Filesystem.action Filesystem.dest Filesystem.file_access_time
+       Filesystem.file_create_time Filesystem.file_hash Filesystem.file_modify_time
+       Filesystem.file_name Filesystem.file_path Filesystem.file_acl
+       Filesystem.file_size Filesystem.process_guid Filesystem.process_id
+       Filesystem.user Filesystem.vendor_product
+  | `drop_dm_object_name(Filesystem)`
+  | `security_content_ctime(lastTime)`
+  | `security_content_ctime(firstTime)`
+  | `linux_medusa_rootkit_filter`
+splunk_rule_id: 7add8520-71d5-43aa-b262-ee082b1f0238
+splunk_rule_type: TTP
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection_0:
+    TargetFilename|endswith:
+    - /lib/libseconf
+    - .backup_ld.so
+    - .boot.sh
+    - .logpam
+    - sshpass.txt
+    - sshpass2.txt
+    - /lib/libdsx.so
+    - rkload
+    - /lib/libseconf/local.txt
+    - /lib/locate/local.txt
+    - /var/log/remote.txt
+    - /lib/libseconf/.pts
+    - /lib/locate /.pts
+    - /libseconf/.ports
+  condition: selection_0

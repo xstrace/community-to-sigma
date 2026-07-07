@@ -1,0 +1,43 @@
+title: Windows Mshta Execution In Registry
+id: e13ceade-b673-4d34-adc4-4d9c01729753
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of mshta.exe via registry entries to run malicious scripts. It leverages registry activity logs to identify entries containing "mshta," "javascript,"
+  "vbscript," or "WScript.Shell." This behavior is significant as it indicates potential fileless malware, such as Kovter, which uses encoded scripts in the registry to persist and execute without files.
+  If confirmed malicious, this activity could allow attackers to maintain persistence, execute arbitrary code, and evade traditional file-based detection methods, posing a significant threat to system integrity
+  and security.
+references:
+- https://redcanary.com/threat-detection-report/techniques/mshta/
+- https://learn.microsoft.com/en-us/microsoft-365/security/intelligence/fileless-threats?view=o365-worldwide
+tags:
+- attack.t1218.005
+date: '2022-10-14'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Registry
+    WHERE Registry.registry_value_data = "*mshta*"
+      OR
+      Registry.registry_value_data IN ("*javascript:*", "*vbscript:*","*WScript.Shell*")
+    BY Registry.action Registry.dest Registry.process_guid
+       Registry.process_id Registry.registry_hive Registry.registry_path
+       Registry.registry_key_name Registry.registry_value_data Registry.registry_value_name
+       Registry.registry_value_type Registry.status Registry.user
+       Registry.vendor_product
+  | `drop_dm_object_name(Registry)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `windows_mshta_execution_in_registry_filter`
+splunk_rule_id: e13ceade-b673-4d34-adc4-4d9c01729753
+splunk_rule_type: TTP
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    Details|contains: mshta
+  selection_1:
+    Details|contains:
+    - 'javascript:'
+    - 'vbscript:'
+    - WScript.Shell
+  condition: selection_0 and selection_1

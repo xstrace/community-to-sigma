@@ -1,0 +1,64 @@
+title: Cisco Secure Firewall - High Priority Intrusion Classification
+id: ec99bb81-c31b-4837-8c7d-1b32aa70b337
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic identifies high-severity intrusion events based on the classification assigned to Snort rules within Cisco Secure Firewall logs.
+  It leverages Cisco Secure Firewall Threat Defense logs and focuses on events classified as:
+
+  - A Network Trojan was Detected
+  - Successful Administrator Privilege Gain
+  - Successful User Privilege Gain
+  - Attempt to Login By a Default Username and Password
+  - Known malware command and control traffic
+  - Known malicious file or file based exploit
+  - Known client side exploit attempt
+  - Large Scale Information Leak"
+
+  These classifications typically represent significant threats such as remote code execution, credential theft, lateral movement, or malware communication. Detection of these classifications should be prioritized for immediate investigation.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/firepower/741/api/FQE/secure_firewall_estreamer_fqe_guide_740.pdf
+tags:
+- attack.t1203
+- attack.t1003
+- attack.t1071
+- attack.t1190
+- attack.t1078
+date: '2025-04-16'
+original_spl: |-
+  `cisco_secure_firewall` EventType=IntrusionEvent
+          class_desc IN ("A Network Trojan was Detected", "Successful Administrator Privilege Gain", "Successful User Privilege Gain", "Attempt to Login By a Default Username and Password", "Known malware command and control traffic", "Known malicious file or file based exploit", "Known client side exploit attempt", "Large Scale Information Leak")
+  | fillnull
+  | stats count min(_time) as firstTime max(_time) as lastTime
+          values(signature_id) as signature_id
+          values(MitreAttackGroups) as MitreAttackGroups
+          values(InlineResult) as InlineResult
+          values(InlineResultReason) as InlineResultReason
+          values(dest_port) as dest_port
+          values(rule) as rule
+          values(transport) as transport
+          values(app) as app
+          by src, dest, signature, class_desc
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_secure_firewall___high_priority_intrusion_classification_filter`
+splunk_rule_id: ec99bb81-c31b-4837-8c7d-1b32aa70b337
+splunk_rule_type: TTP
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: IntrusionEvent
+  selection_1:
+    class_desc:
+    - A Network Trojan was Detected
+    - Successful Administrator Privilege Gain
+    - Successful User Privilege Gain
+    - Attempt to Login By a Default Username and Password
+    - Known malware command and control traffic
+    - Known malicious file or file based exploit
+    - Known client side exploit attempt
+    - Large Scale Information Leak
+  condition: selection_0 and selection_1
