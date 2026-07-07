@@ -1,0 +1,41 @@
+title: Cisco IOS XE Reconnaissance Command Activity
+id: 71ac5328-2364-40cf-8381-92b8dc531399
+status: stable
+level: medium
+author: Nasreddine Bencherchali
+description: |
+  This analytic detects bursts of Cisco IOS or NX-OS discovery commands associated with Salt Typhoon tradecraft.
+  Adversaries who gain initial access to network infrastructure devices typically perform systematic reconnaissance to understand the device configuration, network topology, security policies, connected systems, and potential attack paths.
+  This reconnaissance phase involves executing multiple "show" commands to enumerate device details, running configurations, active connections, routing information, and VPN sessions.
+references:
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
+- https://blog.talosintelligence.com/salt-typhoon-analysis/
+tags:
+- attack.T1082
+- attack.T1016
+- attack.T1590
+date: '2026-05-19'
+logsource:
+  product: cisco
+  service: ios
+detection:
+  selection_0:
+    facility|contains:
+    - AAA
+    - HA_EM
+  selection_1:
+    mnemonic|contains:
+    - AAA_ACCOUNTING_MESSAGE
+    - LOG
+  selection_2:
+    message_text|contains:
+    - '*show running-config*'
+    - '*show tacacs*'
+    - '*show cdp neighbors*'
+    - '*show file systems*'
+    - '*dir bootflash:*'
+    - '*show clock*'
+    - '*show platform software status control-processor brief*'
+    - '*terminal length 0*'
+    - '*terminal width 0*'
+  condition: selection_0 and selection_1 and selection_2

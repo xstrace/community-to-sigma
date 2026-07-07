@@ -1,0 +1,26 @@
+title: Cisco Smart Install Oversized Packet Detection
+id: 3b8d2b4f-4e1e-4a9e-9b43-8a7a3a9c7e21
+status: stable
+level: medium
+author: Bhavin Patel, Michael Haag, Splunk
+description: |
+  This analytic detects oversized Cisco Smart Install (SMI) protocol messages by inspecting traffic to TCP port 4786
+  within the Network_Traffic data model. Abnormally large SMI payloads have been associated with exploitation and
+  protocol abuse (e.g., CVE-2018-0171; activity reported by the "Static Tundra" threat actor). Monitoring message
+  sizes over time can help identify possible attempts at remote code execution, denial of service, or reconnaissance
+  against Cisco devices exposing Smart Install.
+references:
+- https://blog.talosintelligence.com/static-tundra/
+- https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-20180328-smi2
+tags:
+- attack.T1190
+date: '2025-08-21'
+logsource:
+  category: network_connection
+  product: cisco
+detection:
+  selection_0:
+    DestinationPort: 4786
+  selection_1:
+    transport: tcp
+  condition: selection_0 and selection_1

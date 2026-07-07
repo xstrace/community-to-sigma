@@ -1,0 +1,51 @@
+title: Gsuite Email Suspicious Subject With Attachment
+id: 8ef3971e-00f2-11ec-b54f-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies Gsuite emails with suspicious subjects and attachments commonly used in spear phishing attacks. It leverages Gsuite email logs, focusing on specific keywords
+  in the subject line and known malicious file types in attachments. This activity is significant for a SOC as spear phishing is a prevalent method for initial compromise, often leading to further malicious
+  actions. If confirmed malicious, this activity could result in unauthorized access, data exfiltration, or further malware deployment, posing a significant risk to the organization's security.
+references:
+- https://www.redhat.com/en/topics/devops/what-is-devsecops
+- https://www.mandiant.com/resources/top-words-used-in-spear-phishing-attacks
+tags:
+- attack.T1566_001
+date: '2021-08-19'
+logsource:
+  product: google_workspace
+  service: gmail
+detection:
+  selection_0:
+    num_message_attachments: 0
+  selection_1:
+    subject|contains:
+    - '*dhl*'
+    - '* ups *'
+    - '*delivery*'
+    - '*parcel*'
+    - '*label*'
+    - '*invoice*'
+    - '*postal*'
+    - '* fedex *'
+    - '* usps *'
+    - '* express *'
+    - '*shipment*'
+    - '*Banking/Tax*'
+    - '*shipment*'
+    - '*new order*'
+  selection_2:
+    file_extension_type|contains:
+    - doc
+    - docx
+    - xls
+    - xlsx
+    - ppt
+    - pptx
+    - pdf
+    - zip
+    - rar
+    - html
+    - htm
+    - hta
+  condition: selection_0 and selection_1 and selection_2

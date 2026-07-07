@@ -1,0 +1,43 @@
+title: Windows Privileged Group Modification
+id: b8cbef2c-2cc3-4550-b0fc-9715b7852df9
+status: stable
+level: medium
+author: Brandon Sternfield, Optiv + ClearShark
+description: |
+  This analytic detects modifications to privileged groups in Active Directory, including addition, creation, deletion, and changes to various types of groups such as local, global, universal, and LDAP query groups.
+  It specifically monitors for changes to high-privilege groups like "Administrators", "Domain Admins", "Enterprise Admins", and "ESX Admins", among others.
+  This detection is particularly relevant in the context of potential exploitation of vulnerabilities like the VMware ESXi Active Directory Integration Authentication Bypass (CVE-2024-37085), where attackers may attempt to manipulate privileged groups to gain unauthorized access to systems.
+references:
+- https://nvd.nist.gov/vuln/detail/CVE-2024-37085
+- https://www.rapid7.com/blog/post/2024/07/30/vmware-esxi-cve-2024-37085-targeted-in-ransomware-campaigns/%5C
+- https://x.com/mthcht/status/1818196168515461431?s=12&t=kwffmj0KM1sZtg3MrqC0QQ
+tags:
+- attack.T1136_001
+- attack.T1136_002
+date: '2024-07-30'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_1:
+    TargetUserName|contains:
+    - Account Operators
+    - Administrators
+    - Admins DNS
+    - Backup Operators
+    - DnsAdmins
+    - Domain Admins
+    - Enterprise Admins
+    - Enterprise Key Admins
+    - ESX Admins
+    - ESXi Admins
+    - Group Policy Creator Owners
+    - Hyper-V Administrators
+    - Key Admins
+    - Print Operators
+    - Remote Desktop Users
+    - Remote Management Users
+    - Replicators
+    - Schema Admins
+    - Server Operators
+  condition: selection_1

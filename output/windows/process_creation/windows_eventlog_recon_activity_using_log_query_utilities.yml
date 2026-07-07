@@ -1,0 +1,42 @@
+title: Windows EventLog Recon Activity Using Log Query Utilities
+id: dc167f8b-3f9d-4460-9c98-8b6e703fd628
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects EventLog reconnaissance activity using utilities such as `wevtutil.exe`, `wmic.exe`, PowerShell cmdlets like `Get-WinEvent`, or WMI queries targeting `Win32_NTLogEvent`. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line arguments. These tools are often used by adversaries to extract usernames, IP addresses, session data, and event information for credential access or situational awareness during lateral movement. While these utilities are legitimate, execution with specific arguments or targeting sensitive logs like `Security`, `PowerShell`, or specific EventIDs (e.g., 4624, 4778) can indicate malicious intent. If confirmed malicious, this behavior could allow an attacker to extract sensitive info and potentially have leveraged access or move laterally.
+references:
+- http://blog.talosintelligence.com/2022/09/lazarus-three-rats.html
+- https://thedfirreport.com/2023/10/30/netsupport-intrusion-results-in-domain-compromise/
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-144a
+- https://www.group-ib.com/blog/apt41-world-tour-2021/
+- https://labs.withsecure.com/content/dam/labs/docs/f-secureLABS-tlp-white-lazarus-threat-intel-report2.pdf
+- https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.diagnostics/get-winevent
+- https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-eventlog
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/wevtutil
+tags:
+- attack.T1654
+date: '2025-04-24'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine:
+    - '*Get-WinEvent*'
+    - '*Get-EventLog*'
+    - '*EventLogQuery*'
+    - '*.ReadEvent(*'
+  selection_1:
+    CommandLine:
+    - '* qe *'
+    - '* query-events *'
+  selection_2:
+    CommandLine: '*ntevent*'
+  selection_3:
+    CommandLine|contains: '*Win32_NTLogEvent*'
+  selection_4:
+    CommandLine|contains:
+    - '*PsLogList*'
+    - '*Eventquery*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

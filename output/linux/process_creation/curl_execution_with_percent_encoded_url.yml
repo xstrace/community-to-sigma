@@ -1,0 +1,39 @@
+title: Curl Execution with Percent Encoded URL
+id: 9a8d5516-4c5e-11ef-9d42-acde48001122
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects the execution of the curl utility where the command line includes percent-encoded characters and explicit file output options (such as -o or --output).
+  It leverages process execution telemetry from Endpoint Detection and Response (EDR) data sources to identify curl commands that may be using URL encoding to obfuscate download locations or payload paths.
+  This behavior is notable because percent-encoded URLs are commonly used by adversaries to evade simple string-based detections, hide malicious infrastructure, or bypass network security controls.
+  When combined with file download behavior, this activity may indicate malware staging, payload retrieval, or secondary tool deployment.
+  Analysts should review the decoded URL, destination host, parent process, and downloaded file to determine whether the activity is authorized or malicious.
+  The analytic calculates the number of percent (%) characters in the curl command line and triggers when a threshold of three or more is met, indicating potential URL encoding.
+  Adjust the threshold as needed based on your environment and tuning requirements.
+references:
+- https://github.com/nasbench/Misc-Research/blob/main/LOLBINs/Curl.md
+- https://attack.mitre.org/techniques/T1027/
+- https://attack.mitre.org/techniques/T1105/
+- https://curl.se/docs/manpage.html
+tags:
+- attack.T1027
+- attack.T1105
+date: '2026-03-03'
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image|contains:
+    - curl.exe
+    - curl
+  selection_1:
+    OriginalFileName: curl.exe
+  selection_2:
+    CommandLine|contains:
+    - '* --output *'
+    - '* -o *'
+  selection_3:
+    CommandLine|contains: '*%*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

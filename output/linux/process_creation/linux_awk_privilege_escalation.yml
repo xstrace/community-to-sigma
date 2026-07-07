@@ -1,0 +1,25 @@
+title: Linux AWK Privilege Escalation
+id: 4510cae0-96a2-4840-9919-91d262db210a
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Splunk
+description: The following analytic detects the use of the AWK command with elevated privileges to execute system commands. It leverages Endpoint Detection and Response (EDR) telemetry, specifically monitoring
+  processes that include "sudo," "awk," and "BEGIN*system" in their command lines. This activity is significant because it indicates a potential privilege escalation attempt, where a user could gain root
+  access by executing commands as the root user. If confirmed malicious, this could allow an attacker to fully compromise the system, execute arbitrary commands, and maintain persistent control over the
+  affected endpoint.
+references:
+- https://www.hacknos.com/awk-privilege-escalation/
+tags:
+- attack.T1548_003
+date: '2022-02-15'
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: '*sudo*'
+  selection_1:
+    CommandLine|contains: '*awk*'
+  selection_2:
+    CommandLine|contains: '*BEGIN*system*'
+  condition: selection_0 and selection_1 and selection_2

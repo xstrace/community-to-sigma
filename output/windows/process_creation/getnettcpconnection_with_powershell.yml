@@ -1,0 +1,23 @@
+title: GetNetTcpconnection with PowerShell
+id: e02af35c-1de5-4afe-b4be-f45aba57272b
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies the execution of `powershell.exe` with the `Get-NetTcpConnection` command, which lists current TCP connections on a system. This detection leverages data from
+  Endpoint Detection and Response (EDR) agents, focusing on process names and command-line executions. Monitoring this activity is significant as it may indicate an adversary or Red Team performing network
+  reconnaissance or situational awareness. If confirmed malicious, this activity could allow attackers to map network connections, aiding in lateral movement or further exploitation within the network.
+references:
+- https://attack.mitre.org/techniques/T1049/
+- https://docs.microsoft.com/en-us/powershell/module/nettcpip/get-nettcpconnection?view=windowsserver2019-ps
+tags:
+- attack.T1049
+date: '2021-08-24'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: powershell.exe
+  selection_1:
+    CommandLine|contains: '*Get-NetTcpConnection*'
+  condition: selection_0 and selection_1

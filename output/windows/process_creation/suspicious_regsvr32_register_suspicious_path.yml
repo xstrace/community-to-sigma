@@ -1,0 +1,33 @@
+title: Suspicious Regsvr32 Register Suspicious Path
+id: 62732736-6250-11eb-ae93-0242ac130002
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of Regsvr32.exe to register DLLs from suspicious paths such as AppData, ProgramData, or Windows Temp directories. It leverages data from Endpoint Detection
+  and Response (EDR) agents, focusing on process execution logs and command-line arguments. This activity is significant because Regsvr32.exe can be abused to proxy execution of malicious code, bypassing
+  traditional security controls. If confirmed malicious, this could allow an attacker to execute arbitrary code, potentially leading to system compromise, data exfiltration, or further lateral movement
+  within the network.
+references:
+- https://attack.mitre.org/techniques/T1218/010/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218.010/T1218.010.md
+- https://lolbas-project.github.io/lolbas/Binaries/Regsvr32/
+- https://support.microsoft.com/en-us/topic/how-to-use-the-regsvr32-tool-and-troubleshoot-regsvr32-error-messages-a98d960a-7392-e6fe-d90a-3f4e0cb543e5
+- https://any.run/report/f29a7d2ecd3585e1e4208e44bcc7156ab5388725f1d29d03e7699da0d4598e7c/0826458b-5367-45cf-b841-c95a33a01718
+tags:
+- attack.T1218_010
+date: '2021-01-29'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - '*\appdata\*'
+    - '*\programdata\*'
+    - '*\windows\temp\*'
+  filter_1:
+    CommandLine:
+    - '*.dll*'
+    - '*.ax*'
+    - '*.ocx*'
+  condition: (selection_0) and not (filter_1)

@@ -1,0 +1,22 @@
+title: Okta Unauthorized Access to Application
+id: 5f661629-9750-4cb9-897c-1f05d6db8727
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: The following analytic identifies attempts by users to access Okta applications that have not been assigned to them. It leverages Okta Identity Management logs, specifically focusing on failed
+  access attempts to unassigned applications. This activity is significant for a SOC as it may indicate potential unauthorized access attempts, which could lead to exposure of sensitive information or disruption
+  of services. If confirmed malicious, such activity could result in data breaches, non-compliance with data protection laws, and overall compromise of the IT environment.
+references:
+- https://attack.mitre.org/techniques/T1110/003/
+tags:
+- attack.T1087_004
+date: '2024-04-17'
+logsource:
+  category: authentication
+  product: okta
+detection:
+  selection_0:
+    Signature: app.generic.unauth_app_access_attempt
+  selection_1:
+    EventType: failure
+  condition: selection_0 and selection_1

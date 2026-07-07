@@ -1,0 +1,36 @@
+title: Cisco IOS XE Log Clearing Sequence With Optional Loopback Removal
+id: e20a6709-5f2c-4508-83fb-b3af6f705717
+status: stable
+level: medium
+author: Nasreddine Bencherchali
+description: |
+  This analytic detects Cisco IOS-XE command sequences where show logging, clear logging, and exit occur within a short period.
+  It also detects the pattern where a loopback interface is removed before clearing logs and exiting.
+references:
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
+- https://blog.talosintelligence.com/salt-typhoon-analysis/
+tags:
+- attack.T1070_001
+- attack.T1562
+date: '2026-05-19'
+logsource:
+  product: cisco
+  service: ios
+detection:
+  selection_0:
+    facility|contains:
+    - AAA
+    - HA_EM
+    - PARSER
+  selection_1:
+    mnemonic|contains:
+    - AAA_ACCOUNTING_MESSAGE
+    - LOG
+    - CFGLOG_LOGGEDCMD
+  selection_2:
+    message_text|contains:
+    - '*show logging*'
+    - '*clear logging*'
+    - '*exit*'
+    - '*no interface Loopback*'
+  condition: selection_0 and selection_1 and selection_2

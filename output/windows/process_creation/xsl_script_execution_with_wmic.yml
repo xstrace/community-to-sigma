@@ -1,0 +1,27 @@
+title: XSL Script Execution With WMIC
+id: 004e32e2-146d-11ec-a83f-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of an XSL script using the WMIC process, which is often indicative of malicious activity. It leverages data from Endpoint Detection and Response
+  (EDR) agents, focusing on command-line executions involving WMIC and XSL files. This behavior is significant as it has been associated with the FIN7 group, known for using this technique to execute malicious
+  scripts. If confirmed malicious, this activity could allow attackers to execute arbitrary code, potentially leading to system compromise and further malicious actions within the environment.
+references:
+- https://www.mandiant.com/resources/fin7-pursuing-an-enigmatic-and-evasive-global-criminal-operation
+- https://attack.mitre.org/groups/G0046/
+- https://web.archive.org/web/20190814201250/https://subt0x11.blogspot.com/2018/04/wmicexe-whitelisting-bypass-hacking.html
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1220/T1220.md#atomic-test-3---wmic-bypass-using-local-xsl-file
+tags:
+- attack.T1220
+date: '2021-09-14'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*os get*'
+  selection_1:
+    CommandLine|contains: '*/format:*'
+  selection_2:
+    CommandLine|contains: '*.xsl*'
+  condition: selection_0 and selection_1 and selection_2

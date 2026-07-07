@@ -1,0 +1,28 @@
+title: Detect Computer Changed with Anonymous Account
+id: 1400624a-d42d-484d-8843-e6753e6e3645
+status: stable
+level: medium
+author: Rod Soto, Jose Hernandez, Splunk
+description: |
+  The following analytic detects changes to computer accounts using an anonymous logon.
+  It leverages Windows Security Event Codes 4742 (Computer Change) with a SubjectUserName of a value "ANONYMOUS LOGON".
+  This activity can be significant because anonymous logons should not typically be modifying computer accounts, indicating potential unauthorized access or misconfiguration.
+  If confirmed malicious, this could allow an attacker to alter computer accounts, potentially leading to privilege escalation or persistent access within the network.
+references:
+- https://www.lares.com/blog/from-lares-labs-defensive-guidance-for-zerologon-cve-2020-1472/
+- https://netwrix.com/en/cybersecurity-glossary/cyber-security-attacks/zerologon-vulnerability/
+- https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES/blob/master/Credential%20Access/Zerologon_VoidSec_CVE-2020-1472_4626_LT3_Anonym_follwedby_4742_DC_Anony_DC.evtx
+tags:
+- attack.T1210
+date: '2020-09-18'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4742
+  selection_1:
+    SubjectUserName: ANONYMOUS LOGON
+  selection_2:
+    PasswordLastSet|contains: '*'
+  condition: selection_0 and selection_1 and selection_2

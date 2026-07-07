@@ -1,0 +1,22 @@
+title: Splunk Information Disclosure on Account Login
+id: 2bae5d19-6d1b-4db0-82ab-0af5ac5f836c
+status: deprecated
+level: medium
+author: Rod Soto
+description: This is a composed hunting search that looks for possible user enumeration attempts when SAML is enabled on a Splunk instance by capturing different responses from server.
+references:
+- https://advisory.splunk.com/advisories/SVD-2024-0716
+tags:
+- attack.T1087
+date: '2024-07-01'
+logsource:
+  product: splunk
+  service: splunkd
+detection:
+  selection_0:
+    component: UiAuth
+  selection_1:
+    sc-status: failure
+  selection_2:
+    action: login
+  condition: selection_0 and selection_1 and selection_2

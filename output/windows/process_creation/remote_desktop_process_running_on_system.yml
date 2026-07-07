@@ -1,0 +1,20 @@
+title: Remote Desktop Process Running On System
+id: f5939373-8054-40ad-8c64-cec478a22a4a
+status: experimental
+level: medium
+author: David Dorsey, Splunk
+description: The following analytic detects the execution of the remote desktop process (mstsc.exe) on systems where it is not typically run. This detection leverages data from Endpoint Detection and Response
+  (EDR) agents, filtering out systems categorized as common RDP sources. This activity is significant because unauthorized use of mstsc.exe can indicate lateral movement or unauthorized remote access attempts.
+  If confirmed malicious, this could allow an attacker to gain remote control of a system, potentially leading to data exfiltration, privilege escalation, or further network compromise.
+tags:
+- attack.T1021_001
+date: '2019-10-16'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*mstsc.exe'
+  selection_1:
+    dest_category!: common_rdp_source
+  condition: selection_0 and selection_1

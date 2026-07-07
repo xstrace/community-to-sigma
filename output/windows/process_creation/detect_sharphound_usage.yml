@@ -1,0 +1,31 @@
+title: Detect SharpHound Usage
+id: dd04b29a-beed-11eb-87bc-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the usage of the SharpHound binary by identifying its original filename, `SharpHound.exe`, and the process name. This detection leverages data from Endpoint Detection
+  and Response (EDR) agents, focusing on process metadata and command-line executions. SharpHound is a tool used for Active Directory enumeration, often by attackers during the reconnaissance phase. If
+  confirmed malicious, this activity could allow an attacker to map out the network, identify high-value targets, and plan further attacks, potentially leading to privilege escalation and lateral movement
+  within the environment.
+references:
+- https://attack.mitre.org/software/S0521/
+- https://thedfirreport.com/?s=bloodhound
+- https://github.com/BloodHoundAD/BloodHound/tree/master/Collectors
+- https://github.com/BloodHoundAD/SharpHound3
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1059.001/T1059.001.md#atomic-test-2---run-bloodhound-from-local-disk
+tags:
+- attack.T1069_001
+- attack.T1069_002
+- attack.T1087_001
+- attack.T1087_002
+- attack.T1482
+date: '2021-06-03'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: sharphound.exe
+  selection_1:
+    OriginalFileName: SharpHound.exe
+  condition: selection_0 and selection_1

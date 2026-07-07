@@ -1,0 +1,35 @@
+title: Windows Exchange Autodiscover SSRF Abuse
+id: d436f9e7-0ee7-4a47-864b-6dea2c4e2752
+status: stable
+level: medium
+author: Michael Haag, Nathaniel Stearns, Splunk
+description: This analytic identifies potential exploitation attempts of ProxyShell (CVE-2021-34473, CVE-2021-34523, CVE-2021-31207) and ProxyNotShell (CVE-2022-41040, CVE-2022-41082) vulnerabilities in
+  Microsoft Exchange Server. The detection focuses on identifying the SSRF attack patterns used in these exploit chains. The analytic monitors for suspicious POST requests to /autodiscover/autodiscover.json
+  endpoints that may indicate attempts to enumerate LegacyDN attributes as part of initial reconnaissance. It also detects requests containing X-Rps-CAT parameters that could indicate attempts to impersonate
+  Exchange users and access the PowerShell backend. Additionally, it looks for MAPI requests that may be used to obtain user SIDs, along with suspicious user agents (particularly Python-based) commonly
+  used in automated exploit attempts. If successful, these attacks can lead to remote code execution as SYSTEM, allowing attackers to deploy webshells, access mailboxes, or gain persistent access to the
+  Exchange server and potentially the broader network environment.
+references:
+- https://www.gteltsc.vn/blog/warning-new-attack-campaign-utilized-a-new-0day-rce-vulnerability-on-microsoft-exchange-server-12715.html
+- https://msrc-blog.microsoft.com/2022/09/29/customer-guidance-for-reported-zero-day-vulnerabilities-in-microsoft-exchange-server/
+- https://twitter.com/GossiTheDog/status/1575762721353916417?s=20&t=67gq9xCWuyPm1VEm8ydfyA
+- https://twitter.com/cglyer/status/1575793769814728705?s=20&t=67gq9xCWuyPm1VEm8ydfyA
+- https://www.gteltsc.vn/blog/warning-new-attack-campaign-utilized-a-new-0day-rce-vulnerability-on-microsoft-exchange-server-12715.html
+- https://research.splunk.com/stories/proxyshell/
+- https://splunk.github.io/splunk-add-on-for-microsoft-iis/
+- https://highon.coffee/blog/ssrf-cheat-sheet/
+- https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+- https://m365internals.com/2022/10/18/hunting-and-responding-to-proxyshell-attacks/
+tags:
+- attack.T1190
+- attack.T1133
+date: '2022-10-03'
+logsource:
+  category: webserver
+  product: windows
+detection:
+  selection_0:
+    sc-status: 200
+  selection_1:
+    cs-method: POST
+  condition: selection_0 and selection_1

@@ -1,0 +1,33 @@
+title: PingID Mismatch Auth Source and Verification Response
+id: 15b0694e-caa2-4009-8d83-a1f98b86d086
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic identifies discrepancies between the IP address of an authentication event and the IP address of the verification response event, focusing on differences in the originating
+  countries. It leverages JSON logs from PingID, comparing the 'auth_Country' and 'verify_Country' fields. This activity is significant as it may indicate suspicious sign-in behavior, such as account compromise
+  or unauthorized access attempts. If confirmed malicious, this could allow attackers to bypass authentication mechanisms, potentially leading to unauthorized access to sensitive systems and data.
+references:
+- https://twitter.com/jhencinski/status/1618660062352007174
+- https://attack.mitre.org/techniques/T1098/005/
+- https://attack.mitre.org/techniques/T1556/006/
+- https://docs.pingidentity.com/r/en-us/pingoneforenterprise/p14e_subscriptions?tocId=3xhnxjX3VzKNs3SXigWnQA
+tags:
+- attack.T1621
+- attack.T1556_006
+- attack.T1098_005
+date: '2023-12-20'
+logsource:
+  category: application
+  product: okta
+detection:
+  selection_0:
+    status"|contains:
+    - SUCCESS*
+    - FAIL*
+    - UNSUCCESSFUL*
+  filter_1:
+    message":
+    - '*pair*'
+    - '*create*'
+    - '*delete*'
+  condition: (selection_0) and not (filter_1)

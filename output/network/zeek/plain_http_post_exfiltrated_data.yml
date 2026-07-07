@@ -1,0 +1,29 @@
+title: Plain HTTP POST Exfiltrated Data
+id: e2b36208-a364-11eb-8909-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects potential data exfiltration using plain HTTP POST requests. It leverages network traffic logs, specifically monitoring the `stream_http` data source for POST
+  methods containing suspicious form data such as "wermgr.exe" or "svchost.exe". This activity is significant because it is commonly associated with malware like Trickbot, trojans, keyloggers, or APT adversaries,
+  which use plain text HTTP POST requests to communicate with remote C2 servers. If confirmed malicious, this activity could lead to unauthorized data exfiltration, compromising sensitive information and
+  potentially leading to further network infiltration.
+references:
+- https://blog.talosintelligence.com/2020/03/trickbot-primer.html
+tags:
+- attack.T1048_003
+date: '2021-04-22'
+logsource:
+  product: zeek
+  service: http
+detection:
+  selection_0:
+    cs-method: POST
+  selection_1:
+    form_data|contains:
+    - '*wermgr.exe*'
+    - '*svchost.exe*'
+    - '*name=\"proclist\"*'
+    - '*ipconfig*'
+    - '*name=\"sysinfo\"*'
+    - '*net view*'
+  condition: selection_0 and selection_1

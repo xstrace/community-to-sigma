@@ -1,0 +1,39 @@
+title: Windows Spearphishing Attachment Connect To None MS Office Domain
+id: 1cb40e15-cffa-45cc-abbd-e35884a49766
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies suspicious Office documents that connect to non-Microsoft Office domains. It leverages Sysmon EventCode 22 to detect processes like winword.exe or excel.exe
+  making DNS queries to domains outside of *.office.com or *.office.net. This activity is significant as it may indicate a spearphishing attempt using malicious documents to download or connect to harmful
+  content. If confirmed malicious, this could lead to unauthorized data access, malware infection, or further network compromise.
+references:
+- https://www.netskope.com/blog/asyncrat-using-fully-undetected-downloader
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.asyncrat
+tags:
+- attack.T1566_001
+date: '2023-01-27'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 22
+  selection_1:
+    Image|contains:
+    - '*\winword.exe'
+    - '*\excel.exe'
+    - '*\powerpnt.exe'
+    - '*\mspub.exe'
+    - '*\visio.exe'
+    - '*\wordpad.exe'
+    - '*\wordview.exe'
+    - '*\onenote.exe'
+    - '*\onenotem.exe'
+    - '*\onenoteviewer.exe'
+    - '*\onenoteim.exe'
+    - '*\msaccess.exe'
+  filter_2:
+    QueryName:
+    - '*.office.com'
+    - '*.office.net'
+  condition: (selection_0 and selection_1) and not (filter_2)

@@ -1,0 +1,23 @@
+title: Malicious Powershell Executed As A Service
+id: 8e204dfd-cae0-4ea8-a61d-e972a1ff2ff8
+status: stable
+level: medium
+author: Ryan Becwar
+description: The following analytic identifies the execution of malicious PowerShell commands or payloads via the Windows SC.exe utility. It detects this activity by analyzing Windows System logs (EventCode
+  7045) and filtering for specific PowerShell-related patterns in the ImagePath field. This behavior is significant because it indicates potential abuse of the Windows Service Control Manager to run unauthorized
+  or harmful scripts, which could lead to system compromise. If confirmed malicious, this activity could allow attackers to execute arbitrary code, escalate privileges, or maintain persistence within the
+  environment.
+references:
+- https://www.fireeye.com/content/dam/fireeye-www/blog/pdfs/dosfuscation-report.pdf
+- http://az4n6.blogspot.com/2017/
+- https://www.danielbohannon.com/blog-1/2017/3/12/powershell-execution-argument-obfuscation-how-it-can-make-detection-easier
+tags:
+- attack.T1569_002
+date: '2021-04-13'
+logsource:
+  product: windows
+  service: system
+detection:
+  selection_0:
+    EventID: 7045
+  condition: selection_0

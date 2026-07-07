@@ -1,0 +1,23 @@
+title: GCP Successful Single-Factor Authentication
+id: 40e17d88-87da-414e-b253-8dc1e4f9555b
+status: stable
+level: medium
+author: Bhavin Patel, Mauricio Velazco, Splunk
+description: The following analytic identifies a successful single-factor authentication event against Google Cloud Platform (GCP) for an account without Multi-Factor Authentication (MFA) enabled. It uses
+  Google Workspace login event data to detect instances where MFA is not utilized. This activity is significant as it may indicate a misconfiguration, policy violation, or potential account takeover attempt.
+  If confirmed malicious, an attacker could gain unauthorized access to GCP resources, potentially leading to data breaches, service disruptions, or further exploitation within the cloud environment.
+references:
+- https://attack.mitre.org/techniques/T1078/004/
+- https://support.google.com/a/answer/175197?hl=en
+- https://www.forbes.com/sites/daveywinder/2020/07/08/new-dark-web-audit-reveals-15-billion-stolen-logins-from-100000-breaches-passwords-hackers-cybercrime/?sh=69927b2a180f
+tags:
+- attack.T1078_004
+- attack.T1586_003
+date: '2022-10-14'
+logsource:
+  product: google_workspace
+  service: login
+detection:
+  selection_0:
+    name: login_success
+  condition: selection_0

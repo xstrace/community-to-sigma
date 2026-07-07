@@ -1,0 +1,18 @@
+title: ESXi VIB Acceptance Level Tampering
+id: d051d94f-c792-445e-b5d2-0b904f93ac09
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: This detection identifies changes to the VIB (vSphere Installation Bundle) acceptance level on an ESXi host. Modifying the acceptance level, such as setting it to CommunitySupported, lowers
+  the system's integrity enforcement and may allow the installation of unsigned or unverified software.
+tags:
+- attack.T1685
+date: '2025-07-11'
+logsource:
+  category: application
+detection:
+  selection_0:
+    Message|contains: '*esxcli software acceptance set*'
+  selection_1:
+    Message|contains: '*shell*'
+  condition: selection_0 and selection_1

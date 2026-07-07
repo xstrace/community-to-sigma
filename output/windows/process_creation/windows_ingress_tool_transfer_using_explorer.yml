@@ -1,0 +1,31 @@
+title: Windows Ingress Tool Transfer Using Explorer
+id: 76753bab-f116-4ea3-8fb9-89b638be58a9
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies instances where the Windows Explorer process (explorer.exe) is executed with a URL in its command line. This detection leverages data from Endpoint Detection
+  and Response (EDR) agents, focusing on process execution logs. This activity is significant because adversaries, such as those using DCRat malware, may abuse explorer.exe to open URLs with the default
+  browser, which is an uncommon and suspicious behavior. If confirmed malicious, this technique could allow attackers to download and execute malicious payloads, leading to potential system compromise and
+  further malicious activities.
+references:
+- https://www.mandiant.com/resources/analyzing-dark-crystal-rat-backdoor
+tags:
+- attack.T1105
+date: '2022-08-01'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: explorer.exe
+  selection_1:
+    OriginalFileName: explorer.exe
+  filter_2:
+    ParentImage:
+    - userinit.exe
+    - svchost.exe
+  selection_3:
+    CommandLine|contains:
+    - '* http://*'
+    - '* https://*'
+  condition: (selection_0 and selection_1 and selection_3) and not (filter_2)

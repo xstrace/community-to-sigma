@@ -1,0 +1,24 @@
+title: MCP Filesystem Server Suspicious Extension Write
+id: fc2a024a-18c1-4d31-9480-7f04cf3ff293
+status: stable
+level: medium
+author: Rod Soto
+description: This detection identifies attempts to create executable or script files through MCP filesystem server connections. Threat actors leveraging LLM-based tools may attempt to write malicious executables,
+  scripts, or batch files to disk for persistence or code execution. The detection prioritizes files written to system directories or startup locations which indicate higher likelihood of malicious intent.
+references:
+- https://splunkbase.splunk.com/app/8377
+- https://cymulate.com/blog/cve-2025-53109-53110-escaperoute-anthropic/
+- https://www.splunk.com/en_us/blog/security/securing-ai-agents-model-context-protocol.html
+tags:
+- attack.T1059
+date: '2026-02-17'
+logsource:
+  category: application
+detection:
+  selection_0:
+    method|contains:
+    - write_file
+    - create_file
+  selection_1:
+    direction: inbound
+  condition: selection_0 and selection_1

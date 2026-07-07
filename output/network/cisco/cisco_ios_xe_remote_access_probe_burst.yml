@@ -1,0 +1,33 @@
+title: Cisco IOS XE Remote Access Probe Burst
+id: efb20922-17bc-4fb0-880c-be50cfc100dd
+status: stable
+level: medium
+author: Nasreddine Bencherchali
+description: |
+  This analytic detects bursts of ping, SSH, and Telnet commands issued from Cisco IOS or NX-OS devices. The Salt Typhoon notes describe repeated SSH, Telnet-to-port-22, and ping activity across multiple IP addresses in a short time window.
+references:
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
+- https://blog.talosintelligence.com/salt-typhoon-analysis/
+tags:
+- attack.T1018
+- attack.T1021_004
+- attack.T1046
+date: '2026-05-19'
+logsource:
+  product: cisco
+  service: ios
+detection:
+  selection_0:
+    facility|contains:
+    - AAA
+    - HA_EM
+  selection_1:
+    mnemonic|contains:
+    - AAA_ACCOUNTING_MESSAGE
+    - LOG
+  selection_2:
+    message_text|contains:
+    - '*ssh *'
+    - '*telnet *'
+    - '*ping *'
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,25 @@
+title: Cisco Duo Admin Login Unusual Browser
+id: b38932ad-e663-4e90-bfdf-8446ee5b3f34
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic identifies instances where a Duo admin logs in using a browser other than Chrome, which is considered unusual based on typical access patterns. Please adjust as needed
+  to your environment. The detection leverages Duo activity logs ingested via the Cisco Security Cloud App and filters for admin login actions where the browser is not Chrome. By renaming and aggregating
+  relevant fields such as user, browser, IP address, and location, the analytic highlights potentially suspicious access attempts that deviate from the norm. This behavior is significant for a SOC because
+  the use of an unexpected browser may indicate credential compromise, session hijacking, or the use of unauthorized devices by attackers attempting to evade detection. Detecting such anomalies enables
+  early investigation and response, helping to prevent privilege escalation, policy manipulation, or further compromise of sensitive administrative accounts. The impact of this attack could include unauthorized
+  changes to security policies, user access, or the disabling of critical security controls, posing a substantial risk to the organizations security posture.
+references:
+- https://splunkbase.splunk.com/app/7404
+tags:
+- attack.T1556
+date: '2025-07-10'
+logsource:
+  product: cisco
+  service: duo
+detection:
+  selection_0:
+    name": admin_login
+  filter_1:
+    browser: Chrome
+  condition: (selection_0) and not (filter_1)

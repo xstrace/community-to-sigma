@@ -1,0 +1,33 @@
+title: Windows Service Create Kernel Mode Driver
+id: 0b4e3b06-1b2b-4885-b752-cf06d12a90cb
+status: stable
+level: medium
+author: Michael Haag, Teoderick Contreras Splunk
+description: The following analytic identifies the creation of a new kernel mode driver using the sc.exe command. This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing
+  on process execution logs that include command-line details. The activity is significant because adding a kernel driver is uncommon in regular operations and can indicate an attempt to gain low-level
+  access to the system. If confirmed malicious, this could allow an attacker to execute code with high privileges, potentially compromising the entire system and evading traditional security measures.
+references:
+- https://www.aon.com/cyber-solutions/aon_cyber_labs/yours-truly-signed-av-driver-weaponizing-an-antivirus-driver/
+- https://whiteknightlabs.com/2025/11/25/discreet-driver-loading-in-windows/
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/sc-config
+tags:
+- attack.T1068
+- attack.T1543_003
+date: '2022-05-16'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: sc.exe
+  selection_1:
+    OriginalFileName: sc.exe
+  selection_2:
+    CommandLine|contains: '*create*'
+  selection_3:
+    CommandLine|contains:
+    - '*kernel*'
+    - '*filesys*'
+  selection_4:
+    CommandLine|contains: '*type*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

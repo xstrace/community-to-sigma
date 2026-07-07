@@ -1,0 +1,61 @@
+title: Linux Common Process For Elevation Control
+id: 66ab15c0-63d0-11ec-9e70-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies the execution of common Linux processes used for elevation control, such as `chmod`, `chown`, and `setuid`. It leverages data from Endpoint Detection and Response
+  (EDR) agents, focusing on process names and command-line executions. This activity is significant because these processes are often abused by adversaries to gain persistence or escalate privileges on
+  compromised hosts. If confirmed malicious, this behavior could allow attackers to modify file attributes, change file ownership, or set user IDs, potentially leading to unauthorized access and control
+  over critical system resources.
+references:
+- https://attack.mitre.org/techniques/T1548/001/
+- https://github.com/Neo23x0/auditd/blob/master/audit.rules#L285-L297
+- https://github.com/bfuzzy1/auditd-attack/blob/master/auditd-attack/auditd-attack.rules#L269-L270
+- https://github.com/microsoft/MSTIC-Sysmon/blob/main/linux/configs/attack-based/privilege_escalation/T1548.001_ElevationControl_CommonProcesses.xml
+tags:
+- attack.T1548_001
+date: '2022-01-10'
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image|contains:
+    - chmod
+    - chown
+    - fchmod
+    - fchmodat
+    - fchown
+    - fchownat
+    - fremovexattr
+    - fsetxattr
+    - lchown
+    - lremovexattr
+    - lsetxattr
+    - removexattr
+    - setuid
+    - setgid
+    - setreuid
+    - setregid
+    - chattr
+  selection_1:
+    CommandLine|contains:
+    - '*chmod *'
+    - '*chown *'
+    - '*fchmod *'
+    - '*fchmodat *'
+    - '*fchown *'
+    - '*fchownat *'
+    - '*fremovexattr *'
+    - '*fsetxattr *'
+    - '*lchown *'
+    - '*lremovexattr *'
+    - '*lsetxattr *'
+    - '*removexattr *'
+    - '*setuid *'
+    - '*setgid *'
+    - '*setreuid *'
+    - '*setregid *'
+    - '*setcap *'
+    - '*chattr *'
+  condition: selection_0 and selection_1

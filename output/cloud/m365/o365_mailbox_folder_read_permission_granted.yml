@@ -1,0 +1,26 @@
+title: O365 Mailbox Folder Read Permission Granted
+id: cd15c0a8-470e-4b12-9517-046e4927db30
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies instances where read permissions are granted to mailbox folders within an Office 365 environment. It detects this activity by monitoring the `o365_management_activity`
+  data source for the `Set-MailboxFolderPermission` and `Add-MailboxFolderPermission` operations. This behavior is significant as it may indicate unauthorized access or changes to mailbox folder permissions,
+  potentially exposing sensitive email content. If confirmed malicious, an attacker could gain unauthorized access to read email communications, leading to data breaches or information leakage.
+references:
+- https://attack.mitre.org/techniques/T1098/002/
+- https://learn.microsoft.com/en-us/powershell/module/exchange/add-mailboxfolderpermission?view=exchange-ps
+- https://learn.microsoft.com/en-us/powershell/module/exchange/set-mailboxfolderpermission?view=exchange-ps
+tags:
+- attack.T1098_002
+date: '2024-04-17'
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: Exchange
+  selection_1:
+    Operation|contains:
+    - Set-MailboxFolderPermission
+    - Add-MailboxFolderPermission
+  condition: selection_0 and selection_1

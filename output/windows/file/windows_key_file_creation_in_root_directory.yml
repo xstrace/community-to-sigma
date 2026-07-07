@@ -1,0 +1,20 @@
+title: Windows .Key File Creation in Root Directory
+id: 90e71722-8c0f-43b4-937a-6222325976c2
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects the creation of a .key file in the root directory of the system drive.
+  This activity was seen with various ransomware before performing encryption of files.
+references:
+- https://www.cisa.gov/uscert/ncas/alerts/aa22-321a
+tags:
+- attack.T1486
+date: '2021-09-02'
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|contains: '*.key'
+  condition: selection_0

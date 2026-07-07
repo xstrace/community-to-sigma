@@ -1,0 +1,39 @@
+title: Elevated Group Discovery With Wmic
+id: 3f6bbf22-093e-4cb4-9641-83f47b8444b6
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of `wmic.exe` with command-line arguments querying specific elevated domain groups. It leverages Endpoint Detection and Response (EDR) telemetry
+  to identify processes that access the LDAP namespace and search for groups like "Domain Admins" or "Enterprise Admins." This activity is significant as it indicates potential reconnaissance efforts by
+  adversaries to identify high-privilege accounts within Active Directory. If confirmed malicious, this behavior could lead to privilege escalation, allowing attackers to gain elevated access and control
+  over critical network resources.
+references:
+- https://attack.mitre.org/techniques/T1069/002/
+- https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/appendix-b--privileged-accounts-and-groups-in-active-directory
+- https://adsecurity.org/?p=3658
+tags:
+- attack.T1069_002
+date: '2021-08-26'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: wmic.exe
+  selection_1:
+    CommandLine|contains: '*/NAMESPACE:\\root\directory\ldap*'
+  selection_2:
+    CommandLine|contains: '*Domain Admins*'
+  selection_3:
+    CommandLine|contains: '*Enterprise Admins*'
+  selection_4:
+    CommandLine|contains: '*Schema Admins*'
+  selection_5:
+    CommandLine|contains: '*Account Operators*'
+  selection_6:
+    CommandLine|contains: '*Server Operators*'
+  selection_7:
+    CommandLine|contains: '*Protected Users*'
+  selection_8:
+    CommandLine|contains: '*Dns Admins*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4 and selection_5 and selection_6 and selection_7 and selection_8

@@ -1,0 +1,20 @@
+title: Zscaler Legal Liability Threat Blocked
+id: bbf55ebf-c416-4f62-94d9-4064f2a28014
+status: stable
+level: medium
+author: Rod Soto, Gowthamaraj Rajendran, Splunk
+description: The following analytic identifies significant legal liability threats blocked by the Zscaler web proxy. It uses web proxy logs to track destinations, device owners, users, URL categories, and
+  actions associated with legal liability. By leveraging statistics on unique fields, it ensures a precise focus on these threats. This activity is significant for SOC as it helps enforce legal compliance
+  and risk management. If confirmed malicious, it could indicate attempts to access legally sensitive or restricted content, potentially leading to legal repercussions and compliance violations.
+references:
+- https://help.zscaler.com/zia/nss-feed-output-format-web-logs
+tags:
+- attack.T1566
+date: '2024-04-17'
+logsource:
+  category: proxy
+  service: zscaler
+detection:
+  selection_0:
+    urlclass: Legal Liability
+  condition: selection_0

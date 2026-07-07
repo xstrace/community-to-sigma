@@ -1,0 +1,28 @@
+title: Exchange PowerShell Abuse via SSRF
+id: 29228ab4-0762-11ec-94aa-acde48001122
+status: experimental
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects suspicious behavior indicative of ProxyShell exploitation against on-premise Microsoft Exchange servers. It identifies HTTP POST requests to `autodiscover.json`
+  containing `PowerShell` in the URI, leveraging server-side request forgery (SSRF) to access backend PowerShell. This detection uses Exchange server logs ingested into Splunk. Monitoring this activity
+  is crucial as it may indicate an attacker attempting to execute commands or scripts on the Exchange server. If confirmed malicious, this could lead to unauthorized access, privilege escalation, or persistent
+  control over the Exchange environment.
+references:
+- https://github.com/GossiTheDog/ThreatHunting/blob/master/AzureSentinel/Exchange-Powershell-via-SSRF
+- https://blog.orange.tw/2021/08/proxylogon-a-new-attack-surface-on-ms-exchange-part-1.html
+- https://peterjson.medium.com/reproducing-the-proxyshell-pwn2own-exploit-49743a4ea9a1
+tags:
+- attack.T1190
+- attack.T1133
+date: '2021-09-01'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    c_uri|contains: '*//autodiscover*'
+  selection_1:
+    cs_uri_query|contains: '*PowerShell*'
+  selection_2:
+    cs_method: POST
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,45 @@
+title: Gsuite Suspicious Shared File Name
+id: 07eed200-03f5-11ec-98fb-acde48001122
+status: experimental
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects shared files in Google Drive with suspicious filenames commonly used in spear phishing campaigns. It leverages GSuite Drive logs to identify documents with titles
+  that include keywords like "dhl," "ups," "invoice," and "shipment." This activity is significant because such filenames are often used to lure users into opening malicious documents or clicking harmful
+  links. If confirmed malicious, this activity could lead to unauthorized access, data theft, or further compromise of the user's system.
+references:
+- https://www.redhat.com/en/topics/devops/what-is-devsecops
+- https://www.mandiant.com/resources/top-words-used-in-spear-phishing-attacks
+tags:
+- attack.T1566_001
+date: '2021-08-23'
+logsource:
+  product: google_workspace
+  service: drive
+detection:
+  selection_0:
+    owner_is_team_drive: 'false'
+  selection_1:
+    doc_title"|contains:
+    - '*dhl*'
+    - '* ups *'
+    - '*delivery*'
+    - '*parcel*'
+    - '*label*'
+    - '*invoice*'
+    - '*postal*'
+    - '*fedex*'
+    - '* usps *'
+    - '* express *'
+    - '*shipment*'
+    - '*Banking/Tax*'
+    - '*shipment*'
+    - '*new order*'
+  selection_2:
+    doc_type|contains:
+    - document
+    - pdf
+    - msexcel
+    - msword
+    - spreadsheet
+    - presentation
+  condition: selection_0 and selection_1 and selection_2

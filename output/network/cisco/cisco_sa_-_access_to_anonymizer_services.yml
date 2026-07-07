@@ -1,0 +1,23 @@
+title: Cisco SA - Access to Anonymizer Services
+id: a7c8613a-92e2-4232-b64d-bd39d33dee8b
+status: stable
+level: medium
+author: Mahamudul Chowdhury, Bhavin Patel, Splunk
+description: |
+  This analytic detects attempts to access proxy-evasion or anonymizer services using Cisco Secure Access DNS and secure web proxy telemetry.
+  Users who reach anonymizer or proxy-evasion infrastructure are often trying to bypass corporate controls such as secure web gateway inspection, DLP monitoring, CASB visibility, and threat-detection systems. These services frequently establish encrypted tunnels that hide subsequent traffic from inspection.
+  Early identification helps security teams spot circumvention attempts before potential data exfiltration or follow-on malicious activity. Correlating DNS resolution and proxy session data strengthens confidence that access was intentional.
+references:
+- https://attack.mitre.org/techniques/T1090/003
+tags:
+- attack.T1090_003
+date: '2026-05-06'
+logsource:
+  category: network_connection
+  product: cisco
+detection:
+  selection_0:
+    action: allowed
+  selection_1:
+    category|contains: '*anonymizer*'
+  condition: selection_0 and selection_1

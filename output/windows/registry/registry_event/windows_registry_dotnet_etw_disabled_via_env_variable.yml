@@ -1,0 +1,29 @@
+title: Windows Registry Dotnet ETW Disabled Via ENV Variable
+id: 55502381-5cce-491b-9277-7cb1d10bc0df
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: The following analytic detects a registry modification that disables the ETW for the .NET Framework. It leverages data from the Endpoint.Registry data model, specifically monitoring changes
+  to the COMPlus_ETWEnabled registry value under the "Environment" registry key path for both user (HKCU\Environment) and machine (HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment) scopes.
+  This activity is significant because disabling ETW can allow attackers to evade Endpoint Detection and Response (EDR) tools and hide their execution from audit logs. If confirmed malicious, this action
+  could enable attackers to operate undetected, potentially leading to further compromise and persistent access within the environment.
+references:
+- https://gist.github.com/Cyb3rWard0g/a4a115fd3ab518a0e593525a379adee3
+- https://blog.xpnsec.com/hiding-your-dotnet-complus-etwenabled/
+- https://attack.mitre.org/techniques/T1562/006/
+tags:
+- attack.T1685
+date: '2021-10-07'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\Environment*'
+  selection_1:
+    Details: COMPlus_ETWEnabled
+  selection_2:
+    Details: '0x000000000'
+  selection_3:
+    Details: 0
+  condition: selection_0 and selection_1 and selection_2 and selection_3

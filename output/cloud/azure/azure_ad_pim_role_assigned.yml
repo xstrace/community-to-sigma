@@ -1,0 +1,22 @@
+title: Azure AD PIM Role Assigned
+id: fcd6dfeb-191c-46a0-a29c-c306382145ab
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the assignment of an Azure AD Privileged Identity Management (PIM) role. It leverages Azure Active Directory events to identify when a user is added as an eligible
+  member to a PIM role. This activity is significant because PIM roles grant elevated privileges, and their assignment should be closely monitored to prevent unauthorized access. If confirmed malicious,
+  an attacker could exploit this to gain privileged access, potentially leading to unauthorized actions, data breaches, or further compromise of the environment.
+references:
+- https://learn.microsoft.com/en-us/azure/active-directory/privileged-identity-management/pim-configure
+- https://learn.microsoft.com/en-us/azure/active-directory/privileged-identity-management/pim-how-to-activate-role
+- https://microsoft.github.io/Azure-Threat-Research-Matrix/PrivilegeEscalation/AZT401/AZT401/
+tags:
+- attack.T1098_003
+date: '2023-04-26'
+logsource:
+  product: azure
+  service: aad
+detection:
+  selection_0:
+    operationName|contains: Add eligible member to role in PIM completed*
+  condition: selection_0

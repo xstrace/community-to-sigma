@@ -1,0 +1,21 @@
+title: O365 DLP Rule Triggered
+id: 63a8a537-36fd-4aac-a3ea-1a96afd2c871
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic detects when Microsoft Office 365 Data Loss Prevention (DLP) rules have been triggered. DLP rules can be configured for any number of security, regulatory, or business
+  compliance reasons, as such this analytic will only be as accurate as the upstream DLP configuration. Detections from this analytic should be evaluated thoroughly to de termine what, if any, security
+  relevance the underlying DLP events contain.
+references:
+- https://learn.microsoft.com/en-us/purview/dlp-learn-about-dlp
+tags:
+- attack.T1048
+- attack.T1567
+date: '2024-04-07'
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Operation: DLPRuleMatch
+  condition: selection_0

@@ -1,0 +1,24 @@
+title: Splunk RCE PDFgen Render
+id: bc2b7437-0400-438b-9537-21ab5b7d2d53
+status: deprecated
+level: critical
+author: Rod Soto, Chase Franklin
+description: This is a hunting search designed to find and discover exploitation attempts against Splunk pdfgen render endpoint which results in remote
+references:
+- https://advisory.splunk.com/advisories/SVD-2024-0701
+tags:
+- attack.T1210
+date: '2024-07-01'
+logsource:
+  category: application
+detection:
+  selection_0:
+    index: _internal
+  selection_1:
+    sourcetype: splunk_pdfgen
+  selection_2:
+    _raw|contains:
+    - '*base64*'
+    - '*lambda*'
+    - '*system*'
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,22 @@
+title: Execute Javascript With Jscript COM CLSID
+id: dc64d064-d346-11eb-8588-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of JavaScript using the JScript.Encode CLSID (COM Object) by cscript.exe. It leverages data from Endpoint Detection and Response (EDR) agents, focusing
+  on process names, command-line executions, and parent processes. This activity is significant as it is a known technique used by ransomware, such as Reddot, to execute malicious scripts and potentially
+  disable AMSI (Antimalware Scan Interface). If confirmed malicious, this behavior could allow attackers to execute arbitrary code, evade detection, and maintain persistence within the environment.
+references:
+- https://app.any.run/tasks/c0f98850-af65-4352-9746-fbebadee4f05/
+tags:
+- attack.T1059_005
+date: '2021-06-23'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: cscript.exe
+  selection_1:
+    CommandLine|contains: '*-e:{F414C262-6AC0-11CF-B6D1-00AA00BBBB58}*'
+  condition: selection_0 and selection_1

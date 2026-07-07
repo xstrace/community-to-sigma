@@ -1,0 +1,29 @@
+title: Windows AD Same Domain SID History Addition
+id: 5fde0b7c-df7a-40b1-9b3a-294c00f0289d
+status: stable
+level: medium
+author: Dean Luxton
+description: The following analytic detects changes to the sIDHistory attribute of user or computer objects within the same domain. It leverages Windows Security Event Codes 4738 and 4742 to identify when
+  the sIDHistory attribute is modified. This activity is significant because the sIDHistory attribute can be abused by adversaries to grant unauthorized access by inheriting permissions from another account.
+  If confirmed malicious, this could allow attackers to maintain persistent access or escalate privileges within the domain, posing a severe security risk.
+references:
+- https://adsecurity.org/?p=1772
+- https://learn.microsoft.com/en-us/windows/win32/adschema/a-sidhistory?redirectedfrom=MSDN
+- https://learn.microsoft.com/en-us/defender-for-identity/security-assessment-unsecure-sid-history-attribute
+- https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/sid-history-injection
+tags:
+- attack.T1134_005
+date: '2022-09-08'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4742
+  selection_1:
+    EventID: 4738
+  filter_2:
+    SidHistory:
+    - '%%1793'
+    - '-'
+  condition: (selection_0 and selection_1) and not (filter_2)

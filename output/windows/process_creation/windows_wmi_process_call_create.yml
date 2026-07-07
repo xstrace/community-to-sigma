@@ -1,0 +1,28 @@
+title: Windows WMI Process Call Create
+id: 0661c2de-93de-11ec-9833-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of WMI command lines used to create or execute processes. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on command-line
+  events that include specific keywords like "process," "call," and "create." This activity is significant because adversaries often use WMI to execute malicious payloads on local or remote hosts, potentially
+  bypassing traditional security controls. If confirmed malicious, this behavior could allow attackers to execute arbitrary code, escalate privileges, or maintain persistence within the environment, posing
+  a severe threat to organizational security.
+references:
+- https://github.com/NVISOsecurity/sigma-public/blob/master/rules/windows/process_creation/win_susp_wmi_execution.yml
+- https://github.com/redcanaryco/atomic-red-team/blob/2b804d25418004a5f1ba50e9dc637946ab8733c7/atomics/T1047/T1047.md
+- https://www.microsoft.com/en-us/security/blog/2023/05/24/volt-typhoon-targets-us-critical-infrastructure-with-living-off-the-land-techniques/
+- https://thedfirreport.com/2023/05/22/icedid-macro-ends-in-nokoyawa-ransomware/
+tags:
+- attack.T1047
+date: '2022-02-22'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '* process *'
+  selection_1:
+    CommandLine|contains: '* call *'
+  selection_2:
+    CommandLine|contains: '* create *'
+  condition: selection_0 and selection_1 and selection_2

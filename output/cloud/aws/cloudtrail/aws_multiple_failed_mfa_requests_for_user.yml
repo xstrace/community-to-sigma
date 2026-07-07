@@ -1,0 +1,26 @@
+title: AWS Multiple Failed MFA Requests For User
+id: 1fece617-e614-4329-9e61-3ba228c0f353
+status: stable
+level: medium
+author: Bhavin Patel
+description: The following analytic identifies multiple failed multi-factor authentication (MFA) requests to an AWS Console for a single user. It leverages AWS CloudTrail logs, specifically the `additionalEventData`
+  field, to detect more than 10 failed MFA prompts within 5 minutes. This activity is significant as it may indicate an adversary attempting to bypass MFA by bombarding the user with repeated authentication
+  requests. If confirmed malicious, this could lead to unauthorized access to the AWS environment, potentially compromising sensitive data and resources.
+references:
+- https://attack.mitre.org/techniques/T1621/
+- https://aws.amazon.com/what-is/mfa/
+tags:
+- attack.T1586_003
+- attack.T1621
+date: '2022-10-03'
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    eventName: ConsoleLogin
+  selection_1:
+    MFAUsed": 'Yes'
+  selection_2:
+    errorMessage: Failed authentication
+  condition: selection_0 and selection_1 and selection_2

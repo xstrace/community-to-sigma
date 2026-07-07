@@ -1,0 +1,28 @@
+title: Splunk Authentication Token Exposure in Debug Log
+id: 9a67e749-d291-40dd-8376-d422e7ecf8b5
+status: stable
+level: medium
+author: Rod Soto, Chase Franklin
+description: |-
+  The following analytic identifies exposed authentication tokens in debug logs within Splunk Enterprise.
+  It leverages logs from the `splunkd` component with a DEBUG log level, specifically searching for event messages that validate tokens. This activity is significant because exposed tokens can be exploited by attackers to gain unauthorized access to the Splunk environment.
+  If confirmed malicious, this exposure could lead to unauthorized data access, privilege escalation, and potential compromise of the entire Splunk infrastructure.
+  Monitoring and addressing this vulnerability is crucial for maintaining the security and integrity of the Splunk deployment.
+references:
+- https://advisory.splunk.com/advisories/SVD-2024-0301
+tags:
+- attack.T1654
+date: '2024-03-27'
+logsource:
+  product: splunk
+  service: splunkd
+detection:
+  selection_0:
+    component: JsonWebToken
+  selection_1:
+    log_level: DEBUG
+  selection_2:
+    eventtype: splunkd-log
+  selection_3:
+    event_message|contains: Validating token:*
+  condition: selection_0 and selection_1 and selection_2 and selection_3

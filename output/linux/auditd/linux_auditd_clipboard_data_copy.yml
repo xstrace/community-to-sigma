@@ -1,0 +1,28 @@
+title: Linux Auditd Clipboard Data Copy
+id: 9ddfe470-c4d0-4e60-8668-7337bd699edd
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the use of the Linux 'xclip' command to copy data from the clipboard. It leverages Linux Auditd telemetry, focusing on process names and command-line arguments
+  related to clipboard operations. This activity is significant because adversaries can exploit clipboard data to capture sensitive information such as passwords or IP addresses. If confirmed malicious,
+  this technique could lead to unauthorized data exfiltration, compromising sensitive information and potentially aiding further attacks within the environment.
+references:
+- https://attack.mitre.org/techniques/T1115/
+- https://linux.die.net/man/1/xclip
+tags:
+- attack.T1115
+date: '2022-06-17'
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    execve_command|contains:
+    - '*xclip*'
+    - '*clipboard*'
+  selection_1:
+    execve_command|contains:
+    - '*-o*'
+    - '*-selection *'
+    - '*-sel *'
+  condition: selection_0 and selection_1

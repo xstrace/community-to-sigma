@@ -1,0 +1,27 @@
+title: Recursive Delete of Directory In Batch CMD
+id: ba570b3a-d356-11eb-8358-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of a batch command designed to recursively delete files or directories, a technique often used by ransomware like Reddot to delete files in the
+  recycle bin and prevent recovery. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on command-line executions that include specific flags for recursive and quiet deletions.
+  This activity is significant as it indicates potential ransomware behavior aimed at data destruction. If confirmed malicious, it could lead to significant data loss and hinder recovery efforts, severely
+  impacting business operations.
+references:
+- https://app.any.run/tasks/c0f98850-af65-4352-9746-fbebadee4f05/
+tags:
+- attack.T1070_004
+date: '2021-06-23'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*/c*'
+  selection_1:
+    CommandLine|contains: '* rd *'
+  selection_2:
+    CommandLine|contains: '*/s*'
+  selection_3:
+    CommandLine|contains: '*/q*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

@@ -1,0 +1,24 @@
+title: Azure AD Block User Consent For Risky Apps Disabled
+id: 875de3d7-09bc-4916-8c0a-0929f4ced3d8
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects when the risk-based step-up consent security setting in Azure AD is disabled. It monitors Azure Active Directory logs for the "Update authorization policy" operation,
+  specifically changes to the "AllowUserConsentForRiskyApps" setting. This activity is significant because disabling this feature can expose the organization to OAuth phishing threats by allowing users
+  to grant consent to potentially malicious applications. If confirmed malicious, attackers could gain unauthorized access to user data and sensitive information, leading to data breaches and further compromise
+  within the organization.
+references:
+- https://attack.mitre.org/techniques/T1562/
+- https://goodworkaround.com/2020/10/19/a-look-behind-the-azure-ad-permission-classifications-preview/
+- https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-risk-based-step-up-consent
+- https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
+tags:
+- attack.T1685
+date: '2023-11-16'
+logsource:
+  product: azure
+  service: aad
+detection:
+  selection_0:
+    operationName: Update authorization policy
+  condition: selection_0

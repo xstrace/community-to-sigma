@@ -1,0 +1,24 @@
+title: Windows System Discovery Using Qwinsta
+id: 2e765c1b-144a-49f0-93d0-1df4287cca04
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of "qwinsta.exe" on a Windows operating system. This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on process
+  execution logs. The "qwinsta.exe" tool is significant because it can display detailed session information on a remote desktop session host server. This behavior is noteworthy as it is commonly abused
+  by Qakbot malware to gather system information and send it back to its Command and Control (C2) server. If confirmed malicious, this activity could lead to unauthorized data exfiltration and further compromise
+  of the host.
+references:
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/qwinsta
+- https://securelist.com/qakbot-technical-analysis/103931/
+tags:
+- attack.T1033
+date: '2022-10-21'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: qwinsta.exe
+  selection_1:
+    OriginalFileName: qwinsta.exe
+  condition: selection_0 and selection_1

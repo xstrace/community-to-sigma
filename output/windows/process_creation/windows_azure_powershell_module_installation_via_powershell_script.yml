@@ -1,0 +1,32 @@
+title: Windows Azure PowerShell Module Installation Via PowerShell Script
+id: 344bed10-9a8b-4398-8bf3-ec9114125260
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  This analytic detects the installation of Azure AD and cloud management modules via PowerShell Script Block Logging.
+  Tools such as AADInternals, AzureAD, MSOnline, and Az.Resources provide deep access to Azure Active Directory objects, user accounts, service principals, and tenant configurations making them high-value targets for adversaries conducting reconnaissance, privilege escalation, or persistence operations post-compromise.
+tags:
+- attack.T1078
+- attack.T1021_007
+- attack.T1136_003
+- attack.T1098
+- attack.T1069_003
+date: '2026-05-05'
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: '4104'
+  selection_1:
+    ScriptBlockText|contains:
+    - '*Install-Module -Name AADInternals*'
+    - '*Install-Module -Name Az.Resources*'
+    - '*Install-Module -Name AzureAd*'
+    - '*Install-Module -Name MSOnline*'
+    - '*Install-Module AADInternals*'
+    - '*Install-Module Az.Resources*'
+    - '*Install-Module AzureAd*'
+    - '*Install-Module MSOnline*'
+  condition: selection_0 and selection_1

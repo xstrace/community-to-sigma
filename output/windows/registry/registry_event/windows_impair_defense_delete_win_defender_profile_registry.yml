@@ -1,0 +1,24 @@
+title: Windows Impair Defense Delete Win Defender Profile Registry
+id: 65d4b105-ec52-48ec-ac46-289d0fbf7d96
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the deletion of the Windows Defender main profile registry key. It leverages data from the Endpoint.Registry datamodel, specifically monitoring for deleted actions
+  within the Windows Defender registry path. This activity is significant as it indicates potential tampering with security defenses, often associated with Remote Access Trojans (RATs) and other malware.
+  If confirmed malicious, this action could allow an attacker to disable Windows Defender, reducing the system's ability to detect and respond to further malicious activities, thereby compromising endpoint
+  security.
+references:
+- https://blog.malwarebytes.com/malwarebytes-news/2021/02/lazyscripter-from-empire-to-double-rat/
+- https://app.any.run/tasks/45f5d114-91ea-486c-ab01-41c4093d2861/
+tags:
+- attack.T1685
+date: '2020-11-06'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\Policies\Microsoft\Windows Defender'
+  selection_1:
+    action: deleted
+  condition: selection_0 and selection_1

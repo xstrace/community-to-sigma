@@ -1,0 +1,31 @@
+title: Linux Service Started Or Enabled
+id: e0428212-61b7-11ec-88a3-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the creation or enabling of services on Linux platforms using the systemctl or service tools. It leverages Endpoint Detection and Response (EDR) logs, focusing
+  on process names, parent processes, and command-line executions. This activity is significant as adversaries may create or modify services to maintain persistence or execute malicious payloads. If confirmed
+  malicious, this behavior could lead to persistent access, data theft, ransomware deployment, or other damaging outcomes. Monitoring and investigating such activities are crucial for maintaining the security
+  and integrity of the environment.
+references:
+- https://attack.mitre.org/techniques/T1543/003/
+tags:
+- attack.T1053_006
+date: '2021-12-23'
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image|contains:
+    - systemctl
+    - service
+  selection_1:
+    CommandLine|contains:
+    - '*systemctl *'
+    - '*service *'
+  selection_2:
+    CommandLine|contains:
+    - '* start *'
+    - '* enable *'
+  condition: selection_0 and selection_1 and selection_2

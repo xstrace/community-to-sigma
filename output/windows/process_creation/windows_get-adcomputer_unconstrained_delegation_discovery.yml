@@ -1,0 +1,29 @@
+title: Windows Get-AdComputer Unconstrained Delegation Discovery
+id: c8640777-469f-4638-ab44-c34a3233ffac
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the use of the Get-ADComputer cmdlet with parameters indicating a search for Windows endpoints with Kerberos Unconstrained Delegation. It leverages PowerShell
+  Script Block Logging (EventCode=4104) to identify this specific activity. This behavior is significant as it may indicate an attempt by adversaries or Red Teams to gain situational awareness and perform
+  Active Directory discovery. If confirmed malicious, this activity could allow attackers to identify high-value targets for further exploitation, potentially leading to privilege escalation or lateral
+  movement within the network.
+references:
+- https://attack.mitre.org/techniques/T1018/
+- https://adsecurity.org/?p=1667
+- https://docs.microsoft.com/en-us/defender-for-identity/cas-isp-unconstrained-kerberos
+- https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/domain-compromise-via-unrestricted-kerberos-delegation
+- https://www.cyberark.com/resources/threat-research-blog/weakness-within-kerberos-delegation
+tags:
+- attack.T1018
+date: '2022-03-28'
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: '*Get-ADComputer*'
+  selection_2:
+    ScriptBlockText|contains: '*TrustedForDelegation*'
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,24 @@
+title: Windows AD DSRM Account Changes
+id: 08cb291e-ea77-48e8-a95a-0799319bf056
+status: stable
+level: medium
+author: Dean Luxton
+description: The following analytic identifies changes to the Directory Services Restore Mode (DSRM) account behavior via registry modifications. It detects alterations in the registry path "*\\System\\CurrentControlSet\\Control\\Lsa\\DSRMAdminLogonBehavior"
+  with specific values indicating potential misuse. This activity is significant because the DSRM account, if misconfigured, can be exploited to persist within a domain, similar to a local administrator
+  account. If confirmed malicious, an attacker could gain persistent administrative access to a Domain Controller, leading to potential domain-wide compromise and unauthorized access to sensitive information.
+references:
+- https://adsecurity.org/?p=1714
+tags:
+- attack.T1098
+date: '2022-09-08'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\System\CurrentControlSet\Control\Lsa\DSRMAdminLogonBehavior'
+  selection_1:
+    Details|contains:
+    - '*1'
+    - '*2'
+  condition: selection_0 and selection_1

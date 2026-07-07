@@ -1,0 +1,27 @@
+title: Azure AD Application Administrator Role Assigned
+id: eac4de87-7a56-4538-a21b-277897af6d8d
+status: stable
+level: medium
+author: Mauricio Velazco, Gowthamaraj Rajendran, Splunk
+description: The following analytic identifies the assignment of the Application Administrator role to an Azure AD user. It leverages Azure Active Directory events, specifically monitoring the "Add member
+  to role" operation. This activity is significant because users in this role can manage all aspects of enterprise applications, including credentials, which can be used to impersonate application identities.
+  If confirmed malicious, an attacker could escalate privileges, manage application settings, and potentially access sensitive resources by impersonating application identities, posing a significant security
+  risk to the Azure AD tenant.
+references:
+- https://dirkjanm.io/azure-ad-privilege-escalation-application-admin/
+- https://posts.specterops.io/azure-privilege-escalation-via-service-principal-abuse-210ae2be2a5
+- https://docs.microsoft.com/en-us/azure/active-directory/roles/concept-understand-roles
+- https://attack.mitre.org/techniques/T1098/003/
+- https://learn.microsoft.com/en-us/azure/active-directory/roles/permissions-reference#application-administrator
+tags:
+- attack.T1098_003
+date: '2023-04-25'
+logsource:
+  product: azure
+  service: aad
+detection:
+  selection_0:
+    operationName: Add member to role
+  selection_1:
+    targetResources{}.modifiedProperties{}.newValue"|contains: '*Application Administrator*'
+  condition: selection_0 and selection_1

@@ -1,0 +1,24 @@
+title: Suspicious microsoft workflow compiler rename
+id: f0db4464-55d9-11eb-ae93-0242ac130002
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the renaming of microsoft.workflow.compiler.exe, a rarely used executable typically located in C:\Windows\Microsoft.NET\Framework64\v4.0.30319. This detection
+  leverages Endpoint Detection and Response (EDR) data, focusing on process names and original file names. This activity is significant because renaming this executable can indicate an attempt to evade
+  security controls. If confirmed malicious, an attacker could use this renamed executable to execute arbitrary code, potentially leading to privilege escalation or persistent access within the environment.
+references:
+- https://lolbas-project.github.io/lolbas/Binaries/Microsoft.Workflow.Compiler/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218/T1218.md#atomic-test-6---microsoftworkflowcompilerexe-payload-execution
+tags:
+- attack.T1036_003
+- attack.T1127
+date: '2021-01-19'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    process_name!: microsoft.workflow.compiler.exe
+  selection_1:
+    OriginalFileName: Microsoft.Workflow.Compiler.exe
+  condition: selection_0 and selection_1

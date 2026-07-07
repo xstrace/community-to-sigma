@@ -1,0 +1,26 @@
+title: Linux Ingress Tool Transfer Hunting
+id: 52fd468b-cb6d-48f5-b16a-92f1c9bb10cf
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of 'curl' and 'wget' commands within a Linux environment. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names,
+  user information, and command-line executions. This activity is significant as 'curl' and 'wget' are commonly used for downloading files, which can indicate potential ingress of malicious tools. If confirmed
+  malicious, this activity could lead to unauthorized code execution, data exfiltration, or further compromise of the system. Monitoring and tuning this detection helps identify and differentiate between
+  normal and potentially harmful usage.
+references:
+- https://gtfobins.github.io/gtfobins/curl/
+- https://curl.se/docs/manpage.html#-I
+- https://gtfobins.github.io/gtfobins/curl/
+- https://github.com/rapid7/metasploit-framework/search?q=curl
+tags:
+- attack.T1105
+date: '2022-06-17'
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image: curl
+  selection_1:
+    Image: wget
+  condition: selection_0 and selection_1

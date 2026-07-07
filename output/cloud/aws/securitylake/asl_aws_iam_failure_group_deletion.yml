@@ -1,0 +1,26 @@
+title: ASL AWS IAM Failure Group Deletion
+id: 8d12f268-c567-4557-9813-f8389e235c06
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects failed attempts to delete AWS IAM groups, triggered by access denial, conflicts, or non-existent groups. It operates by monitoring CloudTrail logs for specific
+  error codes related to deletion failures. This behavior is significant for a SOC as it may indicate unauthorized attempts to modify access controls or disrupt operations by removing groups. Such actions
+  could be part of a larger attack aiming to escalate privileges or impair security protocols. Identifying these attempts allows for timely investigation and mitigation, preventing potential impact on the
+  organizations security posture.
+references:
+- https://awscli.amazonaws.com/v2/documentation/api/latest/reference/iam/delete-group.html
+- https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteGroup.html
+tags:
+- attack.T1098
+date: '2024-05-22'
+logsource:
+  product: aws
+  service: securitylake
+detection:
+  selection_0:
+    operation: DeleteGroup
+  selection_1:
+    sc-status: Failure
+  selection_2:
+    user_agent!|contains: '*.amazonaws.com'
+  condition: selection_0 and selection_1 and selection_2

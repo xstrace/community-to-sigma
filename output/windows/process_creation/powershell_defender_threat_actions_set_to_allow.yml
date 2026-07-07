@@ -1,0 +1,30 @@
+title: Powershell Defender Threat Actions Set to Allow
+id: 7dd3ced1-dc48-4998-9bc2-57e6ae5efaa7
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the setting of the Windows Defender Threat Actions to allow. It leverages data from the Endpoint.Processes data model, specifically monitoring the execution of
+  the `Set-MpPreference` cmdlet with the `-HighThreatDefaultAction`, `-ModerateThreatDefaultAction`, `-LowThreatDefaultAction`, and `-SevereThreatDefaultAction` parameters set to `6`. This activity is significant
+  because it is commonly used by malware such as RATs, bots, or Trojans to evade detection by allowing threats to pass through the Windows Defender antivirus engine. If confirmed malicious, this action
+  could allow an attacker to execute malicious code without being detected by Windows Defender, leading to potential data exfiltration, further system compromise, or persistent access within the environment.
+references:
+- https://www.broadcom.com/support/security-center/protection-bulletin/uac-0252-activity-delivering-shadowsniff-and-salatstealer-malware
+- https://bazaar.abuse.ch/browse/tag/SalatStealer/
+tags:
+- attack.T1059_001
+date: '2026-05-12'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*Set-MpPreference*'
+  selection_1:
+    CommandLine|contains:
+    - '*-HighThreatDefaultAction*'
+    - '*-ModerateThreatDefaultAction*'
+    - '*-LowThreatDefaultAction*'
+    - '*-SevereThreatDefaultAction*'
+  selection_2:
+    CommandLine|contains: '* 6*'
+  condition: selection_0 and selection_1 and selection_2

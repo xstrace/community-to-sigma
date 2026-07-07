@@ -1,0 +1,46 @@
+title: Windows Curl Download to Suspicious Path
+id: c32f091e-30db-11ec-8738-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects the use of Windows Curl.exe to download
+  a file to a suspicious location, such as AppData, ProgramData, or Public directories.
+  It leverages data from Endpoint Detection and Response (EDR) agents, focusing on
+  command-line executions that include the -O or --output options. This activity is
+  significant because downloading files to these locations can indicate an attempt
+  to bypass security controls or establish persistence. If confirmed malicious, this
+  behavior could lead to unauthorized code execution, data exfiltration, or further
+  compromise of the system.
+references:
+- https://thedfirreport.com/2021/10/18/icedid-to-xinglocker-ransomware-in-24-hours/
+- https://attack.mitre.org/techniques/T1105/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1105/T1105.md
+tags:
+- attack.T1105
+date: '2021-10-19'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: curl.exe
+  selection_1:
+    OriginalFileName: Curl.exe
+  selection_2:
+    CommandLine|contains:
+    - '*-O *'
+    - '*--output*'
+    - '*--output-dir*'
+  selection_3:
+    CommandLine|contains:
+    - '*:\PerfLogs\*'
+    - '*:\Windows\Temp\*'
+    - '*\AppData\*'
+    - '*\ProgramData\*'
+    - '*\Users\Public\*'
+    - '*%AppData%*'
+    - '*%Public%*'
+    - '*%Temp%*'
+    - '*%tmp%*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

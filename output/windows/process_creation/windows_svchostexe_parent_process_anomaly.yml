@@ -1,0 +1,29 @@
+title: Windows Svchost.exe Parent Process Anomaly
+id: 1d38e5e9-2ff8-4c47-872c-bf1657cefab5
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects an anomaly where an svchost.exe process is spawned by a parent process other than the standard services.exe. In a typical Windows environment, svchost.exe is
+  a system process that hosts Windows service DLLs, and is expected to be a child of services.exe. A process deviation from this hierarchy may indicate suspicious behavior, such as malicious code attempting
+  to masquerade as a legitimate system process or evade detection. It is essential to investigate the parent process and associated behavior for further signs of compromise or unauthorized activity.
+references:
+- https://attack.mitre.org/techniques/T1036/009/
+- https://www.trendmicro.com/en_nl/research/24/k/earth-estries.html
+tags:
+- attack.T1036_009
+date: '2022-12-06'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: services.exe
+  selection_1:
+    Image: svchost.exe
+  selection_2:
+    CommandLine: unknown
+  selection_3:
+    ParentImage|contains: C:\ProgramData\Microsoft\Windows Defender\Platform\*\MsMpEng.exe
+  selection_4:
+    ParentImage: C:\Program Files\Windows Defender\MsMpEng.exe
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

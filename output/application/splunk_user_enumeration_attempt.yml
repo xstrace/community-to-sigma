@@ -1,0 +1,20 @@
+title: Splunk User Enumeration Attempt
+id: 25625cb4-1c4d-4463-b0f9-7cb462699cde
+status: stable
+level: medium
+author: Lou Stella, Splunk
+description: The following analytic identifies attempts to enumerate usernames in Splunk by detecting multiple failed authentication attempts from the same source. It leverages data from the `_audit` index,
+  specifically focusing on failed authentication events. This activity is significant for a SOC because it can indicate an attacker trying to discover valid usernames, which is a precursor to more targeted
+  attacks like password spraying or brute force attempts. If confirmed malicious, this activity could lead to unauthorized access, compromising the security of the Splunk environment and potentially exposing
+  sensitive data.
+references:
+- https://www.splunk.com/en_us/product-security/announcements/svd-2022-0502.html
+tags:
+- attack.T1078
+date: '2022-04-29'
+logsource:
+  category: application
+detection:
+  selection_0:
+    auths: 5
+  condition: selection_0

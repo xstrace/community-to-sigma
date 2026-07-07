@@ -1,0 +1,24 @@
+title: Suspicious Image Creation In Appdata Folder
+id: f6f904c4-1ac0-11ec-806b-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the creation of image files in the AppData folder by processes that also have a file reference in the same folder. It leverages data from the Endpoint.Processes
+  and Endpoint.Filesystem datamodels to identify this behavior. This activity is significant because it is commonly associated with malware, such as the Remcos RAT, which captures screenshots and stores
+  them in the AppData folder before exfiltrating them to a command-and-control server. If confirmed malicious, this activity could indicate unauthorized data capture and exfiltration, compromising sensitive
+  information and user privacy.
+references:
+- https://success.trendmicro.com/dcx/s/solution/1123281-remcos-malware-information?language=en_US
+- https://blog.malwarebytes.com/threat-intelligence/2021/07/remcos-rat-delivered-via-visual-basic/
+tags:
+- attack.T1113
+date: '2021-09-22'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image|contains: '*.exe'
+  selection_1:
+    Image|contains: '*\appdata\Roaming\*'
+  condition: selection_0 and selection_1

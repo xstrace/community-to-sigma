@@ -1,0 +1,32 @@
+title: Cisco IOS XE VTY Access Class Tampering
+id: a01ca274-16cb-476d-a814-d2ffe29d8905
+status: stable
+level: medium
+author: Nasreddine Bencherchali
+description: |
+  This analytic detects rapid modification of Cisco IOS-XE VTY access-class settings. The Salt Typhoon notes describe configure HTTP activity followed by line vty changes and removal/re-application of an access-class within 60 seconds.
+references:
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
+- https://blog.talosintelligence.com/salt-typhoon-analysis/
+tags:
+- attack.T1562
+- attack.T1021
+date: '2026-05-19'
+logsource:
+  product: cisco
+  service: ios
+detection:
+  selection_0:
+    facility|contains:
+    - HA_EM
+    - PARSER
+  selection_1:
+    mnemonic|contains:
+    - LOG
+    - CFGLOG_LOGGEDCMD
+  selection_2:
+    message_text|contains:
+    - '*access-class*'
+    - '*configure http*'
+    - '*line vty*'
+  condition: selection_0 and selection_1 and selection_2

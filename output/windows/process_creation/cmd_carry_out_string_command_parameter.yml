@@ -1,0 +1,23 @@
+title: CMD Carry Out String Command Parameter
+id: 54a6ed00-3256-11ec-b031-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Bhavin Patel, Splunk
+description: The following analytic detects the use of `cmd.exe /c` to execute commands, a technique often employed by adversaries and malware to run batch commands or invoke other shells like PowerShell.
+  This detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on command-line executions and process metadata. Monitoring this activity is crucial as it can indicate script-based
+  attacks or unauthorized command execution. If confirmed malicious, this behavior could lead to unauthorized code execution, privilege escalation, or persistence within the environment.
+references:
+- https://thedfirreport.com/2021/10/18/icedid-to-xinglocker-ransomware-in-24-hours/
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+tags:
+- attack.T1059_003
+date: '2021-10-21'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - '*/c*'
+    - '*/k*'
+  condition: selection_0

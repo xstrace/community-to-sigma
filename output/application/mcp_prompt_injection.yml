@@ -1,0 +1,22 @@
+title: MCP Prompt Injection
+id: 49779398-b738-4d64-bb3f-ead6eb97fe53
+status: stable
+level: medium
+author: Rod Soto
+description: This detection identifies potential prompt injection attempts within MCP (Model Context Protocol) communications by monitoring for known malicious phrases and patterns commonly used to manipulate
+  AI assistants. Prompt injection is a critical vulnerability where adversaries embed hidden instructions in content processed by AI tools, attempting to override system prompts, bypass security controls,
+  or hijack the AI's behavior. The search monitors JSON-RPC traffic for phrases such as "IGNORE PREVIOUS INSTRUCTIONS," "SYSTEM PROMPT OVERRIDE," and "ignore all security" which indicate attempts to subvert
+  the AI's intended behavior and potentially execute unauthorized actions through the MCP toolchain.
+references:
+- https://splunkbase.splunk.com/app/8377
+- https://www.tenable.com/blog/mcp-prompt-injection-not-just-for-evil
+- https://www.splunk.com/en_us/blog/security/securing-ai-agents-model-context-protocol.html
+tags:
+- attack.T1059
+date: '2026-02-17'
+logsource:
+  category: application
+detection:
+  selection_0:
+    direction: inbound
+  condition: selection_0

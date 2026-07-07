@@ -1,0 +1,20 @@
+title: Detect New Open GCP Storage Buckets
+id: f6ea3466-d6bb-11ea-87d0-0242ac130003
+status: experimental
+level: medium
+author: Shannon Davis, Splunk
+description: The following analytic identifies the creation of new open/public GCP Storage buckets. It leverages GCP PubSub events, specifically monitoring for the `storage.setIamPermissions` method and
+  checks if the `allUsers` member is added. This activity is significant because open storage buckets can expose sensitive data to the public, posing a severe security risk. If confirmed malicious, an attacker
+  could access, modify, or delete data within the bucket, leading to data breaches and potential compliance violations.
+tags:
+- attack.T1530
+date: '2020-08-19'
+logsource:
+  product: gcp
+  service: pubsub
+detection:
+  selection_0:
+    resource.type: gcs_bucket
+  selection_1:
+    protoPayload.methodName: storage.setIamPermissions
+  condition: selection_0 and selection_1

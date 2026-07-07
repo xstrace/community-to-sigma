@@ -1,0 +1,20 @@
+title: Internal Horizontal Port Scan
+id: 1ff9eb9a-7d72-4993-a55e-59a839e607f1
+status: stable
+level: medium
+author: Dean Luxton
+description: This analytic identifies instances where an internal host has attempted to communicate with 250 or more destination IP addresses using the same port and protocol. Horizontal port scans from
+  internal hosts can indicate reconnaissance or scanning activities, potentially signaling malicious intent or misconfiguration. By monitoring network traffic logs, this detection helps detect and respond
+  to such behavior promptly, enhancing network security and preventing potential threats.
+tags:
+- attack.T1046
+date: '2024-07-01'
+logsource:
+  category: network_connection
+detection:
+  selection_0:
+    SourceIp|contains:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+  condition: selection_0

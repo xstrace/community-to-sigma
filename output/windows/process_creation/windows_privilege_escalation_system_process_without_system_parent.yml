@@ -1,0 +1,37 @@
+title: Windows Privilege Escalation System Process Without System Parent
+id: 5a5351cd-ba7e-499e-ad82-2ce160ffa637
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic detects any system integrity level process spawned by a non-system account. It leverages Sysmon EventID 1, focusing on process integrity and parent user data. This behavior
+  is significant as it often indicates successful privilege escalation to SYSTEM from a user-controlled process or service. If confirmed malicious, this activity could allow an attacker to gain full control
+  over the system, execute arbitrary code, and potentially compromise the entire environment.
+references:
+- https://attack.mitre.org/techniques/T1068/
+- https://vuls.cert.org/confluence/display/Wiki/2021/06/21/Finding+Privilege+Escalation+Vulnerabilities+in+Windows+using+Process+Monitor
+- https://redcanary.com/blog/getsystem-offsec/
+- https://atomicredteam.io/privilege-escalation/T1134.001/
+tags:
+- attack.T1068
+- attack.T1548
+- attack.T1134
+date: '2024-02-14'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 1
+  selection_1:
+    IntegrityLevel: system
+  selection_2:
+    ParentUser|contains: '*'
+  filter_3:
+    ParentUser:
+    - '*SYSTEM'
+    - '*LOCAL SERVICE'
+    - '*NETWORK SERVICE'
+    - '*DWM-*'
+    - '*$'
+    - '-'
+  condition: (selection_0 and selection_1 and selection_2) and not (filter_3)

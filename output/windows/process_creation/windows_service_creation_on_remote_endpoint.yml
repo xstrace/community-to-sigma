@@ -1,0 +1,31 @@
+title: Windows Service Creation on Remote Endpoint
+id: e0eea4fa-4274-11ec-882b-3e22fbd008af
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies the creation of a Windows Service on a remote endpoint using `sc.exe`. It detects this activity by analyzing process execution logs from Endpoint Detection
+  and Response (EDR) agents, focusing on command-line arguments that include remote paths and service creation commands. This behavior is significant because adversaries often exploit the Service Control
+  Manager for lateral movement and remote code execution. If confirmed malicious, this activity could allow attackers to execute arbitrary code on remote systems, potentially leading to further compromise
+  and persistence within the network.
+references:
+- https://docs.microsoft.com/en-us/windows/win32/services/service-control-manager
+- https://docs.microsoft.com/en-us/windows/win32/services/controlling-a-service-using-sc
+- https://attack.mitre.org/techniques/T1543/003/
+tags:
+- attack.T1543_003
+date: '2021-11-11'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: sc.exe
+  selection_1:
+    OriginalFileName: sc.exe
+  selection_2:
+    CommandLine|contains: '*\\*'
+  selection_3:
+    CommandLine|contains: '*create*'
+  selection_4:
+    CommandLine|contains: '*binpath*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

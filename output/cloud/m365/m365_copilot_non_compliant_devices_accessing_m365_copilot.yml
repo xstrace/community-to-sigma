@@ -1,0 +1,23 @@
+title: M365 Copilot Non Compliant Devices Accessing M365 Copilot
+id: e26bc52d-9cbc-4743-9745-e8781d935042
+status: stable
+level: medium
+author: Rod Soto
+description: Detects M365 Copilot access from non-compliant or unmanaged devices that violate corporate security policies, indicating potential shadow IT usage, BYOD policy violations, or compromised endpoint
+  access. The detection filters M365 Copilot Graph API events where deviceDetail.isCompliant=false or deviceDetail.isManaged=false, then aggregates by user, operating system, and browser to calculate metrics
+  including event counts, unique IPs and locations, and compliance/management status over time. Users accessing Copilot from non-compliant or unmanaged devices are flagged and sorted by activity volume
+  and geographic spread, enabling security teams to identify unauthorized endpoints that may lack proper security controls, encryption, or MDM enrollment.
+references:
+- https://www.splunk.com/en_us/blog/artificial-intelligence/m365-copilot-log-analysis-splunk.html
+tags:
+- attack.T1685
+date: '2025-10-13'
+logsource:
+  category: application
+  product: m365
+detection:
+  selection_0:
+    isCompliant: 'false'
+  selection_1:
+    isManaged: 'false'
+  condition: selection_0 and selection_1

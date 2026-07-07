@@ -1,0 +1,24 @@
+title: Cisco Duo Policy Deny Access
+id: abf39464-ed43-4d69-a56c-02750032a3fb
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic identifies instances where a Duo administrator creates or updates a policy to explicitly deny user access within the Duo environment. It detects this behavior by searching
+  Duo administrator activity logs for policy creation or update actions where the authentication status is set to "Deny access." By correlating these events with user and admin details, the analytic highlights
+  potential misuse or malicious changes to access policies. This behavior is critical for a SOC to monitor, as unauthorized or suspicious denial of access policies can indicate insider threats, account
+  compromise, or attempts to disrupt legitimate user access. The impact of such an attack may include denial of service to critical accounts, disruption of business operations, or the masking of further
+  malicious activity by preventing targeted users from accessing resources. Early detection enables rapid investigation and remediation to maintain organizational security and availability.
+references:
+- https://splunkbase.splunk.com/app/7404
+tags:
+- attack.T1556
+date: '2025-07-10'
+logsource:
+  product: cisco
+  service: duo
+detection:
+  selection_0:
+    action: policy_update
+  selection_1:
+    action: policy_create
+  condition: selection_0 and selection_1

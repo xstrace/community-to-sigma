@@ -1,0 +1,31 @@
+title: Confluence Data Center and Server Privilege Escalation
+id: 115bebac-0976-4f7d-a3ec-d1fb45a39a11
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies potential exploitation attempts on a known vulnerability in Atlassian Confluence, specifically targeting the /setup/*.action* URL pattern. It leverages web
+  logs within the Splunk 'Web' Data Model, filtering for successful accesses (HTTP status 200) to these endpoints. This activity is significant as it suggests attackers might be exploiting a privilege escalation
+  flaw in Confluence. If confirmed malicious, it could result in unauthorized access or account creation with escalated privileges, leading to potential data breaches or further exploitation within the
+  environment.
+references:
+- https://confluence.atlassian.com/security/cve-2023-22515-privilege-escalation-vulnerability-in-confluence-data-center-and-server-1295682276.html
+- https://confluence.atlassian.com/security/cve-2023-22518-improper-authorization-vulnerability-in-confluence-data-center-and-server-1311473907.html
+- https://www.rapid7.com/blog/post/2023/10/04/etr-cve-2023-22515-zero-day-privilege-escalation-in-confluence-server-and-data-center/
+- https://attackerkb.com/topics/Q5f0ItSzw5/cve-2023-22515/rapid7-analysis
+tags:
+- attack.T1190
+date: '2023-10-04'
+logsource:
+  category: webserver
+detection:
+  selection_0:
+    cs-uri|contains:
+    - '*/setup/setupadministrator.action*'
+    - '*/setup/finishsetup.action*'
+    - '*/json/setup-restore-local.action*'
+    - '*/json/setup-restore-progress.action*'
+    - '*/json/setup-restore.action*'
+    - '*/bootstrap/selectsetupstep.action*'
+  selection_1:
+    sc-status: 200
+  condition: selection_0 and selection_1

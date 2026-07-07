@@ -1,0 +1,18 @@
+title: ESXi VM Exported via Remote Tool
+id: 2e155547-aaac-49d3-b0ef-ceabc31fd364
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: This detection identifies the use of a remote tool to download virtual machine disk files from a datastore. The NFC protocol is used by management tools to transfer files to and from ESXi hosts,
+  but it can also be abused by attackers or insiders to exfiltrate full virtual disk images
+tags:
+- attack.T1005
+date: '2025-07-11'
+logsource:
+  category: application
+detection:
+  selection_0:
+    Message|contains: '*File download from path*'
+  selection_1:
+    Message|contains: '*was initiated from*'
+  condition: selection_0 and selection_1

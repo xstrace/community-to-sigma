@@ -1,0 +1,29 @@
+title: Azure Automation Account Created
+id: 860902fd-2e76-46b3-b050-ba548dab576c
+status: stable
+level: medium
+author: Mauricio Velazco, Brian Serocki, Splunk
+description: The following analytic detects the creation of a new Azure Automation account within an Azure tenant. It leverages Azure Audit events, specifically the Azure Activity log category, to identify
+  when an account is created or updated. This activity is significant because Azure Automation accounts can be used to automate tasks and orchestrate actions across Azure and on-premise environments. If
+  an attacker creates an Automation account with elevated privileges, they could maintain persistence, execute malicious runbooks, and potentially escalate privileges or execute code on virtual machines,
+  posing a significant security risk.
+references:
+- https://docs.microsoft.com/en-us/azure/automation/overview
+- https://docs.microsoft.com/en-us/azure/automation/automation-create-standalone-account?tabs=azureportal
+- https://docs.microsoft.com/en-us/azure/automation/automation-hybrid-runbook-worker
+- https://www.inversecos.com/2021/12/how-to-detect-malicious-azure.html
+- https://www.netspi.com/blog/technical/cloud-penetration-testing/maintaining-azure-persistence-via-automation-accounts/
+- https://microsoft.github.io/Azure-Threat-Research-Matrix/Persistence/AZT503/AZT503-3/
+- https://attack.mitre.org/techniques/T1136/003/
+tags:
+- attack.T1136_003
+date: '2022-08-22'
+logsource:
+  product: azure
+  service: audit
+detection:
+  selection_0:
+    value: Microsoft.Automation/automationAccounts/write
+  selection_1:
+    value: Succeeded
+  condition: selection_0 and selection_1

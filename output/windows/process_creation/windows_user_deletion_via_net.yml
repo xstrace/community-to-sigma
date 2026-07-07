@@ -1,0 +1,22 @@
+title: Windows User Deletion Via Net
+id: b0b6fd2c-8953-4d1b-8f7b-56075ea6ab3e
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the use of net.exe or net1.exe command-line to delete a user account on a system. It leverages data from Endpoint Detection and Response (EDR) agents, focusing
+  on process and command-line execution logs. This activity is significant as it may indicate an attempt to impair user accounts or cover tracks during lateral movement. If confirmed malicious, this could
+  lead to unauthorized access removal, disruption of legitimate user activities, or concealment of adversarial actions, complicating incident response and forensic investigations.
+references:
+- https://thedfirreport.com/2020/04/20/sqlserver-or-the-miner-in-the-basement/
+tags:
+- attack.T1531
+date: '2021-05-07'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*user*'
+  selection_1:
+    CommandLine|contains: '*/delete*'
+  condition: selection_0 and selection_1

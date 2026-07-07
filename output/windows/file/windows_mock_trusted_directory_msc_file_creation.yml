@@ -1,0 +1,32 @@
+title: Windows Mock Trusted Directory MSC File Creation
+id: de8cc077-2dba-4060-af78-c98b3cfc5407
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects the creation of MSC files within a "C:\Windows \System32" directory.
+  Due to how Windows parses paths, the space causes an execution flow hijack and a malicious file will be executed instead of the standard Windows Files.
+references:
+- https://www.fortinet.com/blog/threat-research/fickle-stealer-distributed-via-multiple-attack-chain
+tags:
+- attack.T1218_014
+- attack.T1548_002
+- attack.T1574
+date: '2026-05-05'
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    TargetFilename|contains:
+    - C:\Windows \System32\*.msc
+    - C:\Windows \System32\de-DE\*.msc
+    - C:\Windows \System32\en-US\*.msc
+    - C:\Windows \System32\es-ES\*.msc
+    - C:\Windows \System32\fr-FR\*.msc
+    - C:\Windows \System32\it-IT\*.msc
+    - C:\Windows \System32\ja-JP\*.msc
+    - C:\Windows \System32\ko-KR\*.msc
+    - C:\Windows \System32\zh-CN\*.msc
+    - C:\Windows \System32\zh-TW\*.msc
+  condition: selection_0

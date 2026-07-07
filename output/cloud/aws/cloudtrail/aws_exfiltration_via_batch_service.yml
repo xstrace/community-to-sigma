@@ -1,0 +1,21 @@
+title: AWS Exfiltration via Batch Service
+id: 04455dd3-ced7-480f-b8e6-5469b99e98e2
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: The following analytic identifies the creation of AWS Batch jobs that could potentially abuse the AWS Bucket Replication feature on S3 buckets. It leverages AWS CloudTrail logs to detect the
+  `JobCreated` event, analyzing job details and their status. This activity is significant because attackers can exploit this feature to exfiltrate data by creating malicious batch jobs. If confirmed malicious,
+  this could lead to unauthorized data transfer between S3 buckets, resulting in data breaches and loss of sensitive information.
+references:
+- https://hackingthe.cloud/aws/exploitation/s3-bucket-replication-exfiltration/
+- https://bleemb.medium.com/data-exfiltration-with-native-aws-s3-features-c94ae4d13436
+tags:
+- attack.T1119
+date: '2023-04-24'
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    eventName: JobCreated
+  condition: selection_0

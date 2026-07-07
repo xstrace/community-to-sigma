@@ -1,0 +1,24 @@
+title: Windows Outlook Dialogs Disabled from Unusual Process
+id: 94e3ba29-6245-4f25-8d47-d5b6b34c40ac
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: The following analytic detects the modification of the Windows Registry key "PONT_STRING" under Outlook Options. This disables certain dialog popups, which could allow malicious scripts to
+  run without notice. This detection leverages data from the Endpoint.Registry datamodel to search for this key changing from an unusual process. This activity is significant as it is commonly associated
+  with some malware infections, indicating potential malicious intent to harvest email information.
+references:
+- https://lab52.io/blog/analyzing-notdoor-inside-apt28s-expanding-arsenal/
+- https://hackread.com/russian-apt28-notdoor-backdoor-microsoft-outlook/
+tags:
+- attack.T1112
+- attack.T1685
+date: '2025-09-11'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\Outlook\Options\General*'
+  selection_1:
+    Details: PONT_STRING
+  condition: selection_0 and selection_1

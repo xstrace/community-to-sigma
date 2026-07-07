@@ -1,0 +1,20 @@
+title: Windows Service Deletion In Registry
+id: daed6823-b51c-4843-a6ad-169708f1323e
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the deletion of a service from the Windows Registry under CurrentControlSet\Services. It leverages data from the Endpoint.Registry datamodel, specifically monitoring
+  registry paths and actions related to service deletion. This activity is significant as adversaries may delete services to evade detection and hinder incident response efforts. If confirmed malicious,
+  this action could disrupt legitimate services, impair system functionality, and potentially allow attackers to maintain a lower profile within the environment, complicating detection and remediation efforts.
+references:
+- https://unit42.paloaltonetworks.com/brute-ratel-c4-tool/
+tags:
+- attack.T1489
+date: '2022-06-22'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\SYSTEM\CurrentControlSet\Services*'
+  condition: selection_0

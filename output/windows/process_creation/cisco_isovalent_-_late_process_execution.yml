@@ -1,0 +1,22 @@
+title: Cisco Isovalent - Late Process Execution
+id: 7f4b9b8e-5d6a-4a21-9e3f-0f1e8f2d1c3a
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: |
+  Detects process executions that occur well after a container has initialized, which can indicate
+  suspicious activity (e.g., interactive shells, injected binaries, or post-compromise tooling).
+  The analytic compares the process start time to the container start time and flags processes
+  launched more than 5 minutes (300 seconds) after initialization.
+references:
+- https://docs.isovalent.com/user-guide/sec-ops-visibility/process-execution/index.html
+tags:
+- attack.T1543
+date: '2026-01-05'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: sh
+  condition: selection_0

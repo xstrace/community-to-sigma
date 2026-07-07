@@ -1,0 +1,24 @@
+title: Windows Impair Defense Add Xml Applocker Rules
+id: 467ed9d9-8035-470e-ad5e-ae5189283033
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the use of a PowerShell commandlet to import an AppLocker XML policy. This behavior is identified by monitoring processes that execute the "Import-Module Applocker"
+  and "Set-AppLockerPolicy" commands with the "-XMLPolicy" parameter. This activity is significant because it can indicate an attempt to disable or bypass security controls, as seen in the Azorult malware.
+  If confirmed malicious, this could allow an attacker to disable antivirus products, leading to further compromise and persistence within the environment.
+references:
+- https://app.any.run/tasks/a6f2ffe2-e6e2-4396-ae2e-04ea0143f2d8/
+tags:
+- attack.T1685
+date: '2022-06-28'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*Import-Module Applocker*'
+  selection_1:
+    CommandLine|contains: '*Set-AppLockerPolicy *'
+  selection_2:
+    CommandLine|contains: '* -XMLPolicy *'
+  condition: selection_0 and selection_1 and selection_2

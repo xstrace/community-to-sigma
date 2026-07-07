@@ -1,0 +1,25 @@
+title: O365 Concurrent Sessions From Different Ips
+id: 58e034de-1f87-4812-9dc3-a4f68c7db930
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies user sessions in Office 365 accessed from multiple IP addresses, indicating potential adversary-in-the-middle (AiTM) phishing attacks. It detects this activity
+  by analyzing Azure Active Directory logs for 'UserLoggedIn' operations and flags sessions with more than one associated IP address. This behavior is significant as it suggests unauthorized concurrent
+  access, which is uncommon in normal usage. If confirmed malicious, the impact could include data theft, account takeover, and the launching of internal phishing campaigns, posing severe risks to organizational
+  security.
+references:
+- https://attack.mitre.org/techniques/T1185/
+- https://breakdev.org/evilginx-2-next-generation-of-phishing-2fa-tokens/
+- https://github.com/kgretzky/evilginx2
+tags:
+- attack.T1185
+date: '2024-01-10'
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: UserLoggedIn
+  condition: selection_0 and selection_1

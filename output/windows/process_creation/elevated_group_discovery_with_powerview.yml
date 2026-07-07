@@ -1,0 +1,34 @@
+title: Elevated Group Discovery with PowerView
+id: 10d62950-0de5-4199-a710-cff9ea79b413
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of the `Get-DomainGroupMember` cmdlet from PowerView, identified through PowerShell Script Block Logging (EventCode=4104). This cmdlet is used to
+  enumerate members of elevated domain groups such as Domain Admins and Enterprise Admins. Monitoring this activity is crucial as it indicates potential reconnaissance efforts by adversaries to identify
+  high-privileged users within the domain. If confirmed malicious, this activity could lead to targeted attacks on privileged accounts, facilitating further compromise and lateral movement within the network.
+references:
+- https://attack.mitre.org/techniques/T1069/002/
+- https://powersploit.readthedocs.io/en/latest/Recon/Get-DomainGroupMember/
+- https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/appendix-b--privileged-accounts-and-groups-in-active-directory
+- https://attack.mitre.org/techniques/T1069/002/
+tags:
+- attack.T1069_002
+date: '2021-08-27'
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: '*Get-DomainGroupMember*'
+  selection_2:
+    ScriptBlockText|contains:
+    - '*Domain Admins*'
+    - '*Enterprise Admins*'
+    - '*Schema Admins*'
+    - '*Account Operators*'
+    - '*Server Operators*'
+    - '*Protected Users*'
+    - '*Dns Admins*'
+  condition: selection_0 and selection_1 and selection_2

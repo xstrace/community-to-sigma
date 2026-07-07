@@ -1,0 +1,22 @@
+title: Windows Product Key Registry Query
+id: 977da0c0-c7d5-45de-8b7e-f79e959ca13d
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  This Analytic detects the execution of a process attempting to access the registry for product key recovery purposes.
+  This behavior could be significant as it might indicate potential malware activity or attempts to bypass security measures or data exfiltration.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/py.blankgrabber
+tags:
+- attack.T1012
+date: '2026-03-16'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4663
+  selection_1:
+    object_file_path|contains: '*\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'
+  condition: selection_0 and selection_1

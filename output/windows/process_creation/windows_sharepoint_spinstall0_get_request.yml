@@ -1,0 +1,28 @@
+title: Windows SharePoint Spinstall0 GET Request
+id: ac490de2-ee39-421c-b61b-1c4005dde427
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects potential post-exploitation activity related to the Microsoft SharePoint CVE-2025-53770 vulnerability. After successful exploitation via the ToolPane.aspx endpoint,
+  attackers typically deploy a webshell named "spinstall0.aspx" in the SharePoint layouts directory. This detection identifies GET requests to this webshell, which indicates active use of the backdoor for
+  command execution, data exfiltration, or credential/key extraction. Attackers commonly use these webshells to extract encryption keys, authentication tokens, and other sensitive information from the compromised
+  SharePoint server.
+references:
+- https://research.eye.security/sharepoint-under-siege/
+- https://www.cisa.gov/news-events/alerts/2025/07/20/microsoft-releases-guidance-exploitation-sharepoint-vulnerability-cve-2025-53770
+- https://msrc.microsoft.com/blog/2025/07/customer-guidance-for-sharepoint-vulnerability-cve-2025-53770/
+- https://splunkbase.splunk.com/app/3185
+tags:
+- attack.T1190
+- attack.T1505_003
+- attack.T1552
+date: '2025-07-21'
+logsource:
+  category: webserver
+  product: windows
+detection:
+  selection_0:
+    cs-uri|contains: '*/_layouts/15/spinstall0.aspx*'
+  selection_1:
+    cs-method: GET
+  condition: selection_0 and selection_1

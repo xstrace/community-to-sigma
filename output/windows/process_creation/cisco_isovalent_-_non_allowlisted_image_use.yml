@@ -1,0 +1,32 @@
+title: Cisco Isovalent - Non Allowlisted Image Use
+id: 9f2b7b1d-6c2f-4f2d-9a8b-8a1d7c5f2e11
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: |
+  The following analytic detects use of container images that fall outside an approved
+  allowlist, leveraging Cisco Isovalent/Tetragon runtime telemetry (image name and
+  workload identity). Adversaries commonly introduce untrusted or newly published
+  images to deploy tooling, establish persistence, or abuse supply‑chain trust. This
+  behavior may indicate image pulls from unauthorized registries, execution of
+  unvetted software, or a drift from established deployment baselines. Extra scrutiny
+  is warranted for namespaces and workloads that normally source images from restricted
+  registries, and for pods that suddenly begin running images outside expected
+  prefixes.
+  Maintain an environment‑specific allowlist via the macro `cisco_isovalent_allowed_images`
+  (for example, allow trusted registries/prefixes such as ImageName="gcr.io/org/*",
+  "registry.local/*", or "myco/*") and keep it updated as new baseline images are
+  introduced. This analytic alerts on images NOT matching the allowlist.
+references:
+- https://dev.to/thenjdevopsguy/attacking-a-kubernetes-cluster-enter-red-team-mode-2onj
+- https://www.reddit.com/r/kubernetes/comments/l6e5yr/one_of_our_kubernetes_containers_was_compromised/
+tags:
+- attack.T1204_003
+date: '2026-01-05'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    pod_name!: ''
+  condition: selection_0

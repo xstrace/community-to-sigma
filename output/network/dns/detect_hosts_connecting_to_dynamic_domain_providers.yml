@@ -1,0 +1,21 @@
+title: Detect hosts connecting to dynamic domain providers
+id: a1e761ac-1344-4dbd-88b2-3f34c912d359
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: The following analytic identifies DNS queries from internal hosts to dynamic domain providers. It leverages DNS query logs from the `Network_Resolution` data model and cross-references them
+  with a lookup file containing known dynamic DNS providers. This activity is significant because attackers often use dynamic DNS services to host malicious payloads or command-and-control servers, making
+  it crucial for security teams to monitor. If confirmed malicious, this activity could allow attackers to bypass firewall blocks, evade detection, and maintain persistent access to the network.
+tags:
+- attack.T1189
+date: '2019-10-16'
+logsource:
+  category: dns
+detection:
+  selection_0:
+    QueryName|contains: '*'
+  filter_1:
+    QueryName:
+    - '-'
+    - unknown
+  condition: (selection_0) and not (filter_1)

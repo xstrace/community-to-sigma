@@ -1,0 +1,29 @@
+title: Windows Non-System Process Querying Definition Update
+id: 9d375cfd-c9a5-48ff-b875-9bcaf6b63265
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: Detects DNS queries to definitionupdates.microsoft.com or the go.microsoft.com fwlink redirect used for WD update downloads, when the querying process is not a Windows system component. BlueHammer
+  utilizes these definition updates as part of its exploit chain.
+references:
+- https://github.com/Nightmare-Eclipse/BlueHammer
+tags:
+- attack.T1068
+- attack.T1071_001
+date: '2026-04-27'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: '22'
+  selection_1:
+    QueryName|contains: '*definitionupdates.microsoft.com*'
+  filter_2:
+    Image:
+    - '*:\Program Files\Microsoft Office\*'
+    - '*:\Program Files\Windows Defender\*'
+    - '*:\ProgramData\Microsoft\Windows Defender\*'
+    - '*:\Windows\System32\*'
+    - '*:\Windows\SysWOW64\*'
+  condition: (selection_0 and selection_1) and not (filter_2)

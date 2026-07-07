@@ -1,0 +1,15 @@
+title: Zoom High Video Latency
+id: 6ad6b548-adfa-452c-aa77-9ff94877e832
+status: experimental
+level: medium
+author: Marissa Bower, Raven Tait
+description: Detects particularly high latency from Zoom logs. Latency observed from threat actors performing Remote Employment Fraud (REF) is typically well above what’s normal for the majority of employees.
+tags:
+- attack.T1078
+date: '2025-06-12'
+logsource:
+  category: application
+detection:
+  selection_0:
+    object.participant.qos{}.type": video_input
+  condition: selection_0

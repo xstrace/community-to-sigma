@@ -1,0 +1,38 @@
+title: Cisco NVM - MSHTML or MSHTA Network Execution Without URL in CLI
+id: f2a9df84-9b01-4a21-9e3a-7aa1a217f69e
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects suspicious use of 'mshta.exe' or 'rundll32.exe' invoking 'mshtml.dll'
+  or the 'RunHTMLApplication' export without including a direct HTTP/HTTPS URL in the command line.
+  This pattern could be associated with obfuscated script execution used by threat actors during
+  initial access or payload staging. The absence of a visible URL may indicate attempts to evade static
+  detections by embedding the URL via string concatenation, encoding (e.g., hex), or indirect script loaders
+  like 'GetObject()'.
+references:
+- https://attack.mitre.org/techniques/T1218/005/
+- https://redcanary.com/blog/mshta-attack-technique/
+- https://lolbas-project.github.io/lolbas/Binaries/Rundll32/
+- https://learn.microsoft.com/en-us/windows/win32/api/mshtml/nf-mshtml-mshtml_runhtmlapplication
+tags:
+- attack.T1218_005
+- attack.T1059_005
+date: '2025-07-01'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: mshta.exe
+    process_arguments:
+    - '*javascript*'
+    - '*vbscript*'
+  selection_1:
+    Image: rundll32.exe
+    process_arguments|contains: '*mshtml*'
+  filter_2:
+    process_arguments:
+    - '*http://*'
+    - '*https://*'
+  condition: (selection_0 and selection_1) and not (filter_2)

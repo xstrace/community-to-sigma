@@ -1,0 +1,25 @@
+title: MacOS Data Chunking
+id: 7f1c8bed-9bd4-40b0-a1df-c262cbade0fc
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  The following analytic detects suspicious data chunking activities that involve the use of split or dd, potentially indicating an attempt to evade detection by breaking large files into smaller parts.
+  Attackers may use this technique to bypass size-based security controls, facilitating the covert exfiltration of sensitive data.
+  By monitoring for unusual or unauthorized use of these commands, this analytic helps identify potential data exfiltration attempts, allowing security teams to intervene and prevent the unauthorized transfer of critical information from the network.
+references:
+- https://osquery.readthedocs.io/en/stable/deployment/process-auditing/
+- https://ss64.com/mac/dd.html
+- https://ss64.com/mac/split.html
+tags:
+- attack.T1030
+date: '2026-04-14'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: dd *
+  selection_1:
+    CommandLine|contains: '*split *'
+  condition: selection_0 and selection_1

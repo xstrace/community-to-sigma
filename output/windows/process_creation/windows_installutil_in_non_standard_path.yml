@@ -1,0 +1,31 @@
+title: Windows InstallUtil in Non Standard Path
+id: dcf74b22-7933-11ec-857c-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the execution of InstallUtil.exe from non-standard paths. It leverages Endpoint Detection and Response (EDR) data, focusing on process names and original file
+  names outside typical directories. This activity is significant because InstallUtil.exe is often used by attackers to execute malicious code or scripts. If confirmed malicious, this behavior could allow
+  an attacker to bypass security controls, execute arbitrary code, and potentially gain unauthorized access or persist within the environment.
+references:
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1036.003/T1036.003.yaml
+- https://attack.mitre.org/techniques/T1036/003/
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218.004/T1218.004.md
+tags:
+- attack.T1036_003
+- attack.T1218_004
+date: '2022-01-20'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  filter_0:
+    Image:
+    - '*\Windows\ADWS\*'
+    - '*\Windows\SysWOW64*'
+    - '*\Windows\system32*'
+    - '*\Windows\NetworkController\*'
+    - '*\Windows\SystemApps\*'
+    - '*\WinSxS\*'
+    - '*\Windows\Microsoft.NET\*'
+  condition: filter_0

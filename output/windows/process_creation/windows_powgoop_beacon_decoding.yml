@@ -1,0 +1,29 @@
+title: Windows PowGoop Beacon Decoding
+id: 4d0480d8-80c4-4f74-84fe-2ab7fb514c85
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects a DLL decoding and executing the PowGoop config.txt payload, the stage in the MuddyWater infection chain where an obfuscated PowerShell beacon is unwrapped and live C2 communication begins.
+  PowGoop is the primary loader used by MuddyWater (also tracked as SeedWorm, Static Kitten, and MERCURY) and has been their main initial access loader since at least 2020.
+  It abuses DLL side-loading against a fake GoogleUpdate.exe to execute a multi-stage decoding chain, a fully functional PowerShell backdoor disguised with a benign extension.
+  The config.txt contains a hardcoded C2 address and victim GUID, beacons via modified base64-encoded HTTP, and runs C2 traffic under the legitimate Google Update process to evade network detection.
+references:
+- https://www.cisa.gov/uscert/sites/default/files/publications/AA22-055A_Iranian_Government-Sponsored_Actors_Conduct_Cyber_Operations.pdf
+tags:
+- attack.T1059_001
+- attack.T1001
+date: '2026-05-05'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage|contains: '*rundll32.exe'
+  selection_1:
+    Image: powershell.exe
+  selection_2:
+    CommandLine|contains: '*FromBase64String*'
+  selection_3:
+    CommandLine|contains: '*config.txt*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

@@ -1,0 +1,27 @@
+title: Azure AD Successful Single-Factor Authentication
+id: a560e7f6-1711-4353-885b-40be53101fcd
+status: stable
+level: medium
+author: Mauricio Velazco, Gowthamaraj Rajendran, Splunk
+description: The following analytic identifies a successful single-factor authentication event against Azure Active Directory. It leverages Azure SignInLogs data, specifically focusing on events where single-factor
+  authentication succeeded. This activity is significant as it may indicate a misconfiguration, policy violation, or potential account takeover attempt. If confirmed malicious, an attacker could gain unauthorized
+  access to the account, potentially leading to data breaches, privilege escalation, or further exploitation within the environment.
+references:
+- https://attack.mitre.org/techniques/T1078/004/
+- https://docs.microsoft.com/en-us/azure/active-directory/authentication/concept-mfa-howitworks*
+- https://www.forbes.com/sites/daveywinder/2020/07/08/new-dark-web-audit-reveals-15-billion-stolen-logins-from-100000-breaches-passwords-hackers-cybercrime/?sh=69927b2a180f
+tags:
+- attack.T1078_004
+- attack.T1586_003
+date: '2022-07-12'
+logsource:
+  product: azure
+  service: aad
+detection:
+  selection_0:
+    category: SignInLogs
+  selection_1:
+    authenticationRequirement: singleFactorAuthentication
+  selection_2:
+    authenticationDetails{}.succeeded: 'true'
+  condition: selection_0 and selection_1 and selection_2

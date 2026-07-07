@@ -1,0 +1,21 @@
+title: Linux Preload Hijack Library Calls
+id: cbe2ca30-631e-11ec-8670-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the use of the LD_PRELOAD environment variable to hijack or hook library functions on a Linux platform. It leverages data from Endpoint Detection and Response
+  (EDR) agents, focusing on process execution logs that include command-line details. This activity is significant because adversaries, malware authors, and red teamers commonly use this technique to gain
+  elevated privileges and establish persistence on a compromised machine. If confirmed malicious, this behavior could allow attackers to execute arbitrary code, escalate privileges, and maintain long-term
+  access to the system.
+references:
+- https://compilepeace.medium.com/memory-malware-part-0x2-writing-userland-rootkits-via-ld-preload-30121c8343d5
+tags:
+- attack.T1574_006
+date: '2022-01-05'
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    CommandLine|contains: '*LD_PRELOAD*'
+  condition: selection_0

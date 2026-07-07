@@ -1,0 +1,23 @@
+title: Network Connection Discovery With Netstat
+id: 2cf5cc25-f39a-436d-a790-4857e5995ede
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of `netstat.exe` with command-line arguments to list network connections on a system. It leverages data from Endpoint Detection and Response (EDR)
+  agents, focusing on process names, command-line executions, and parent processes. This activity is significant as both Red Teams and adversaries use `netstat.exe` for situational awareness and Active
+  Directory discovery. If confirmed malicious, this behavior could allow attackers to map network connections, identify critical systems, and plan further lateral movement or data exfiltration.
+references:
+- https://attack.mitre.org/techniques/T1049/
+- https://www.microsoft.com/en-us/security/blog/2023/05/24/volt-typhoon-targets-us-critical-infrastructure-with-living-off-the-land-techniques/
+tags:
+- attack.T1049
+date: '2021-08-24'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: netstat.exe
+  selection_1:
+    CommandLine|contains: '*-a*'
+  condition: selection_0 and selection_1

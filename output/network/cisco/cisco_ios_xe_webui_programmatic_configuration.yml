@@ -1,0 +1,25 @@
+title: Cisco IOS XE WebUI Programmatic Configuration
+id: f9686576-a23d-4c4d-bfad-a45499dc448a
+status: stable
+level: medium
+author: Nasreddine Bencherchali
+description: |
+  This analytic detects Cisco IOS-XE configuration changes performed by the WebUI WSMA process.
+references:
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
+- https://blog.talosintelligence.com/salt-typhoon-analysis/
+tags:
+- attack.T1190
+- attack.T1078
+date: '2026-05-19'
+logsource:
+  product: cisco
+  service: ios
+detection:
+  selection_0:
+    facility: SYS
+  selection_1:
+    mnemonic: CONFIG_P
+  selection_2:
+    message_text|contains: '*Configured programmatically by process SEP_webui_wsma_http*'
+  condition: selection_0 and selection_1 and selection_2

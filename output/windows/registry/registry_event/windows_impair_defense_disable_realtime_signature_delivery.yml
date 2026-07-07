@@ -1,0 +1,24 @@
+title: Windows Impair Defense Disable Realtime Signature Delivery
+id: ffd99aea-542f-448e-b737-091c1b417274
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects modifications to the Windows registry that disable the Windows Defender real-time signature delivery feature. It leverages data from the Endpoint.Registry data
+  model, specifically monitoring changes to the registry path associated with Windows Defender signature updates. This activity is significant because disabling real-time signature delivery can prevent
+  Windows Defender from receiving timely malware definitions, reducing its effectiveness. If confirmed malicious, this action could allow attackers to bypass malware detection, leading to potential system
+  compromise and persistent threats.
+references:
+- https://x.com/malmoeb/status/1742604217989415386?s=20
+- https://github.com/undergroundwires/privacy.sexy
+tags:
+- attack.T1685
+date: '2024-01-29'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\Windows Defender\Signature Updates\RealtimeSignatureDelivery'
+  selection_1:
+    Details: '0x00000000'
+  condition: selection_0 and selection_1

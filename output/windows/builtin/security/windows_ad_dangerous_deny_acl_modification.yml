@@ -1,0 +1,21 @@
+title: Windows AD Dangerous Deny ACL Modification
+id: 8e897153-2ebd-4cb2-85d3-09ad57db2fb7
+status: stable
+level: medium
+author: Dean Luxton
+description: This detection identifies an Active Directory access-control list (ACL) modification event, which applies permissions that deny the ability to enumerate permissions of the object.
+references:
+- https://happycamper84.medium.com/sneaky-persistence-via-hidden-objects-in-ad-1c91fc37bf54
+- https://www.youtube.com/watch?v=_nGpZ1ydzS8
+- https://lantern.splunk.com/Security/Product_Tips/Enterprise_Security/Enabling_an_audit_trail_from_Active_Directory
+tags:
+- attack.T1222_001
+- attack.T1484
+date: '2024-07-01'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5136
+  condition: selection_0

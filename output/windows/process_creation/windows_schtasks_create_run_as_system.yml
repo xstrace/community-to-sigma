@@ -1,0 +1,31 @@
+title: Windows Schtasks Create Run As System
+id: 41a0e58e-884c-11ec-9976-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the creation of a new scheduled task using Schtasks.exe to run as the SYSTEM user. This detection leverages data from Endpoint Detection and Response (EDR) agents,
+  focusing on command-line executions and process details. This activity is significant as it often indicates an attempt to gain elevated privileges or maintain persistence within the environment. If confirmed
+  malicious, an attacker could execute code with SYSTEM-level privileges, potentially leading to data theft, ransomware deployment, or further system compromise. Immediate investigation and mitigation are
+  crucial to prevent further damage.
+references:
+- https://pentestlab.blog/2019/11/04/persistence-scheduled-tasks/
+- https://www.ired.team/offensive-security/persistence/t1053-schtask
+- https://thedfirreport.com/2022/02/07/qbot-likes-to-move-it-move-it/
+tags:
+- attack.T1053_005
+date: '2022-02-09'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: schtasks.exe
+  selection_1:
+    OriginalFileName: schtasks.exe
+  selection_2:
+    CommandLine|contains: '*/create *'
+  selection_3:
+    CommandLine|contains: '*/ru *'
+  selection_4:
+    CommandLine|contains: '*system*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

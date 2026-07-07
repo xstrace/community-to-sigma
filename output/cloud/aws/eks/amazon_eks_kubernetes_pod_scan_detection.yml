@@ -1,0 +1,25 @@
+title: Amazon EKS Kubernetes Pod scan detection
+id: dbfca1dd-b8e5-4ba4-be0e-e565e5d62002
+status: experimental
+level: medium
+author: Rod Soto, Splunk
+description: The following analytic detects unauthenticated requests made against the Kubernetes Pods API, indicating potential unauthorized access attempts. It leverages the `aws_cloudwatchlogs_eks` data
+  source, filtering for events where `user.username` is "system:anonymous", `verb` is "list", and `objectRef.resource` is "pods", with `requestURI` set to "/api/v1/pods". This activity is significant as
+  it may signal attempts to access sensitive resources or execute unauthorized commands within the Kubernetes environment. If confirmed malicious, such access could lead to data compromise, unauthorized
+  command execution, or lateral movement within the cluster.
+tags:
+- attack.T1526
+date: '2020-04-29'
+logsource:
+  product: aws
+  service: eks
+detection:
+  selection_0:
+    username": system:anonymous
+  selection_1:
+    verb: list
+  selection_2:
+    resource: pods
+  selection_3:
+    requestURI: /api/v1/pods
+  condition: selection_0 and selection_1 and selection_2 and selection_3

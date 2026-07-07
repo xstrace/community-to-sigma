@@ -1,0 +1,28 @@
+title: Windows RunMRU Command Execution
+id: a15aa1ab-2b79-467f-8201-65e0f32d5b1a
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Michael Haag, Splunk
+description: The following analytic detects modifications to the Windows RunMRU registry key, which stores a history of commands executed through the Run dialog box (Windows+R). It leverages Endpoint Detection
+  and Response (EDR) telemetry to monitor registry events targeting this key. This activity is significant as malware often uses the Run dialog to execute malicious commands while attempting to appear legitimate.
+  If confirmed malicious, this could indicate an attacker using indirect command execution techniques for defense evasion or persistence. The detection excludes MRUList value changes to focus on actual
+  command entries.
+references:
+- https://medium.com/@ahmed.moh.farou2/fake-captcha-campaign-on-arabic-pirated-movie-sites-delivers-lumma-stealer-4f203f7adabf
+- https://medium.com/@shaherzakaria8/downloading-trojan-lumma-infostealer-through-capatcha-1f25255a0e71
+- https://www.forensafe.com/blogs/runmrukey.html
+- https://github.com/SigmaHQ/sigma/blob/master/rules-threat-hunting/windows/registry/registry_set/registry_set_runmru_command_execution.yml
+tags:
+- attack.T1202
+date: '2024-11-13'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\Microsoft\Windows\CurrentVersion\Explorer\RunMRU*'
+  filter_1:
+    Details: MRUList
+  filter_2:
+    Details: unknown
+  condition: (selection_0) and not (filter_1 and filter_2)

@@ -1,0 +1,22 @@
+title: Windows Modify Registry Disable RDP
+id: 11ed764f-eb9c-4be7-bdad-2209b9d33ee1
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: This analytic is developed to detect suspicious registry modifications that disable Remote Desktop Protocol (RDP) by altering the "fDenyTSConnections" key. Changing this key's value to 1 prevents
+  remote connections, which can disrupt remote management and access. Such modifications could indicate an attempt to hinder remote administration or isolate the system from remote intervention, potentially
+  signifying malicious activity.
+references:
+- https://www.bleepingcomputer.com/news/security/new-shrinklocker-ransomware-uses-bitlocker-to-encrypt-your-files/
+tags:
+- attack.T1112
+date: '2024-07-25'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\Control\Terminal Server\fDenyTSConnections*'
+  selection_1:
+    Details: '0x00000001'
+  condition: selection_0 and selection_1

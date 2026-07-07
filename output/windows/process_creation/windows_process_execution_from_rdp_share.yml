@@ -1,0 +1,26 @@
+title: Windows Process Execution From RDP Share
+id: 6b1b84c4-3834-4dee-b062-9b79bdb31d15
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic identifies process executions originating from RDP shares on Windows endpoints.
+  Remote Desktop Protocol (RDP) shares, typically accessed via the "tsclient" path, allow users to share files between their local machine and a remote desktop session. However, threat actors may exploit RDP shares to execute malicious processes or transfer harmful files onto a compromised system.
+  This detection focuses on identifying any process executions that originate from RDP shares, which could indicate unauthorized access or malicious activity.
+  Security teams should investigate any instances of such process executions, especially if they are found on systems that should not be using RDP shares or if the executed processes are unfamiliar or suspicious.
+references:
+- https://jsac.jpcert.or.jp/archive/2024/pdf/JSAC2024_2_7_hara_shoji_higashi_vickie-su_nick-dai_en.pdf
+- https://thedfirreport.com/2020/04/04/gogoogle-ransomware/
+- https://www.welivesecurity.com/2022/09/30/amazon-themed-campaigns-lazarus-netherlands-belgium/
+tags:
+- attack.T1021_001
+- attack.T1105
+- attack.T1059
+date: '2025-10-24'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*\\tsclient\*'
+  condition: selection_0

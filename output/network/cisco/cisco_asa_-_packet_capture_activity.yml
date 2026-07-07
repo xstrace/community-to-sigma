@@ -1,0 +1,25 @@
+title: Cisco ASA - Packet Capture Activity
+id: 7e9c3f8a-4b2d-4c5e-9a1f-6d8e5b3c2a9f
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects execution of packet capture commands on Cisco ASA devices via CLI or ASDM.
+  Adversaries may abuse the built-in packet capture functionality to perform network sniffing, intercept credentials transmitted over the network, capture sensitive data in transit, or gather intelligence about network traffic patterns and internal communications. Packet captures can reveal usernames, passwords, session tokens, and confidential business data.
+  The detection monitors for command execution events (message ID 111008 or 111010) containing "capture" commands, which are used to initiate packet capture sessions on specific interfaces or for specific traffic patterns on the ASA device.
+  Investigate unauthorized packet capture activities, especially captures targeting sensitive interfaces (internal network segments, DMZ), captures configured to capture large volumes of traffic, captures with suspicious filter criteria, captures initiated by non-administrative accounts, or captures during unusual hours.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/asa/asa-cli-reference/A-H/asa-command-ref-A-H/ca-cld-commands.html
+- https://www.cisco.com/c/en/us/support/docs/security/asa-5500-x-series-next-generation-firewalls/118097-configure-asa-00.html
+- https://www.ncsc.gov.uk/static-assets/documents/malware-analysis-reports/RayInitiator-LINE-VIPER/ncsc-mar-rayinitiator-line-viper.pdf
+tags:
+- attack.T1040
+- attack.T1557
+date: '2025-11-21'
+logsource:
+  product: cisco
+  service: asa
+detection:
+  selection_1:
+    command|contains: capture *
+  condition: selection_1

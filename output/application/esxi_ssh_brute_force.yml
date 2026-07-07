@@ -1,0 +1,16 @@
+title: ESXi SSH Brute Force
+id: 68fe4efa-bbbb-44ee-9f09-d07d2f0f346b
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: This detection identifies signs of SSH brute-force attacks by monitoring for a high number of failed login attempts within a short time frame. Such activity may indicate an attacker attempting
+  to gain unauthorized access through password guessing.
+tags:
+- attack.T1110
+date: '2025-07-11'
+logsource:
+  category: application
+detection:
+  selection_0:
+    Message|contains: '*Authentication failure for*'
+  condition: selection_0

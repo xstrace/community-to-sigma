@@ -1,0 +1,27 @@
+title: Linux Auditd Possible Append Cronjob Entry On Existing Cronjob File
+id: fea71cf0-fa10-4ef6-9202-9682b2e0c477
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  The following analytic detects potential tampering with cronjob files on a Linux system.
+  It leverages logs from Linux Auditd, focusing on events of type PATH or CWD.
+  This activity could be significant because adversaries often use it for persistence or privilege escalation.
+  Correlate this with related EXECVE or PROCTITLE events to identify the process or user responsible for the access or modification.
+  If confirmed malicious, this could allow attackers to execute unauthorized code automatically, leading to system compromises and unauthorized data access, thereby impacting business operations and data integrity.
+references:
+- https://attack.mitre.org/techniques/T1053/003/
+- https://blog.aquasec.com/threat-alert-kinsing-malware-container-vulnerability
+- https://www.intezer.com/blog/research/kaiji-new-chinese-linux-malware-turning-to-golang/
+tags:
+- attack.T1053_003
+date: '2024-08-12'
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    type: PATH
+  selection_1:
+    type: CWD
+  condition: selection_0 and selection_1

@@ -1,0 +1,25 @@
+title: Windows RunMRU Registry Key or Value Deleted
+id: e651795f-b2c9-4a84-a18a-b901018a3bfa
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the deletion or modification of Most Recently Used (MRU) command entries stored within the Windows Registry. Adversaries often clear these registry keys, such
+  as HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU, to remove forensic evidence of commands executed via the Windows Run dialog or other system utilities. This activity aims to obscure
+  their actions, hinder incident response efforts, and evade detection. Detection focuses on monitoring for changes (deletion of values or modification of the MRUList value) to these specific registry paths,
+  particularly when performed by unusual processes or outside of typical user behavior. Anomalous deletion events can indicate an attempt at defense evasion or post-exploitation cleanup by a malicious actor.
+references:
+- https://www.linkedin.com/posts/mauricefielenbach_cybersecurity-incidentresponse-dfir-activity-7394805779448418304-g0gZ?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAuFTjIB5weY_kcyu4qp3kHbI4v49tO0zEk
+- https://thedfirreport.com/2023/10/30/netsupport-intrusion-results-in-domain-compromise/
+- https://www.esentire.com/blog/evalusion-campaign-delivers-amatera-stealer-and-netsupport-rat
+tags:
+- attack.T1112
+date: '2025-11-21'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU*'
+  selection_1:
+    action: deleted
+  condition: selection_0 and selection_1

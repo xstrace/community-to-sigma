@@ -1,0 +1,22 @@
+title: Multiple Archive Files Http Post Traffic
+id: 4477f3ea-a28f-11eb-b762-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the high-frequency exfiltration of archive files via HTTP POST requests. It leverages HTTP stream logs to identify specific archive file headers within the request
+  body. This activity is significant as it often indicates data exfiltration by APTs or trojan spyware after data collection. If confirmed malicious, this behavior could lead to the unauthorized transfer
+  of sensitive data to an attacker’s command and control server, potentially resulting in severe data breaches and loss of confidential information.
+references:
+- https://attack.mitre.org/techniques/T1560/001/
+- https://www.mandiant.com/resources/apt39-iranian-cyber-espionage-group-focused-on-personal-information
+- https://www.microsoft.com/security/blog/2021/01/20/deep-dive-into-the-solorigate-second-stage-activation-from-sunburst-to-teardrop-and-raindrop/
+tags:
+- attack.T1048_003
+date: '2021-04-22'
+logsource:
+  product: zeek
+  service: http
+detection:
+  selection_0:
+    cs-method: POST
+  condition: selection_0

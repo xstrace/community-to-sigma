@@ -1,0 +1,25 @@
+title: Windows Find Domain Organizational Units with GetDomainOU
+id: 0ada2f82-b7af-40cc-b1d7-1e5985afcb4e
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Mauricio Velazco, Splunk
+description: The following analytic detects the execution of the `Get-DomainOU` cmdlet, a part of the PowerView toolkit used for Windows domain enumeration. It leverages PowerShell Script Block Logging
+  (EventCode=4104) to identify this activity. Detecting `Get-DomainOU` usage is significant as adversaries may use it to gather information about organizational units within Active Directory, which can
+  facilitate lateral movement or privilege escalation. If confirmed malicious, this activity could allow attackers to map the domain structure, aiding in further exploitation and persistence within the
+  network.
+references:
+- https://powersploit.readthedocs.io/en/latest/Recon/Get-DomainOU/
+- https://attack.mitre.org/techniques/T1087/002/
+- https://book.hacktricks.xyz/windows-hardening/basic-powershell-for-pentesters/powerview
+tags:
+- attack.T1087_002
+date: '2023-09-01'
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: '*Get-DomainOU*'
+  condition: selection_0 and selection_1

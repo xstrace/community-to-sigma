@@ -1,0 +1,24 @@
+title: O365 Application Registration Owner Added
+id: c068d53f-6aaa-4558-8011-3734df878266
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies instances where a new owner is assigned to an application registration within an Azure AD and Office 365 tenant. It leverages O365 audit logs, specifically
+  events related to changes in owner assignments within the AzureActiveDirectory workload. This activity is significant because assigning a new owner to an application registration can grant significant
+  control over the application's configuration, permissions, and behavior. If confirmed malicious, an attacker could modify the application's settings, permissions, and behavior, leading to unauthorized
+  data access, privilege escalation, or the introduction of malicious behavior within the application's operations.
+references:
+- https://attack.mitre.org/techniques/T1098/
+- https://learn.microsoft.com/en-us/azure/active-directory/manage-apps/overview-assign-app-owners
+tags:
+- attack.T1098
+date: '2023-12-06'
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: Add owner to application.
+  condition: selection_0 and selection_1

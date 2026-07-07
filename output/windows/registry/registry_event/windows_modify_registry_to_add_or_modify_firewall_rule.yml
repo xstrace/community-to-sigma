@@ -1,0 +1,22 @@
+title: Windows Modify Registry to Add or Modify Firewall Rule
+id: 43254751-e2ce-409a-b6b4-4f851e8dcc26
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a potential addition or modification of firewall rules, signaling possible configuration changes or security policy adjustments. It tracks commands such as netsh
+  advfirewall firewall add rule and netsh advfirewall firewall set rule, which may indicate attempts to alter network access controls. Monitoring these actions ensures the integrity of firewall settings
+  and helps prevent unauthorized network access.
+references:
+- https://www.bleepingcomputer.com/news/security/new-shrinklocker-ransomware-uses-bitlocker-to-encrypt-your-files/
+tags:
+- attack.T1112
+date: '2024-07-25'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\System\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules\*'
+  selection_1:
+    action: modified
+  condition: selection_0 and selection_1

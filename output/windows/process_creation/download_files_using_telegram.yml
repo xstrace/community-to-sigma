@@ -1,0 +1,24 @@
+title: Download Files Using Telegram
+id: 58194e28-ae5e-11eb-8912-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects suspicious file downloads by the Telegram application on a Windows system. It leverages Sysmon EventCode 15 to identify instances where Telegram.exe creates files
+  with a Zone.Identifier, indicating a download. This activity is significant as it may indicate an adversary using Telegram to download malicious tools, such as network scanners, for further exploitation.
+  If confirmed malicious, this behavior could lead to network mapping, lateral movement, and potential compromise of additional systems within the network.
+references:
+- https://thedfirreport.com/2020/04/20/sqlserver-or-the-miner-in-the-basement/
+tags:
+- attack.T1105
+date: '2021-05-07'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 15
+  selection_1:
+    Image: telegram.exe
+  selection_2:
+    TargetFilename|contains: '*:Zone.Identifier'
+  condition: selection_0 and selection_1 and selection_2

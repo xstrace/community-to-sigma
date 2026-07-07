@@ -1,0 +1,27 @@
+title: Ryuk Wake on LAN Command
+id: 538d0152-7aaa-11eb-beaa-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of Wake-on-LAN commands associated with Ryuk ransomware. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on specific process
+  and command-line activities. This behavior is significant as Ryuk ransomware uses Wake-on-LAN to power on devices in a compromised network, increasing its encryption success rate. If confirmed malicious,
+  this activity could lead to widespread ransomware encryption across multiple endpoints, causing significant operational disruption and data loss. Immediate isolation and thorough investigation of the
+  affected endpoints are crucial to mitigate the impact.
+references:
+- https://www.bleepingcomputer.com/news/security/ryuk-ransomware-uses-wake-on-lan-to-encrypt-offline-devices/
+- https://www.bleepingcomputer.com/news/security/ryuk-ransomware-now-self-spreads-to-other-windows-lan-devices/
+- https://www.cert.ssi.gouv.fr/uploads/CERTFR-2021-CTI-006.pdf
+tags:
+- attack.T1059_003
+date: '2021-03-01'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - '* 8 LAN'
+    - '* 8 LAN *'
+    - '* 9 REP'
+    - '* 9 REP *'
+  condition: selection_0

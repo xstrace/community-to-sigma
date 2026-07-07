@@ -1,0 +1,38 @@
+title: Cisco ASA - Logging Filters Configuration Tampering
+id: b87b48a8-6d1a-4280-9cf1-16a950dbf901
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects tampering with logging filter configurations on Cisco ASA devices via CLI or ASDM.
+  Adversaries may reduce logging levels or disable specific log categories to evade detection, hide their activities, or prevent security monitoring systems from capturing evidence of their actions. By lowering logging verbosity, attackers can operate with reduced visibility to security teams.
+  The detection monitors for logging configuration commands (message ID 111008 or 111010) that modify logging destinations (asdm, console, history, mail, monitor, trap) without setting them to higher severity levels (5-notifications, 6-informational, 7-debugging), which may indicate an attempt to reduce logging verbosity.
+  Investigate unauthorized logging configuration changes that reduce verbosity, especially changes performed by non-administrative accounts, during unusual hours, or without corresponding change management approval.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/asa/asa-cli-reference/I-R/asa-command-ref-I-R/m_log-lz.html
+tags:
+- attack.T1685
+date: '2025-11-21'
+logsource:
+  product: cisco
+  service: asa
+detection:
+  selection_1:
+    command|contains: logging *
+  selection_2:
+    command|contains:
+    - '*asdm*'
+    - '*console*'
+    - '*history*'
+    - '*mail*'
+    - '*monitor*'
+    - '*trap*'
+  filter_3:
+    command:
+    - '*notifications*'
+    - '*informational*'
+    - '*debugging*'
+    - '* 5*'
+    - '* 6*'
+    - '* 7*'
+  condition: (selection_1 and selection_2) and not (filter_3)

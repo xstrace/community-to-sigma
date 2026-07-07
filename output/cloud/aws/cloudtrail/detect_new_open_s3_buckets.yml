@@ -1,0 +1,20 @@
+title: Detect New Open S3 buckets
+id: 2a9b80d3-6340-4345-b5ad-290bf3d0dac4
+status: stable
+level: medium
+author: Bhavin Patel, Patrick Bareiss, Splunk
+description: The following analytic identifies the creation of open/public S3 buckets in AWS. It detects this activity by analyzing AWS CloudTrail events for `PutBucketAcl` actions where the access control
+  list (ACL) grants permissions to all users or authenticated users. This activity is significant because open S3 buckets can expose sensitive data to unauthorized access, leading to data breaches. If confirmed
+  malicious, an attacker could read, write, or fully control the contents of the bucket, potentially leading to data exfiltration or tampering.
+tags:
+- attack.T1530
+date: '2020-04-29'
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    eventSource: s3.amazonaws.com
+  selection_1:
+    eventName: PutBucketAcl
+  condition: selection_0 and selection_1

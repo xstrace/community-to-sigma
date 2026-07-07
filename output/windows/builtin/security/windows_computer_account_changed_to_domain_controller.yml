@@ -1,0 +1,24 @@
+title: Windows Computer Account Changed to Domain Controller
+id: f9df6250-fa45-4f62-bc9a-768c60bf99b2
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects a modification to the User Account Control flags for a computer account where the `SERVER_TRUST_ACCOUNT` flag is set.
+  This flag is normally associated with domain controller computer accounts.
+  This activity may indicate a legitimate domain controller promotion or, if unexpected, an attempt to grant a computer account domain controller-like trust within Active Directory.
+references:
+- https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4742
+- https://docs.microsoft.com/en-us/troubleshoot/windows-server/identity/useraccountcontrol-manipulate-account-properties
+tags:
+- attack.T1136_002
+date: '2026-05-05'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4742
+  selection_1:
+    UserAccountControl|contains: '*%%2088*'
+  condition: selection_0 and selection_1

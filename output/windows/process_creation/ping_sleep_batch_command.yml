@@ -1,0 +1,36 @@
+title: Ping Sleep Batch Command
+id: ce058d6c-79f2-11ec-b476-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |-
+  The following analytic identifies the execution of ping sleep batch commands.
+  It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process and parent process command-line details.
+  This activity is significant as it indicates an attempt to delay malicious code execution, potentially evading detection or sandbox analysis.
+  If confirmed malicious, this technique allows attackers to bypass security measures, making it harder to detect and analyze their activities, thereby increasing the risk of prolonged unauthorized access and potential data exfiltration.
+references:
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+tags:
+- attack.T1497_003
+date: '2022-01-20'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentCommandLine|contains: '*ping*'
+    ParentCommandLine:
+    - '*& *'
+    - '*&*'
+    - '*&C:*'
+    - '*>*'
+    - '*>*'
+  selection_1:
+    CommandLine|contains: '*-n*'
+    CommandLine:
+    - '*& *'
+    - '*&*'
+    - '*&C:*'
+    - '*>*'
+    - '*>*'
+  condition: selection_0 and selection_1

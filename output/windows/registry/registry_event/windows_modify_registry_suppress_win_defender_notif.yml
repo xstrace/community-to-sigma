@@ -1,0 +1,24 @@
+title: Windows Modify Registry Suppress Win Defender Notif
+id: e3b42daf-fff4-429d-bec8-2a199468cea9
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects modifications in the Windows registry to suppress Windows Defender notifications. It leverages data from the Endpoint.Registry datamodel, specifically targeting
+  changes to the "Notification_Suppress" registry value. This activity is significant because adversaries, including those deploying Azorult malware, use this technique to bypass Windows Defender and disable
+  critical notifications. If confirmed malicious, this behavior could allow attackers to evade detection, maintain persistence, and execute further malicious activities without alerting the user or security
+  tools.
+references:
+- https://docs.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-remoteassistance-exe-fallowtogethelp
+- https://app.any.run/tasks/a6f2ffe2-e6e2-4396-ae2e-04ea0143f2d8/
+tags:
+- attack.T1112
+date: '2022-06-22'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\Windows Defender\UX Configuration\Notification_Suppress*'
+  selection_1:
+    Details: '0x00000001'
+  condition: selection_0 and selection_1

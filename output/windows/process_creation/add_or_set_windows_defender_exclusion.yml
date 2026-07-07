@@ -1,0 +1,36 @@
+title: Add or Set Windows Defender Exclusion
+id: 773b66fe-4dd9-11ec-8289-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects the use of commands to add or set exclusions
+  in Windows Defender. It leverages data from Endpoint Detection and Response (EDR)
+  agents, focusing on command-line executions involving "Add-MpPreference" or "Set-MpPreference"
+  with exclusion parameters. This activity is significant because adversaries often
+  use it to bypass Windows Defender, allowing malicious code to execute undetected.
+  If confirmed malicious, this behavior could enable attackers to evade antivirus
+  detection, maintain persistence, and execute further malicious activities without
+  interference from Windows Defender.
+references:
+- https://tccontre.blogspot.com/2020/01/remcos-rat-evading-windows-defender-av.html
+- https://app.any.run/tasks/cf1245de-06a7-4366-8209-8e3006f2bfe5/
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+- https://learn.microsoft.com/en-us/powershell/module/defender/add-mppreference?view=windowsserver2025-ps
+tags:
+- attack.T1685
+date: '2021-11-25'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*Add-MpPreference *'
+  selection_1:
+    CommandLine|contains: '*Set-MpPreference *'
+  selection_2:
+    CommandLine|contains:
+    - '*-Exclusion*'
+    - '*-ControlledFolderAccessAllowedApplications*'
+    - '*-AttackSurfaceReductionOnlyExclusions*'
+  condition: selection_0 and selection_1 and selection_2

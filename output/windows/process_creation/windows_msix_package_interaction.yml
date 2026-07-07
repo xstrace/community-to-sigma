@@ -1,0 +1,24 @@
+title: Windows MSIX Package Interaction
+id: 1a06689d-814e-4db2-b2c7-5a174f8c2d6d
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: This hunting query detects user interactions with MSIX packages by monitoring EventCode 171 in the Microsoft-Windows-AppXPackaging/Operational logs. These events are generated when a user clicks
+  on or attempts to interact with an MSIX package, even if the package is not fully installed. This information can be valuable for security teams to identify what MSIX packages users are attempting to
+  open in their environment, which may help detect malicious MSIX packages before they're fully installed. Monitoring these interactions can provide early warning of potential MSIX package abuse, which
+  has been leveraged by threat actors such as FIN7, Zloader (Storm-0569), and FakeBat (Storm-1113).
+references:
+- https://www.appdeploynews.com/packaging-types/msix/troubleshooting-an-msix-package/
+- https://learn.microsoft.com/en-us/windows/win32/appxpkg/troubleshooting
+- https://www.advancedinstaller.com/msix-installation-or-launching-errors-and-fixes.html
+- https://redcanary.com/blog/msix-installers/
+tags:
+- attack.T1204_002
+date: '2025-08-18'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    EventID: 171
+  condition: selection_0

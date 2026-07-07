@@ -1,0 +1,19 @@
+title: Ollama Excessive API Requests
+id: 1cfab663-9adc-4169-a88c-6bae29ba3c70
+status: experimental
+level: medium
+author: Rod Soto
+description: Detects potential Distributed Denial of Service (DDoS) attacks or rate limit abuse against Ollama API endpoints by identifying excessive request volumes from individual client IP addresses.
+  This detection monitors GIN-formatted Ollama server logs to identify clients generating abnormally high request rates within short time windows, which may indicate automated attacks, botnet activity,
+  or resource exhaustion attempts targeting local AI model infrastructure.
+references:
+- https://github.com/rosplk/ta-ollama
+tags:
+- attack.T1498
+date: '2025-10-13'
+logsource:
+  category: application
+detection:
+  selection_0:
+    request_count: 120
+  condition: selection_0

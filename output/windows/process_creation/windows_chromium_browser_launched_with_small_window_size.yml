@@ -1,0 +1,29 @@
+title: Windows Chromium Browser Launched with Small Window Size
+id: 88103f56-8f5c-411f-a87f-71bee776f140
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects instances where a Chromium-based browser process, including Chrome, Edge, Brave, Opera, or Vivaldi, is launched with an unusually small window size, typically
+  less than 100 pixels in width or height. Such configurations render the browser effectively invisible to the user and are uncommon in normal user activity. When observed on endpoints, especially in combination
+  with automation, off-screen positioning, or suppression flags, this behavior may indicate attempts to execute web content or automated actions stealthily, bypassing user interaction and security controls.
+  This analytic highlights potential malicious automation or covert browser-based activity.
+references:
+- https://www.trendmicro.com/en_us/research/26/a/analysis-of-the-evelyn-stealer-campaign.html
+- https://peter.sh/experiments/chromium-command-line-switches/
+tags:
+- attack.T1497
+date: '2026-02-02'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image|contains:
+    - Chrome.exe
+    - Brave.exe
+    - Opera.exe
+    - Vivaldi.exe
+    - msedge.exe
+  selection_1:
+    CommandLine|contains: '*--window-size*'
+  condition: selection_0 and selection_1

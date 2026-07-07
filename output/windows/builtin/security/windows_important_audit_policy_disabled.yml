@@ -1,0 +1,31 @@
+title: Windows Important Audit Policy Disabled
+id: 1bf500e5-1226-41d9-af5d-ed1f577929f2
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: The following analytic detects the disabling of important audit policies. It leverages EventCode 4719 from Windows Security Event Logs to identify changes where success or failure auditing
+  is removed. This activity is significant as it suggests an attacker may have gained access to the domain controller and is attempting to evade detection by tampering with audit policies. If confirmed
+  malicious, this could lead to severe consequences, including data theft, privilege escalation, and full network compromise. Immediate investigation is required to determine the source and intent of the
+  change.
+references:
+- https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4719
+tags:
+- attack.T1685
+date: '2025-02-19'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4719
+  selection_1:
+    AuditPolicyChanges|contains:
+    - '%%8448'
+    - '%%8450'
+    - '%%8448, %%8450'
+  selection_2:
+    Changes|contains:
+    - Failure removed
+    - Success removed
+    - Success removed, Failure removed
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,29 @@
+title: Windows EFI Volume Mount Attempt Via Mountvol
+id: 6ee1d152-56c7-40e8-8db0-edb0074a6bb2
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects attempts to mount the EFI volume.
+  The EFI system partition (ESP) is a special partition on a data storage device (usually a hard disk drive or solid-state drive) that computers adhering to the UEFI (Unified Extensible Firmware Interface) specification use to store data necessary for the system to boot, such as bootloaders, device drivers, and system utilities.
+  This is used with attacks such as PKFail to modify the system on boot.
+references:
+- https://www.binarly.io/blog/pkfail-untrusted-platform-keys-undermine-secure-boot-on-uefi-ecosystem
+tags:
+- attack.T1204_002
+- attack.T1542
+- attack.T1688
+date: '2021-12-08'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: mountvol.exe
+  selection_1:
+    OriginalFileName: MOUNTVOL.EXE
+  selection_2:
+    CommandLine|contains:
+    - '*-S*'
+    - '* /S*'
+  condition: selection_0 and selection_1 and selection_2

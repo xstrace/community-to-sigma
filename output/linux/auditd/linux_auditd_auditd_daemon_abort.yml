@@ -1,0 +1,21 @@
+title: Linux Auditd Auditd Daemon Abort
+id: 76d6573f-c4ab-4fa1-8390-c036416d4add
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the abnormal termination of the Linux audit daemon (auditd) by identifying DAEMON_ABORT events in audit logs. These terminations suggest a serious failure of
+  the auditing subsystem, potentially due to resource exhaustion, corruption, or malicious interference. Unlike a clean shutdown, DAEMON_ABORT implies that audit logging may have been disabled without system
+  administrator intent. Alerts should be generated on detection and correlated with DAEMON_START, DAEMON_END, and system logs to determine root cause. If no DAEMON_START follows soon after, or this pattern
+  repeats, it indicates a high-severity issue that impacts log integrity and should be immediately investigated.
+references:
+- https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/6/html/security_guide/sec-audit_record_types
+tags:
+- attack.T1685_004
+date: '2024-08-12'
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    type: DAEMON_ABORT
+  condition: selection_0

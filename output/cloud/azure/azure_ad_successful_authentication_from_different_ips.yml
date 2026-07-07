@@ -1,0 +1,25 @@
+title: Azure AD Successful Authentication From Different Ips
+id: be6d868d-33b6-4aaa-912e-724fb555b11a
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects an Azure AD account successfully authenticating from multiple unique IP addresses within a 30-minute window. It leverages Azure AD SignInLogs to identify instances
+  where the same user logs in from different IPs in a short time frame. This behavior is significant as it may indicate compromised credentials being used by an adversary, potentially following a phishing
+  attack. If confirmed malicious, this activity could allow unauthorized access to corporate resources, leading to data breaches or further exploitation within the network.
+references:
+- https://attack.mitre.org/techniques/T1110
+- https://attack.mitre.org/techniques/T1110.001
+- https://attack.mitre.org/techniques/T1110.003
+tags:
+- attack.T1110_001
+- attack.T1110_003
+date: '2023-01-24'
+logsource:
+  product: azure
+  service: aad
+detection:
+  selection_0:
+    authenticationDetails{}.succeeded: 'true'
+  selection_1:
+    category: SignInLogs
+  condition: selection_0 and selection_1

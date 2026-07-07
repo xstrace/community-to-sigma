@@ -1,0 +1,22 @@
+title: Linux PF_ALG Registration Outside of Boot Window
+id: 8a9684ae-52e6-4a57-aea4-8a9f72942564
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  The following analytic detects when the AF_ALG kernel crypto socket interface being loaded more than 300 seconds after system boot, which is a primary kernel-level indicator of Copy Fail (CVE-2026-31431) exploitation activity on Debian and Ubuntu family systems.
+  The AF_ALG interface is required by the exploit to access the vulnerable authencesn crypto code path, and on systems where it is not auto-loaded at boot, its on-demand registration by an unprivileged process is a strong indicator of exploitation in progress.
+references:
+- https://xint.io/blog/copy-fail-linux-distributions
+- https://github.com/theori-io/copy-fail-CVE-2026-31431
+- https://github.com/Neo23x0/auditd/blob/master/audit.rules
+tags:
+- attack.T1068
+date: '2026-05-11'
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    sourcetype: linux_messages_syslog
+  condition: selection_0

@@ -1,0 +1,49 @@
+title: Executables Or Script Creation In Suspicious Path
+id: a7e3f0f0-ae42-11eb-b245-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies the creation of executables or scripts in suspicious file paths on Windows systems. It leverages the Endpoint.Filesystem dataset to detect files with specific
+  extensions (e.g., .exe, .dll, .ps1) created in uncommon directories (e.g., \windows\fonts\, \users\public\). This activity can be significant as adversaries often use these paths to evade detection and
+  maintain persistence. If confirmed malicious, this behavior could allow attackers to execute unauthorized code, escalate privileges, or persist within the environment, posing a significant security threat.
+references:
+- https://thedfirreport.com/2020/04/20/sqlserver-or-the-miner-in-the-basement/
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+- https://twitter.com/pr0xylife/status/1590394227758104576
+- https://www.microsoft.com/en-us/security/blog/2023/05/24/volt-typhoon-targets-us-critical-infrastructure-with-living-off-the-land-techniques/
+tags:
+- attack.T1036
+date: '2021-05-07'
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|contains:
+    - '*.bat'
+    - '*.cmd'
+    - '*.com'
+    - '*.dll'
+    - '*.exe'
+    - '*.js'
+    - '*.msc'
+    - '*.pif'
+    - '*.ps1'
+    - '*.sys'
+    - '*.vbe'
+    - '*.vbs'
+  selection_1:
+    TargetFilename|contains:
+    - '*:\PerfLogs\*'
+    - '*:\Users\Administrator\Music\*'
+    - '*:\Users\Default\*'
+    - '*:\Users\Public\*'
+    - '*:\Windows\debug\*'
+    - '*:\Windows\fonts\*'
+    - '*:\Windows\Media\*'
+    - '*:\Windows\repair\*'
+    - '*:\Windows\servicing\*'
+    - '*\inetpub\*'
+    - '*\Microsoft\Windows\Libraries\*'
+    - '*Recycle.bin*'
+  condition: selection_0 and selection_1

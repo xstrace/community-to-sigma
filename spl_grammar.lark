@@ -1,0 +1,73 @@
+// SPL Grammar for Splunk Detection Rule Conversion
+//
+// Ultra-permissive. Only jobs: split on pipes, balance parens, identify
+// comparison operators and macros. Transformer does all semantic interpretation.
+
+start: pipeline
+
+// ---------------------------------------------------------------------------
+// PIPELINE - split on pipes |
+// ---------------------------------------------------------------------------
+pipeline: PIPE? clause (PIPE clause)*
+
+// A clause is a flat sequence of tokens between pipes
+clause: token+
+
+// ---------------------------------------------------------------------------
+// TOKEN
+// ---------------------------------------------------------------------------
+?token: macro
+      | comparison
+      | LPAR token+ RPAR    -> paren_group
+      | value               -> bare_value
+
+// ---------------------------------------------------------------------------
+// COMPARISON
+//   field OP value   e.g., EventCode=4688, CommandLine!="foo"
+//   field IN ( ... ) e.g., ServiceName IN (a, b, c)
+// ---------------------------------------------------------------------------
+?comparison: expr OP expr           -> comparison
+           | expr IN_KW LPAR token+ RPAR  -> in_list
+
+OP: "=" | "!=" | ">" | "<" | ">=" | "<="
+IN_KW: "IN"
+
+// expr: field reference (potentially dotted) or macro
+?expr: ATOM ("." ATOM)* -> field_ref
+     | macro             -> macro_ref
+
+// ---------------------------------------------------------------------------
+// VALUES
+// ---------------------------------------------------------------------------
+?value: QSTRING
+      | WILDCARD
+      | NUMBER
+      | ATOM
+      | macro
+
+// ---------------------------------------------------------------------------
+// MACRO
+// ---------------------------------------------------------------------------
+macro: MACRO
+
+// ---------------------------------------------------------------------------
+// LEXER TERMINALS
+// ---------------------------------------------------------------------------
+PIPE: "|"
+LPAR: "("
+RPAR: ")"
+COMMA: ","
+
+QSTRING: /"(?:\\.|[^"\\])*"/
+
+WILDCARD: /\*[^\s|)(><=,`"'-]*\*?/
+        | /[^\s|)(><=,`"'-]+[*]/
+
+NUMBER: /-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/
+
+MACRO: /`[^`]+`/
+
+ATOM: /[a-zA-Z_][a-zA-Z0-9_@#.:~*{}\[\]\/-]*/
+
+%import common.WS
+%ignore WS

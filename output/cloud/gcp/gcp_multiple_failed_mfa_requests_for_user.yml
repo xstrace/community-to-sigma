@@ -1,0 +1,26 @@
+title: GCP Multiple Failed MFA Requests For User
+id: cbb3cb84-c06f-4393-adcc-5cb6195621f1
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects multiple failed multi-factor authentication (MFA) requests for a single user within a Google Cloud Platform (GCP) tenant. It triggers when 10 or more MFA prompts
+  fail within a 5-minute window, using Google Workspace login failure events. This behavior is significant as it may indicate an adversary attempting to bypass MFA by bombarding the user with repeated authentication
+  requests. If confirmed malicious, this activity could lead to unauthorized access, allowing attackers to compromise accounts and potentially escalate privileges within the GCP environment.
+references:
+- https://www.mandiant.com/resources/blog/russian-targeting-gov-business
+- https://arstechnica.com/information-technology/2022/03/lapsus-and-solar-winds-hackers-both-use-the-same-old-trick-to-bypass-mfa/
+- https://therecord.media/russian-hackers-bypass-2fa-by-annoying-victims-with-repeated-push-notifications/
+- https://attack.mitre.org/techniques/T1621/
+- https://attack.mitre.org/techniques/T1078/004/
+tags:
+- attack.T1078_004
+- attack.T1586_003
+- attack.T1621
+date: '2022-08-25'
+logsource:
+  product: google_workspace
+  service: login
+detection:
+  selection_0:
+    name: login_failure
+  condition: selection_0

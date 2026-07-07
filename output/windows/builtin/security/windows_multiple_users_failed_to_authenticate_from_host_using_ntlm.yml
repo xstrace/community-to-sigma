@@ -1,0 +1,26 @@
+title: Windows Multiple Users Failed To Authenticate From Host Using NTLM
+id: 7ed272a4-9c77-11eb-af22-acde48001122
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies a single source endpoint failing to authenticate with 30 unique valid users using the NTLM protocol. It leverages EventCode 4776 from Domain Controller logs,
+  focusing on error code 0xC000006A, which indicates a bad password. This behavior is significant as it may indicate a Password Spraying attack, where an adversary attempts to gain initial access or elevate
+  privileges. If confirmed malicious, this activity could lead to unauthorized access to sensitive information or further compromise of the Active Directory environment.
+references:
+- https://attack.mitre.org/techniques/T1110/003/
+- https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/audit-credential-validation
+- https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4776
+tags:
+- attack.T1110_003
+date: '2021-04-14'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4776
+  selection_1:
+    TargetUserName!|contains: '*$'
+  selection_2:
+    Status: '0xC000006A'
+  condition: selection_0 and selection_1 and selection_2

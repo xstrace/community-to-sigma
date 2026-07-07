@@ -1,0 +1,24 @@
+title: GitHub Enterprise Modify Audit Log Event Stream
+id: 99abf2e1-863c-4ec6-82f8-714391590a4c
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects when a user modifies or disables audit log event streaming in GitHub Enterprise. The detection monitors GitHub Enterprise audit logs for configuration changes
+  that affect the audit log streaming functionality, which is used to send audit events to security monitoring platforms. This behavior could indicate an attacker attempting to prevent their malicious activities
+  from being logged and detected by tampering with the audit trail. For a SOC, identifying modifications to audit logging is critical as it may be a precursor to other attacks where adversaries want to
+  operate undetected. The impact could be severe as organizations lose visibility into user actions, configuration changes, and security events within their GitHub Enterprise environment, potentially allowing
+  attackers to perform malicious activities without detection. This creates a significant blind spot in security monitoring and incident response capabilities.
+references:
+- https://www.googlecloudcommunity.com/gc/Community-Blog/Monitoring-for-Suspicious-GitHub-Activity-with-Google-Security/ba-p/763610
+- https://docs.github.com/en/enterprise-cloud@latest/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/streaming-the-audit-log-for-your-enterprise#setting-up-streaming-to-splunk
+tags:
+- attack.T1685_002
+- attack.T1195
+date: '2025-01-15'
+logsource:
+  product: github
+  service: enterprise
+detection:
+  selection_0:
+    action: audit_log_streaming.update
+  condition: selection_0

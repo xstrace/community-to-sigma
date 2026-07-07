@@ -1,0 +1,31 @@
+title: Cisco ASA - Device File Copy Activity
+id: 4d7e8f3a-9c2b-4e6f-8a1d-5b9c7e2f4a8c
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects file copy activity on Cisco ASA devices via CLI or ASDM.
+  Adversaries may copy device files including configurations, logs, packet captures, or system files for reconnaissance, credential extraction, or data exfiltration. While legitimate file operations occur during backups and maintenance, unauthorized copies may indicate malicious activity.
+  The detection monitors for command execution events (message ID 111008 or 111010) containing copy commands targeting running-config, startup-config, packet capture files, or other system files from disk0:, flash:, system:, or capture: locations.
+  Investigate unexpected file copies, especially from non-administrative accounts, during unusual hours, or when combined with other suspicious activities.
+references:
+- https://blog.talosintelligence.com/arcanedoor-new-espionage-focused-campaign-found-targeting-perimeter-network-devices/
+tags:
+- attack.T1005
+- attack.T1530
+date: '2025-11-21'
+logsource:
+  product: cisco
+  service: asa
+detection:
+  selection_1:
+    command|contains: copy *
+  selection_2:
+    command|contains:
+    - '*running-config*'
+    - '*startup-config*'
+    - '*/pcap capture:*'
+    - '* disk0:*'
+    - '* flash:*'
+    - '* system:*'
+  condition: selection_1 and selection_2

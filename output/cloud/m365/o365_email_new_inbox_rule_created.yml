@@ -1,0 +1,32 @@
+title: O365 Email New Inbox Rule Created
+id: 449f525a-7b42-47be-96a7-d9724e336c19
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic identifies the creation of new email inbox rules in an Office 365 environment. It detects events logged under New-InboxRule and Set-InboxRule operations within the o365_management_activity
+  data source, focusing on parameters that may indicate mail forwarding, removal, or obfuscation. Inbox rule creation is a typical end-user activity however attackers also leverage this technique for multiple
+  reasons.
+references:
+- https://attack.mitre.org/techniques/T1114/
+- https://www.hhs.gov/sites/default/files/help-desk-social-engineering-sector-alert-tlpclear.pdf
+- https://intelligence.abnormalsecurity.com/attack-library/threat-actor-convincingly-impersonates-employee-requesting-direct-deposit-update-in-likely-ai-generated-attack
+tags:
+- attack.T1114_003
+- attack.T1564_008
+date: '2025-01-23'
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: Exchange
+  selection_1:
+    Name|contains:
+    - SoftDeleteMessage
+    - DeleteMessage
+    - ForwardTo
+    - ForwardAsAttachmentTo
+    - RedirectTo
+    - MoveToFolder
+    - CopyToFolder
+  condition: selection_0 and selection_1

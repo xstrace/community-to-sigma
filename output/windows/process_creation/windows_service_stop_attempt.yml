@@ -1,0 +1,22 @@
+title: Windows Service Stop Attempt
+id: dd0f07ea-f08f-4d88-96e5-cb58156e82b6
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies attempts to stop services on a system using `net.exe`, `sc.exe` or the "Stop-Service" cmdlet. It leverages Endpoint Detection and Response (EDR) telemetry.
+  This activity can be significant as adversaries often terminate security or critical services to evade detection and further their objectives. If confirmed malicious, this behavior could allow attackers
+  to disable security defenses, facilitate ransomware encryption, or disrupt essential services, leading to potential data loss or system compromise.
+references:
+- https://www.microsoft.com/en-us/security/blog/2022/10/14/new-prestige-ransomware-impacts-organizations-in-ukraine-and-poland/
+tags:
+- attack.T1489
+date: '2022-11-30'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '* stop *'
+  selection_1:
+    CommandLine|contains: '*Stop-Service *'
+  condition: selection_0 and selection_1

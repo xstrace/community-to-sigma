@@ -1,0 +1,18 @@
+title: ESXi External Root Login Activity
+id: 218bf991-6c63-4c26-a682-6ac1a53ad8f8
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: This detection identifies instances where the ESXi UI is accessed using the root account instead of a delegated administrative user. Direct root access to the UI bypasses role-based access
+  controls and auditing practices, and may indicate risky behavior, misconfiguration, or unauthorized activity by a malicious actor using compromised credentials.
+tags:
+- attack.T1078
+date: '2025-07-11'
+logsource:
+  category: application
+detection:
+  selection_0:
+    Message|contains: '*root*'
+  selection_1:
+    Message|contains: '*logged in*'
+  condition: selection_0 and selection_1

@@ -1,0 +1,28 @@
+title: Windows Compatibility Telemetry Tampering Through Registry
+id: 43834687-cc48-4878-a2fa-f76e4271791f
+status: stable
+level: medium
+author: Steven Dick
+description: This detection identifies suspicious modifications to the Windows Compatibility Telemetry registry settings, specifically within the "TelemetryController" registry key and "Command" registry
+  value. It leverages data from the Endpoint.Registry data model, focusing on registry paths and values indicative of such changes. This activity is significant because CompatTelRunner.exe and the "Microsoft
+  Compatibility Appraiser" task always run as System and can be used to elevate privileges or establish a highly privileged persistence mechanism. If confirmed malicious, this could enable unauthorized
+  code execution, privilege escalation, or persistent access to the compromised system.
+references:
+- https://attack.mitre.org/techniques/T1546/
+- https://scythe.io/threat-thursday/windows-telemetry-persistence
+- https://www.trustedsec.com/blog/abusing-windows-telemetry-for-persistence
+tags:
+- attack.T1546
+- attack.T1053_005
+date: '2025-02-13'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TelemetryController*'
+  selection_1:
+    Details: Command
+  filter_2:
+    Details: (empty)
+  condition: (selection_0 and selection_1) and not (filter_2)

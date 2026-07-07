@@ -1,0 +1,23 @@
+title: Splunk RCE via User XSLT
+id: 6cb7e011-55fb-48e3-a98d-164fa854e37e
+status: stable
+level: medium
+author: Marissa Bower, Chase Franklin, Rod Soto, Bhavin Patel, Eric McGinnis, Splunk
+description: The following analytic identifies potential remote code execution (RCE) attempts via user-supplied Extensible Stylesheet Language Transformations (XSLT) in Splunk versions 9.1.x. It detects
+  this activity by analyzing `splunkd_ui` logs for specific URI patterns and status codes indicative of XSLT injection attempts. This activity is significant because successful exploitation could allow
+  an attacker to execute arbitrary code on the Splunk server. If confirmed malicious, this could lead to full system compromise, unauthorized data access, and further lateral movement within the network.
+references:
+- https://advisory.splunk.com/advisories/SVD-2023-1104
+tags:
+- attack.T1210
+date: '2023-11-22'
+logsource:
+  category: application
+detection:
+  selection_0:
+    cs-uri|contains: '*NO_BINARY_CHECK=1*'
+  selection_1:
+    cs-uri|contains: '*dispatch*.xsl*'
+  selection_2:
+    uri!|contains: '*splunkd_ui*'
+  condition: selection_0 and selection_1 and selection_2

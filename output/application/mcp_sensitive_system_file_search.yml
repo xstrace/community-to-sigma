@@ -1,0 +1,69 @@
+title: MCP Sensitive System File Search
+id: 4a57877d-9c56-4a50-9ad2-620e2f0ad821
+status: stable
+level: medium
+author: Rod Soto
+description: This detection identifies MCP filesystem tool usage attempting to search for files containing sensitive patterns such as passwords, credentials, API keys, secrets, and configuration files.
+  Adversaries and malicious insiders may abuse legitimate MCP filesystem capabilities to conduct reconnaissance and discover sensitive data stores for exfiltration or credential harvesting.
+references:
+- https://splunkbase.splunk.com/app/8377
+- https://www.splunk.com/en_us/blog/security/securing-ai-agents-model-context-protocol.html
+tags:
+- attack.T1552_001
+date: '2026-02-17'
+logsource:
+  category: application
+detection:
+  selection_0:
+    method|contains:
+    - read_file
+    - get_file_contents
+    - read
+    - search_files
+    - find_files
+    - grep
+    - search
+    - list_directory
+    - read_directory
+  selection_1:
+    path|contains: '*.ssh*'
+  selection_2:
+    path|contains: '*Administrator*'
+  selection_3:
+    path|contains: '*credentials*'
+  selection_4:
+    path|contains: '*password*'
+  selection_5:
+    path|contains: '*.env*'
+  selection_6:
+    path|contains: '*id_rsa*'
+  selection_7:
+    path|contains: '*.pem*'
+  selection_8:
+    path|contains: '*.ppk*'
+  selection_9:
+    path|contains: '*.key*'
+  selection_10:
+    path|contains: '*secrets*'
+  selection_11:
+    path|contains: '*.aws*'
+  selection_12:
+    path|contains: '*.config*'
+  selection_13:
+    pattern|contains: '*password*'
+  selection_14:
+    pattern|contains: '*key*'
+  selection_15:
+    pattern|contains: '*secret*'
+  selection_16:
+    pattern|contains: '*credential*'
+  selection_17:
+    pattern|contains: '*token*'
+  selection_18:
+    pattern|contains: '*auth*'
+  selection_19:
+    pattern|contains: '*api_key*'
+  selection_20:
+    pattern|contains: '*private_key*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4 and selection_5 and selection_6 and selection_7 and selection_8 and selection_9 and selection_10 and selection_11
+    and selection_12 and selection_13 and selection_14 and selection_15 and selection_16 and selection_17 and selection_18 and selection_19 and selection_20

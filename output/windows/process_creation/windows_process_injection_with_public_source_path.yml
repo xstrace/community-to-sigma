@@ -1,0 +1,27 @@
+title: Windows Process Injection With Public Source Path
+id: 492f09cf-5d60-4d87-99dd-0bc325532dda
+status: deprecated
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a process from a non-standard file path on Windows attempting to create a remote thread in another process. This is identified using Sysmon EventCode 8, focusing
+  on processes not originating from typical system directories. This behavior is significant as it often indicates process injection, a technique used by adversaries to evade detection or escalate privileges.
+  If confirmed malicious, this activity could allow an attacker to execute arbitrary code within another process, potentially leading to unauthorized actions and further compromise of the system.
+references:
+- https://unit42.paloaltonetworks.com/brute-ratel-c4-tool/
+tags:
+- attack.T1055_002
+date: '2022-09-05'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 8
+  selection_1:
+    TargetImage|contains: '*.exe'
+  filter_2:
+    SourceImage:
+    - C:\Windows\*
+    - C:\Program File*
+    - '%systemroot%\*'
+  condition: (selection_0 and selection_1) and not (filter_2)

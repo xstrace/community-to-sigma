@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+# Track output/ in git — it's the published Sigma rules
+# Only ignore test outputs
+output2/
+output3/
+output4/
+output_final/

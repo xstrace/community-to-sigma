@@ -1,0 +1,46 @@
+title: Cisco ASA - Reconnaissance Command Activity
+id: 6e9d4f7a-3c8b-4a9e-8d2f-7b5c9e1a6f3d
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects potential reconnaissance activities on Cisco ASA devices by identifying execution of multiple information-gathering "show" commands within a short timeframe.
+  Adversaries who gain initial access to network infrastructure devices typically perform systematic reconnaissance to understand the device configuration, network topology, security policies, connected systems, and potential attack paths. This reconnaissance phase involves executing multiple "show" commands to enumerate device details, running configurations, active connections, routing information, and VPN sessions.
+  The detection monitors for command execution events (message ID 111009) containing reconnaissance-oriented "show" commands (such as show running-config, show version, show interface, show crypto, show conn, etc.) and triggers when 7 or more distinct reconnaissance commands are executed within a 5-minute window by the same user.
+  Investigate reconnaissance bursts from non-administrative accounts, unusual source IP addresses, activity during off-hours, methodical command sequences suggesting automated enumeration, or reconnaissance activity correlated with other suspicious behaviors.
+  We recommend adapting the detection filters to exclude known legitimate administrative activities.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/asa/asa-cli-reference/S/asa-command-ref-S/sa-shov-commands.html
+tags:
+- attack.T1082
+- attack.T1590_001
+- attack.T1590_005
+date: '2025-11-21'
+logsource:
+  product: cisco
+  service: asa
+detection:
+  selection_1:
+    command|contains:
+    - show access-list*
+    - show capture*
+    - show conn*
+    - show cpu*
+    - show crypto*
+    - show eigrp*
+    - show failover*
+    - show flow*
+    - show interface*
+    - show inventory*
+    - show ip*
+    - show license*
+    - show memory*
+    - show nat*
+    - show ospf*
+    - show process*
+    - show running-config*
+    - show startup-config*
+    - show version*
+    - show vpn-sessiondb*
+    - show xlate*
+  condition: selection_1

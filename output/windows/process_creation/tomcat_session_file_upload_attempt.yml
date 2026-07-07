@@ -1,0 +1,27 @@
+title: Tomcat Session File Upload Attempt
+id: a1d8f5c3-9b7e-4f2d-8c51-3bca5e672410
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: This detection identifies potential exploitation of CVE-2025-24813 in Apache Tomcat through the initial stage of the attack. This first phase occurs when an attacker attempts to upload a malicious
+  serialized Java object with a .session file extension via an HTTP PUT request. When successful, these uploads typically result in HTTP status codes 201 (Created) or 409 (Conflict) and create the foundation
+  for subsequent deserialization attacks by placing malicious content in a location where Tomcat's session management can access it.
+references:
+- https://lists.apache.org/thread/j5fkjv2k477os90nczf2v9l61fb0kkgq
+- https://nvd.nist.gov/vuln/detail/CVE-2025-24813
+- https://github.com/vulhub/vulhub/tree/master/tomcat/CVE-2025-24813
+- https://www.rapid7.com/db/vulnerabilities/apache-tomcat-cve-2025-24813/
+- https://gist.github.com/MHaggis/e106367f6649fbb09ab27e7b4a01cf73
+tags:
+- attack.T1190
+- attack.T1505_003
+date: '2025-03-25'
+logsource:
+  category: webserver
+  product: windows
+detection:
+  selection_0:
+    cs-method: PUT
+  selection_1:
+    uri_path|contains: '*.session'
+  condition: selection_0 and selection_1

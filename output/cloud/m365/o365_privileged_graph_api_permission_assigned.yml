@@ -1,0 +1,27 @@
+title: O365 Privileged Graph API Permission Assigned
+id: 868f3131-d5e1-4bf1-af5b-9b0fbaaaedbb
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the assignment of critical Graph API permissions in Azure AD using the O365 Unified Audit Log. It focuses on permissions such as Application.ReadWrite.All, AppRoleAssignment.ReadWrite.All,
+  and RoleManagement.ReadWrite.Directory. The detection method leverages Azure Active Directory workload events, specifically 'Update application' operations. This activity is significant as these permissions
+  provide extensive control over Azure AD settings, posing a high risk if misused. If confirmed malicious, this could allow unauthorized modifications, leading to potential data breaches or privilege escalation.
+  Immediate investigation is crucial.
+references:
+- https://cloudbrothers.info/en/azure-attack-paths/
+- https://github.com/mandiant/Mandiant-Azure-AD-Investigator/blob/master/MandiantAzureADInvestigator.json
+- https://learn.microsoft.com/en-us/graph/permissions-reference
+- https://www.microsoft.com/en-us/security/blog/2024/01/25/midnight-blizzard-guidance-for-responders-on-nation-state-attack/
+- https://posts.specterops.io/azure-privilege-escalation-via-azure-api-permissions-abuse-74aee1006f48
+tags:
+- attack.T1003_002
+date: '2024-02-14'
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: Update application.
+  condition: selection_0 and selection_1

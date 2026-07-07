@@ -1,0 +1,41 @@
+title: Cisco ASA - Device File Copy to Remote Location
+id: 8a9e5f2b-6d4c-4e7f-9b3a-1c8d7f5e2a9b
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects file copy operations to remote locations on Cisco ASA devices via CLI or ASDM.
+  Adversaries may exfiltrate device files including configurations, logs, packet captures, or system data to remote servers using protocols like TFTP, FTP, HTTP, HTTPS, SMB, or SCP. While legitimate backups to centralized servers are common, copies to unexpected destinations may indicate data exfiltration to attacker-controlled infrastructure.
+  The detection monitors for command execution events (message ID 111008 or 111010) containing copy commands with remote protocol indicators (tftp:, ftp:, http:, https:, smb:, scp:).
+  Investigate copies to unexpected destinations, from non-administrative accounts, or outside approved maintenance windows.
+  We recommend adapting the detection filters to exclude known legitimate backup activities.
+references:
+- https://community.cisco.com/t5/security-knowledge-base/asa-how-to-download-images-using-tftp-ftp-http-https-and-scp/ta-p/3109769
+- https://blog.talosintelligence.com/arcanedoor-new-espionage-focused-campaign-found-targeting-perimeter-network-devices/
+tags:
+- attack.T1005
+- attack.T1041
+- attack.T1048_003
+date: '2025-11-21'
+logsource:
+  product: cisco
+  service: asa
+detection:
+  selection_1:
+    command|contains: copy *
+  selection_2:
+    command|contains:
+    - '*running-config*'
+    - '*startup-config*'
+    - '*/pcap capture:*'
+    - '* disk0:*'
+    - '* flash:*'
+    - '* system:*'
+  selection_3:
+    command|contains:
+    - '*ftp:*'
+    - '*http:*'
+    - '*https:*'
+    - '*smb:*'
+    - '*scp:*'
+  condition: selection_1 and selection_2 and selection_3

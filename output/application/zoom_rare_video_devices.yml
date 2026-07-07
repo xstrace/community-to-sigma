@@ -1,0 +1,16 @@
+title: Zoom Rare Video Devices
+id: 9b2b819d-c76b-4dc6-bd3d-148edb8de83e
+status: experimental
+level: medium
+author: Marissa Bower, Raven Tait
+description: Detects rare video devices from Zoom logs. Actors performing Remote Employment Fraud (REF) typically use unusual device information compared to a majority of employees. Detecting this activity
+  requires careful analysis, regular review, and a thorough understanding of the audio and video devices commonly used within your environment.
+tags:
+- attack.T1123
+date: '2025-06-12'
+logsource:
+  category: application
+detection:
+  selection_0:
+    camera|contains: '*'
+  condition: selection_0

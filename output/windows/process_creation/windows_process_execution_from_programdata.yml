@@ -1,0 +1,27 @@
+title: Windows Process Execution From ProgramData
+id: 237016fa-d8e6-47b4-80f9-70c4d42c72c0
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  The following analytic identifies processes running from file paths within
+  the ProgramData directory, a common location abused by adversaries for executing
+  malicious code while evading detection. Threat actors often drop and execute payloads
+  from this directory to bypass security controls, as it typically has write permissions
+  for standard users. While this behavior can indicate malware execution or persistence
+  techniques, it is important to note that some legitimate software, installers, and
+  update mechanisms also run from ProgramData, leading to potential false positives.
+  Security teams should validate detections by correlating with other indicators,
+  such as unusual parent processes, unsigned binaries, or anomalous network activity.
+references:
+- https://www.microsoft.com/en-us/security/blog/2023/05/24/volt-typhoon-targets-us-critical-infrastructure-with-living-off-the-land-techniques/
+tags:
+- attack.T1036_005
+date: '2021-05-07'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image|contains: '*:\ProgramData\*'
+  condition: selection_0

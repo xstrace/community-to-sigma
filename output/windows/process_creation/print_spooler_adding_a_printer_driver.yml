@@ -1,0 +1,32 @@
+title: Print Spooler Adding A Printer Driver
+id: 313681a2-da8e-11eb-adad-acde48001122
+status: stable
+level: medium
+author: Mauricio Velazco, Michael Haag, Teoderick Contreras, Splunk
+description: The following analytic detects the addition of new printer drivers by monitoring Windows PrintService operational logs, specifically EventCode 316. This detection leverages log data to identify
+  messages indicating the addition or update of printer drivers, such as "kernelbase.dll" and "UNIDRV.DLL." This activity is significant as it may indicate exploitation attempts related to vulnerabilities
+  like CVE-2021-34527 (PrintNightmare). If confirmed malicious, attackers could gain code execution or escalate privileges, potentially compromising the affected system. Immediate isolation and investigation
+  of the endpoint are recommended.
+references:
+- https://twitter.com/MalwareJake/status/1410421445608476679?s=20
+- https://www.truesec.com/hub/blog/fix-for-printnightmare-cve-2021-1675-exploit-to-keep-your-print-servers-running-while-a-patch-is-not-available
+- https://www.truesec.com/hub/blog/exploitable-critical-rce-vulnerability-allows-regular-users-to-fully-compromise-active-directory-printnightmare-cve-2021-1675
+- https://www.reddit.com/r/msp/comments/ob6y02/critical_vulnerability_printnightmare_exposes
+tags:
+- attack.T1547_012
+date: '2021-07-01'
+logsource:
+  product: windows
+  service: printservice-admin
+detection:
+  selection_0:
+    EventID: 316
+  selection_1:
+    category: Adding a printer driver
+  selection_2:
+    Message|contains: '*kernelbase.dll,*'
+  selection_3:
+    Message|contains: '*UNIDRV.DLL,*'
+  selection_4:
+    Message|contains: '*.DLL.*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

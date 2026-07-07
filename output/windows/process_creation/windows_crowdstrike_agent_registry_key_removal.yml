@@ -1,0 +1,25 @@
+title: Windows CrowdStrike Agent Registry Key Removal
+id: 094e8c62-c071-4b3d-af43-d3c74c4b249f
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects delete events on the CrowdStrike registry keys.
+  These keys are removed as part of the agent uninstallation process.
+  This activity should only occur during planned events and any instances outside that should be evaluated for malicious activity such as CVE-2022-44721.
+references:
+- https://github.com/purplededa/CVE-2022-44721-CsFalconUninstaller
+tags:
+- attack.T1685
+date: '2026-05-05'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: '12'
+  selection_1:
+    TargetObject|contains: '*\SYSTEM\CrowdStrike'
+  selection_2:
+    action: deleted
+  condition: selection_0 and selection_1 and selection_2

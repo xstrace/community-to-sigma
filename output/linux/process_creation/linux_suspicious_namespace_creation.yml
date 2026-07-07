@@ -1,0 +1,22 @@
+title: Linux Suspicious Namespace Creation
+id: 039dbee4-39d8-4ad0-a43a-df4db3a41990
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: The following analytic detects an unprivileged user invoking the unshare syscall with user namespace flags followed within 120 seconds by a root-owned shell or interpreter spawning under the
+  same parent process, correlating auditd syscall telemetry with Sysmon process creation events to identify the two-step sequence characteristic of user-namespace-based Linux kernel privilege escalation
+  exploits such as DirtyFrag.
+references:
+- https://www.elastic.co/security-labs/copy-fail-dirtyfrag-linux-page-bugs-in-the-wild
+tags:
+- attack.T1068
+date: '2026-05-12'
+logsource:
+  product: linux
+  service: sysmon
+detection:
+  selection_0:
+    type: SYSCALL
+  selection_1:
+    SYSCALL: unshare
+  condition: selection_0 and selection_1

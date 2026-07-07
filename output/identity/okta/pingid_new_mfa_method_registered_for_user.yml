@@ -1,0 +1,27 @@
+title: PingID New MFA Method Registered For User
+id: 892dfeaf-461d-4a78-aac8-b07e185c9bce
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic detects the registration of a new Multi-Factor Authentication (MFA) method for a PingID (PingOne) account. It leverages JSON logs from PingID, specifically looking for
+  successful device pairing events. This activity is significant as adversaries who gain unauthorized access to a user account may register a new MFA method to maintain persistence. If confirmed malicious,
+  this could allow attackers to bypass existing security measures, maintain long-term access, and potentially escalate their privileges within the compromised environment.
+references:
+- https://twitter.com/jhencinski/status/1618660062352007174
+- https://attack.mitre.org/techniques/T1098/005/
+- https://attack.mitre.org/techniques/T1556/006/
+- https://docs.pingidentity.com/r/en-us/pingoneforenterprise/p14e_subscriptions?tocId=3xhnxjX3VzKNs3SXigWnQA
+tags:
+- attack.T1621
+- attack.T1556_006
+- attack.T1098_005
+date: '2023-12-20'
+logsource:
+  category: application
+  product: okta
+detection:
+  selection_0:
+    message"|contains: Device Paired*
+  selection_1:
+    sc-status: SUCCESS
+  condition: selection_0 and selection_1

@@ -1,0 +1,34 @@
+title: Windows Process Accessing Windows Recall Directory
+id: d1d7048e-d095-4fb5-b43b-e570d574a1aa
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  This detection triggers on a process accessing the Windows Recall directory.
+  Recall is a new feature Microsoft release that takes screenshots every 5 or so seconds to provide context to it's AI features.
+  The initial release of Recall was lacking in the security department due to it being trivial to view and steal the data.
+  Due to this lack of security it's likely that info stealer malware will take advantage of this new feature.
+  Microsoft has recognized the security issues with Recall and is planning on making improvements.
+  Once those improvements are released we will re-assess this detection to make sure it is still relevant.
+references:
+- https://doublepulsar.com/recall-stealing-everything-youve-ever-typed-or-viewed-on-your-own-windows-pc-is-now-possible-da3e12e9465e
+- https://github.com/xaitax/TotalRecall
+tags:
+- attack.T1119
+- attack.T1059
+date: '2026-05-05'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    AccessList: '%%4416'
+  selection_1:
+    EventID: '4663'
+  selection_2:
+    ObjectName|contains: '*CoreAIPlatform.00\UKP*'
+  filter_3:
+    ProcessName:
+    - '*aixhost.exe'
+    - '*aihost.exe'
+  condition: (selection_0 and selection_1 and selection_2) and not (filter_3)

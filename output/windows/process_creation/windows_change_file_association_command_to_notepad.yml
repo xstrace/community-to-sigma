@@ -1,0 +1,39 @@
+title: Windows Change File Association Command To Notepad
+id: 339155d6-34cb-4788-9d00-e67f190af93a
+status: stable
+level: medium
+author: Teoderick Contreras, Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects attempts to change the command value of a file association of an extension to open with Notepad.exe.
+  It leverages data from Endpoint Detection and Response (EDR) agents, focusing on specific command-line patterns and registry modifications.
+  This activity is significant as it can indicate an attempt to manipulate file handling behavior, a technique observed in APT and ransomware attacks like Prestige.
+  After changing the extension of all encrypted files to a new one, Prestige ransomware modifies the file association for that extension to open with Notepad.exe in order to display a ransom note.
+references:
+- https://www.microsoft.com/en-us/security/blog/2022/10/14/new-prestige-ransomware-impacts-organizations-in-ukraine-and-poland/
+tags:
+- attack.T1546_001
+date: '2025-10-13'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '* add *'
+  selection_1:
+    CommandLine:
+    - '*New-ItemProperty*'
+    - '*Set-ItemProperty*'
+    - '* sp *'
+  selection_2:
+    CommandLine|contains:
+    - '*HKCR\*'
+    - '*HKEY_CLASSES_ROOT\*'
+  selection_3:
+    CommandLine|contains: '*\shell\open\command*'
+  selection_4:
+    CommandLine|contains: '*Notepad.exe*'
+  filter_5:
+    CommandLine:
+    - '*\Applications\notepad.exe\*'
+    - '*\WindowsApps\Microsoft.WindowsNotepad*'
+  condition: (selection_0 and selection_1 and selection_2 and selection_3 and selection_4) and not (filter_5)

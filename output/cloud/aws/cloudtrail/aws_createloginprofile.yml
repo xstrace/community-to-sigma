@@ -1,0 +1,21 @@
+title: AWS CreateLoginProfile
+id: 2a9b80d3-6340-4345-11ad-212bf444d111
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: The following analytic identifies the creation of a login profile for one AWS user by another, followed by a console login from the same source IP. It uses AWS CloudTrail logs to correlate
+  the `CreateLoginProfile` and `ConsoleLogin` events based on the source IP and user identity. This activity is significant as it may indicate privilege escalation, where an attacker creates a new login
+  profile to gain unauthorized access. If confirmed malicious, this could allow the attacker to escalate privileges and maintain persistent access to the AWS environment.
+references:
+- https://bishopfox.com/blog/privilege-escalation-in-aws
+- https://rhinosecuritylabs.com/aws/aws-privilege-escalation-methods-mitigation-part-2/
+tags:
+- attack.T1136_003
+date: '2021-03-02'
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    eventName: CreateLoginProfile
+  condition: selection_0

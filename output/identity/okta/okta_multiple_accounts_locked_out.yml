@@ -1,0 +1,27 @@
+title: Okta Multiple Accounts Locked Out
+id: a511426e-184f-4de6-8711-cfd2af29d1e1
+status: stable
+level: medium
+author: Michael Haag, Mauricio Velazco, Splunk
+description: The following analytic detects multiple Okta accounts being locked out within a short period. It uses the user.account.lock event from Okta logs, aggregated over a 5-minute window, to identify
+  this behavior. This activity is significant as it may indicate a brute force or password spraying attack, where an adversary attempts to guess passwords, leading to account lockouts. If confirmed malicious,
+  this could result in potential account takeovers or unauthorized access to sensitive Okta accounts, posing a significant security risk.
+references:
+- https://attack.mitre.org/techniques/T1110/
+- https://splunkbase.splunk.com/app/6553
+tags:
+- attack.T1110
+date: '2024-04-17'
+logsource:
+  category: process_creation
+  product: okta
+detection:
+  selection_0:
+    change_type: AAA
+  selection_1:
+    object_category: User
+  selection_2:
+    action: lockout
+  selection_3:
+    CommandLine: user.account.lock
+  condition: selection_0 and selection_1 and selection_2 and selection_3

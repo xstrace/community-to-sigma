@@ -1,0 +1,25 @@
+title: Windows AD Domain Root ACL Modification
+id: 4981e2db-1372-440d-816e-3e7e2ed74433
+status: stable
+level: medium
+author: Dean Luxton
+description: ACL modification performed on the domain root object, significant AD change with high impact. Following MS guidance all changes at this level should be reviewed. Drill into the logonID within
+  EventCode 4624 for information on the source device during triage.
+references:
+- https://learn.microsoft.com/en-us/windows/win32/secauthz/ace-strings
+- https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/1522b774-6464-41a3-87a5-1e5633c3fbbb
+- https://trustedsec.com/blog/a-hitchhackers-guide-to-dacl-based-detections-part-1-a
+- https://lantern.splunk.com/Security/Product_Tips/Enterprise_Security/Enabling_an_audit_trail_from_Active_Directory
+tags:
+- attack.T1222_001
+- attack.T1484
+date: '2024-07-01'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5136
+  selection_1:
+    ObjectClass: domainDNS
+  condition: selection_0 and selection_1

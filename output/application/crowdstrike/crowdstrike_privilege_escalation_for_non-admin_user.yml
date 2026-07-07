@@ -1,0 +1,20 @@
+title: Crowdstrike Privilege Escalation For Non-Admin User
+id: 69e2860c-0e4b-40ae-9dc4-bf9e3bf2a548
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects CrowdStrike alerts for privilege escalation attempts by non-admin users. These alerts indicate unauthorized efforts by regular users to gain elevated permissions,
+  posing a significant security risk. Detecting and addressing these attempts promptly helps prevent potential breaches and ensures that user privileges remain properly managed, maintaining the integrity
+  of the organization's security protocols.
+references:
+- https://www.crowdstrike.com/wp-content/uploads/2022/12/CrowdStrike-Falcon-Event-Streams-Add-on-Guide-v3.pdf
+tags:
+- attack.T1110
+date: '2024-07-31'
+logsource:
+  product: crowdstrike
+  service: crowdstrike
+detection:
+  selection_0:
+    tag: alert
+  condition: selection_0

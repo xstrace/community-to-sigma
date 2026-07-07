@@ -1,0 +1,26 @@
+title: Sqlite Module In Temp Folder
+id: 0f216a38-f45f-11eb-b09c-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the creation of sqlite3.dll files in the %temp% folder. It leverages Sysmon EventCode 11 to identify when these files are written to the temporary directory.
+  This activity is significant because it is associated with IcedID malware, which uses the sqlite3 module to parse browser databases and steal sensitive information such as banking details, credit card
+  information, and credentials. If confirmed malicious, this behavior could lead to significant data theft and compromise of user accounts.
+references:
+- https://www.cisecurity.org/insights/white-papers/security-primer-icedid
+tags:
+- attack.T1005
+date: '2021-08-05'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 11
+  selection_1:
+    TargetFilename|contains: '*\sqlite32.dll'
+  selection_2:
+    TargetFilename|contains: '*\sqlite64.dll'
+  selection_3:
+    TargetFilename|contains: '*\temp\*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

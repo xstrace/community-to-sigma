@@ -1,0 +1,33 @@
+title: Detect Exchange Web Shell
+id: 8c14eeee-2af1-4a4b-bda8-228da0f4862a
+status: stable
+level: medium
+author: Michael Haag, Shannon Davis, David Dorsey, Splunk
+description: The following analytic identifies the creation of suspicious .aspx files in known drop locations for Exchange exploitation, specifically targeting paths associated with HAFNIUM group and vulnerabilities
+  like ProxyShell and ProxyNotShell. It leverages data from the Endpoint datamodel, focusing on process and filesystem events. This activity is significant as it may indicate a web shell deployment, a common
+  method for persistent access and remote code execution. If confirmed malicious, attackers could gain unauthorized access, execute arbitrary commands, and potentially escalate privileges within the Exchange
+  environment.
+references:
+- https://raw.githubusercontent.com/Azure/Azure-Sentinel/master/Sample%20Data/Feeds/MSTICIoCs-ExchangeServerVulnerabilitiesDisclosedMarch2021.csv
+- https://www.zerodayinitiative.com/blog/2021/8/17/from-pwn2own-2021-a-new-attack-surface-on-microsoft-exchange-proxyshell
+- https://www.youtube.com/watch?v=FC6iHw258RI
+- https://www.huntress.com/blog/rapid-response-microsoft-exchange-servers-still-vulnerable-to-proxyshell-exploit#what-should-you-do
+tags:
+- attack.T1133
+- attack.T1190
+- attack.T1505_003
+date: '2021-03-18'
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    TargetFilename|contains:
+    - '*\HttpProxy\owa\auth\*'
+    - '*\inetpub\wwwroot\aspnet_client\*'
+    - '*\HttpProxy\OAB\*'
+  selection_1:
+    Image|contains:
+    - '*.aspx'
+    - '*.ashx'
+  condition: selection_0 and selection_1

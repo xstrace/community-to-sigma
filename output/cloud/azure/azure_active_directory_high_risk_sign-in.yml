@@ -1,0 +1,26 @@
+title: Azure Active Directory High Risk Sign-in
+id: 1ecff169-26d7-4161-9a7b-2ac4c8e61bea
+status: stable
+level: medium
+author: Mauricio Velazco, Gowthamaraj Rajendran, Splunk
+description: The following analytic detects high-risk sign-in attempts against Azure Active Directory, identified by Azure Identity Protection. It leverages the RiskyUsers and UserRiskEvents log categories
+  from Azure AD events ingested via EventHub. This activity is significant as it indicates potentially compromised accounts, flagged by heuristics and machine learning. If confirmed malicious, attackers
+  could gain unauthorized access to sensitive resources, leading to data breaches or further exploitation within the environment.
+references:
+- https://attack.mitre.org/techniques/T1110/003/
+- https://docs.microsoft.com/en-us/security/compass/incident-response-playbook-password-spray
+- https://docs.microsoft.com/en-us/azure/active-directory/identity-protection/overview-identity-protection
+- https://docs.microsoft.com/en-us/azure/active-directory/identity-protection/concept-identity-protection-risks
+tags:
+- attack.T1110_003
+- attack.T1586_003
+date: '2022-07-11'
+logsource:
+  product: azure
+  service: aad
+detection:
+  selection_0:
+    category: UserRiskEvents
+  selection_1:
+    riskLevel: high
+  condition: selection_0 and selection_1

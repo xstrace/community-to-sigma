@@ -1,0 +1,27 @@
+title: Cisco IOS XE Implant Access
+id: 07c36cda-6567-43c3-bc1a-89dff61e2cd9
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: |-
+  The following analytic identifies the potential exploitation of the Cisco IOS XE vulnerability, CVE-2023-20198, in the Web User Interface.
+  It monitors POST requests to the "/webui/logoutconfirm.html?logon_hash=*" endpoint using the Web datamodel.
+  This activity can be significant as it indicates potential access request to the implant
+  If confirmed malicious, attackers could maintain privileged access, compromising the device's integrity and security.
+references:
+- https://blog.talosintelligence.com/active-exploitation-of-cisco-ios-xe-software/
+- https://github.com/vulncheck-oss/cisco-ios-xe-implant-scanner
+tags:
+- attack.T1190
+date: '2023-10-17'
+logsource:
+  category: webserver
+  product: cisco
+detection:
+  selection_0:
+    cs-uri|contains: '*/webui/logoutconfirm.html?logon_hash=*'
+  selection_1:
+    cs-method: POST
+  selection_2:
+    sc-status: 200
+  condition: selection_0 and selection_1 and selection_2

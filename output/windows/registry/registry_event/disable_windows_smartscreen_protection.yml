@@ -1,0 +1,28 @@
+title: Disable Windows SmartScreen Protection
+id: 664f0fd0-91ff-11eb-a56f-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic detects modifications to the Windows registry that disable SmartScreen protection. It leverages data from the Endpoint.Registry data model, specifically monitoring changes
+  to registry paths associated with SmartScreen settings. This activity is significant because SmartScreen provides an early warning system against phishing and malware. Disabling it can indicate malicious
+  intent, often seen in Remote Access Trojans (RATs) to evade detection while downloading additional payloads. If confirmed malicious, this action could allow attackers to bypass security measures, increasing
+  the risk of successful phishing attacks and malware infections.
+references:
+- https://tccontre.blogspot.com/2020/01/remcos-rat-evading-windows-defender-av.html
+tags:
+- attack.T1685
+date: '2021-03-31'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains:
+    - '*\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\SmartScreenEnabled'
+    - '*\Microsoft\Windows\System\EnableSmartScreen'
+  selection_1:
+    Details|contains:
+    - 'Off'
+    - '0'
+    - '0x00000000'
+  condition: selection_0 and selection_1

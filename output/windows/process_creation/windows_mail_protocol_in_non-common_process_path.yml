@@ -1,0 +1,29 @@
+title: Windows Mail Protocol In Non-Common Process Path
+id: ac3311f5-661d-4e99-bd1f-3ec665b05441
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a Windows application establishing an SMTP connection from a non-common installation path. It leverages Sysmon EventCode 3 to identify processes not typically
+  associated with email clients (e.g., Thunderbird, Outlook) making SMTP connections. This activity is significant as adversaries, including malware like AgentTesla, use such connections for Command and
+  Control (C2) communication to exfiltrate stolen data. If confirmed malicious, this behavior could lead to unauthorized data exfiltration, including sensitive information like desktop screenshots, browser
+  data, and system details, compromising the affected host.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.agent_tesla
+tags:
+- attack.T1071_003
+date: '2022-09-21'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 3
+  filter_1:
+    Image:
+    - C:\Program Files \(x86\)\*
+    - C:\Program Files\*
+    - C:\Windows\System32\*
+    - C:\Windows\SysWOW64\*
+  selection_2:
+    DestinationPortName: smtp
+  condition: (selection_0 and selection_2) and not (filter_1)

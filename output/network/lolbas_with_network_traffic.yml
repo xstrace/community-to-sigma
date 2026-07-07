@@ -1,0 +1,107 @@
+title: LOLBAS With Network Traffic
+id: 2820f032-19eb-497e-8642-25b04a880359
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic identifies the use of Living Off the Land Binaries and Scripts (LOLBAS) with network traffic. It leverages data from the Network Traffic data model to detect when native
+  Windows binaries, often abused by adversaries, initiate network connections. This activity is significant as LOLBAS are frequently used to download malicious payloads, enabling lateral movement, command-and-control,
+  or data exfiltration. If confirmed malicious, this behavior could allow attackers to execute arbitrary code, escalate privileges, or maintain persistence within the environment, posing a severe threat
+  to organizational security.
+references:
+- https://lolbas-project.github.io/#
+- https://www.sans.org/presentations/lolbin-detection-methods-seven-common-attacks-revealed/
+tags:
+- attack.T1105
+- attack.T1567
+- attack.T1218
+date: '2023-02-02'
+logsource:
+  category: all_traffic
+detection:
+  selection_0:
+    app|contains:
+    - '*\At.exe'
+    - '*\Atbroker.exe'
+    - '*\Bash.exe'
+    - '*\Bitsadmin.exe'
+    - '*\Certoc.exe'
+    - '*\certutil.exe'
+    - '*\cmd.exe'
+    - '*\Cmstp.exe'
+    - '*\cscript.exe'
+    - '*\Diskshadow.exe'
+    - '*\Dnscmd.exe'
+    - '*\Extexport.exe'
+    - '*\Forfiles.exe'
+    - '*\Ftp.exe'
+    - '*\Gpscript.exe'
+    - '*\Hh.exe'
+    - '*\Ie4uinit.exe'
+    - '*\Ieexec.exe'
+    - '*\Infdefaultinstall.exe'
+    - '*\Installutil.exe'
+    - '*\makecab.exe'
+    - '*\Mavinject.exe'
+    - '*\Microsoft.Workflow.Compiler.exe'
+    - '*\Msbuild.exe'
+    - '*\Msconfig.exe'
+    - '*\Msdt.exe'
+    - '*\Mshta.exe'
+    - '*\Msiexec.exe'
+    - '*\Netsh.exe'
+    - '*\notepad.exe'
+    - '*\Odbcconf.exe'
+    - '*\OfflineScannerShell.exe'
+    - '*\Pcalua.exe'
+    - '*\Pcwrun.exe'
+    - '*\Pnputil.exe'
+    - '*\powershell_ise.exe'
+    - '*\powershell.exe'
+    - '*\Presentationhost.exe'
+    - '*\pwsh.exe'
+    - '*\Rasautou.exe'
+    - '*\Regasm.exe'
+    - '*\Register-cimprovider.exe'
+    - '*\Regsvcs.exe'
+    - '*\Regsvr32.exe'
+    - '*\Runonce.exe'
+    - '*\Runscripthelper.exe'
+    - '*\Schtasks.exe'
+    - '*\Scriptrunner.exe'
+    - '*\SettingSyncHost.exe'
+    - '*\Stordiag.exe'
+    - '*\Syncappvpublishingserver.exe'
+    - '*\Ttdinject.exe'
+    - '*\Tttracer.exe'
+    - '*\Verclsid.exe'
+    - '*\Wab.exe'
+    - '*\Wmic.exe'
+    - '*\WorkFolders.exe'
+    - '*\Wuauclt.exe'
+    - '*\Xwizard.exe'
+  filter_1:
+    DestinationIp:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+    - 100.64.0.0/10
+    - 127.0.0.0/8
+    - 169.254.0.0/16
+    - 192.0.0.0/24
+    - 192.0.0.0/29
+    - 192.0.0.8/32
+    - 192.0.0.9/32
+    - 192.0.0.10/32
+    - 192.0.0.170/32
+    - 192.0.0.171/32
+    - 192.0.2.0/24
+    - 192.31.196.0/24
+    - 192.52.193.0/24
+    - 192.88.99.0/24
+    - 224.0.0.0/4
+    - 192.175.48.0/24
+    - 198.18.0.0/15
+    - 198.51.100.0/24
+    - 203.0.113.0/24
+    - 240.0.0.0/4
+  condition: (selection_0) and not (filter_1)

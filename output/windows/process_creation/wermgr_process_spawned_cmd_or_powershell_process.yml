@@ -1,0 +1,22 @@
+title: Wermgr Process Spawned CMD Or Powershell Process
+id: e8fc95bc-a107-11eb-a978-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the spawning of cmd or PowerShell processes by the wermgr.exe process. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process
+  telemetry, including parent-child process relationships and command-line executions. This behavior is significant as it is commonly associated with code injection techniques used by malware like TrickBot
+  to execute shellcode or malicious DLL modules. If confirmed malicious, this activity could allow attackers to execute arbitrary code, escalate privileges, or maintain persistence within the environment,
+  posing a severe threat to system security.
+references:
+- https://labs.vipre.com/trickbot-and-its-modules/
+- https://whitehat.eu/incident-response-case-study-featuring-ryuk-and-trickbot-part-2/
+tags:
+- attack.T1059
+date: '2021-04-26'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: wermgr.exe
+  condition: selection_0

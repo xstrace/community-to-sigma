@@ -1,0 +1,40 @@
+title: PowerShell PInvoke Process Injection API Chain
+id: 3f1a2b4c-d5e6-7890-abcd-ef1234567890
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  The following analytic detects PowerShell Script Block Logging (Event ID 4104) evidence of a complete P/Invoke process-injection API chain at either the compile phase or the execution phase.
+  Portions of this search were modified to retain the same functionality while preventing antivirus products from alerting on the detection itself
+references:
+- https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportattribute
+- https://www.ired.team/offensive-security/code-injection-process-injection
+- https://www.broadcom.com/support/security-center/protection-bulletin/vip-keylogger-spreads-via-multi-org-impersonation-campaign
+- https://attack.mitre.org/techniques/T1055/
+- https://attack.mitre.org/techniques/T1620/
+tags:
+- attack.T1055_001
+- attack.T1055_003
+- attack.T1055_004
+- attack.T1055_012
+- attack.T1055_013
+- attack.T1059_001
+- attack.T1620
+date: '2026-04-29'
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: '*add-type*'
+  selection_2:
+    ScriptBlockText|contains: '*DllImport*'
+  selection_3:
+    ScriptBlockText|contains:
+    - '*extern IntPtr*'
+    - '*extern bool*'
+    - '*extern uint*'
+    - '*extern int*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

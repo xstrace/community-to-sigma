@@ -1,0 +1,34 @@
+title: Windows Cloud Files Filter Loaded by Uncommon Process
+id: 77b85062-274e-43a5-9dab-c25862b85291
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  The following analytic detects cldapi.dll being loaded by a process not associated with legitimate cloud sync activity.
+  The Windows Cloud Files API (cldapi.dll) is abused by several local privilege escalation exploits.
+references:
+- https://www.huntress.com/blog/nightmare-eclipse-intrusion
+- https://www.threatlocker.com/blog/miniplasma-windows-privilege-escalation-zero-day-affects-fully-patched-systems
+tags:
+- attack.T1543_003
+date: '2026-05-18'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 7
+  selection_1:
+    ImageLoaded|contains: '*\cldapi.dll'
+  filter_2:
+    Image:
+    - '*\box.exe'
+    - '*\dropbox.exe'
+    - '*\googledrivefs.exe'
+    - '*\icloud.exe'
+    - '*\onedrive*.exe'
+    - '*\Windows\explorer.exe'
+    - '*\Windows\System32\*'
+    - '*\Windows\Syswow64\*'
+    - '*\Windows\WinSxS\*'
+  condition: (selection_0 and selection_1) and not (filter_2)

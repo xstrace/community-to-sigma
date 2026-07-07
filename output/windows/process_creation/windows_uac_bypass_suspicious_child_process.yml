@@ -1,0 +1,28 @@
+title: Windows UAC Bypass Suspicious Child Process
+id: 453a6b0f-b0ea-48fa-9cf4-20537ffdd22c
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic detects when an executable known for User Account Control (UAC) bypass exploitation spawns a child process in a user-controlled location or a command shell executable
+  (e.g., cmd.exe, powershell.exe). This detection leverages Sysmon EventID 1 data, focusing on high or system integrity level processes with specific parent-child process relationships. This activity is
+  significant as it may indicate an attacker has successfully used a UAC bypass exploit to escalate privileges. If confirmed malicious, this could allow the attacker to execute arbitrary commands with elevated
+  privileges, potentially compromising the entire system.
+references:
+- https://attack.mitre.org/techniques/T1548/002/
+- https://atomicredteam.io/defense-evasion/T1548.002/
+- https://hadess.io/user-account-control-uncontrol-mastering-the-art-of-bypassing-windows-uac/
+- https://enigma0x3.net/2016/08/15/fileless-uac-bypass-using-eventvwr-exe-and-registry-hijacking/
+tags:
+- attack.T1548_002
+date: '2024-01-10'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    IntegrityLevel|contains:
+    - high
+    - system
+  selection_1:
+    ParentImage|contains: '`uacbypass_process_name`'
+  condition: selection_0 and selection_1

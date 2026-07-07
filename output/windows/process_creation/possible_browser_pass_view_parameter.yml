@@ -1,0 +1,42 @@
+title: Possible Browser Pass View Parameter
+id: 8ba484e8-4b97-11ec-b19a-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies processes with command-line parameters associated with web browser credential dumping tools, specifically targeting behaviors used by Remcos RAT malware. It
+  leverages data from Endpoint Detection and Response (EDR) agents, focusing on command-line executions and specific file paths. This activity is significant as it indicates potential credential theft,
+  a common tactic in broader cyber-espionage campaigns. If confirmed malicious, attackers could gain unauthorized access to sensitive web credentials, leading to further system compromise and data breaches.
+references:
+- https://www.nirsoft.net/utils/web_browser_password.html
+- https://app.any.run/tasks/df0baf9f-8baf-4c32-a452-16562ecb19be/
+tags:
+- attack.T1555_003
+date: '2021-11-22'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains:
+    - '*/stext *'
+    - '*/shtml *'
+    - '*/LoadPasswordsIE*'
+    - '*/LoadPasswordsFirefox*'
+    - '*/LoadPasswordsChrome*'
+    - '*/LoadPasswordsOpera*'
+    - '*/LoadPasswordsSafari*'
+    - '*/UseOperaPasswordFile*'
+    - '*/OperaPasswordFile*'
+    - '*/stab*'
+    - '*/scomma*'
+    - '*/stabular*'
+    - '*/shtml*'
+    - '*/sverhtml*'
+    - '*/sxml*'
+    - '*/skeepass*'
+  selection_1:
+    CommandLine|contains:
+    - '*\temp\*'
+    - '*\users\public\*'
+    - '*\programdata\*'
+  condition: selection_0 and selection_1

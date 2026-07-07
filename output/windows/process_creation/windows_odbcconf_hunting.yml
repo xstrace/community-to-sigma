@@ -1,0 +1,22 @@
+title: Windows Odbcconf Hunting
+id: 0562ad4b-fdaa-4882-b12f-7b8e0034cd72
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies the execution of Odbcconf.exe within the environment. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process creation events
+  where the process name is Odbcconf.exe. This activity is significant because Odbcconf.exe can be used by attackers to execute arbitrary commands or load malicious DLLs, potentially leading to code execution
+  or persistence. If confirmed malicious, this behavior could allow an attacker to maintain access to the system, execute further malicious activities, or escalate privileges, posing a significant threat
+  to the environment.
+references:
+- https://strontic.github.io/xcyclopedia/library/odbcconf.exe-07FBA12552331355C103999806627314.html
+- https://twitter.com/redcanary/status/1541838407894171650?s=20&t=kp3WBPtfnyA3xW7D7wx0uw
+tags:
+- attack.T1218_008
+date: '2022-06-17'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: odbcconf.exe
+  condition: selection_0

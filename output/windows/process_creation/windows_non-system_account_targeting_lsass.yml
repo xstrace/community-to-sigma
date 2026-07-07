@@ -1,0 +1,29 @@
+title: Windows Non-System Account Targeting Lsass
+id: b1ce9a72-73cf-11ec-981b-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies non-SYSTEM accounts requesting access to lsass.exe. This detection leverages Sysmon EventCode 10 logs to monitor access attempts to the Local Security Authority
+  Subsystem Service (lsass.exe) by non-SYSTEM users. This activity is significant as it may indicate credential dumping attempts or unauthorized access to sensitive credentials. If confirmed malicious,
+  an attacker could potentially extract credentials from memory, leading to privilege escalation or lateral movement within the network. Immediate investigation is required to determine the legitimacy of
+  the access request and to mitigate any potential threats.
+references:
+- https://en.wikipedia.org/wiki/Local_Security_Authority_Subsystem_Service
+- https://docs.microsoft.com/en-us/windows/win32/api/minidumpapiset/nf-minidumpapiset-minidumpwritedump
+- https://cyberwardog.blogspot.com/2017/03/chronicles-of-threat-hunter-hunting-for_22.html
+- https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/master/Exfiltration/Invoke-Mimikatz.ps1
+- https://docs.microsoft.com/en-us/windows/win32/procthread/process-security-and-access-rights?redirectedfrom=MSDN
+tags:
+- attack.T1003_001
+date: '2022-01-11'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 10
+  selection_1:
+    TargetImage|contains: '*lsass.exe'
+  filter_2:
+    SourceUser|contains: NT AUTHORITY\*
+  condition: (selection_0 and selection_1) and not (filter_2)

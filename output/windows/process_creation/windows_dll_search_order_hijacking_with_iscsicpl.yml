@@ -1,0 +1,21 @@
+title: Windows DLL Search Order Hijacking with iscsicpl
+id: f39ee679-3b1e-4f47-841c-5c3c580acda2
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects DLL search order hijacking involving iscsicpl.exe. It identifies when iscsicpl.exe loads a malicious DLL from a new path, triggering the payload execution. This
+  detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on child processes spawned by iscsicpl.exe. This activity is significant as it indicates a potential attempt to execute
+  unauthorized code via DLL hijacking. If confirmed malicious, this could allow an attacker to execute arbitrary code, escalate privileges, or maintain persistence within the environment.
+references:
+- https://github.com/hackerhouse-opensource/iscsicpl_bypassUAC
+- https://github.com/422926799/csplugin/tree/master/bypassUAC
+tags:
+- attack.T1574_001
+date: '2022-06-17'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: iscsicpl.exe
+  condition: selection_0

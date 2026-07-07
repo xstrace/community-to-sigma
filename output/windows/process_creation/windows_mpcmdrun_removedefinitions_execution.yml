@@ -1,0 +1,24 @@
+title: Windows MpCmdRun RemoveDefinitions Execution
+id: b2442e49-bd3f-4685-a2dc-2bdc292563bf
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  This detection identifies the execution of MpCmdRun.exe with the "-RemoveDefinitions" argument, which is used to remove definitions from the Windows Malware Protection Engine.
+  This behavior can be significant as it might indicate potential malware activity or attempts to bypass security measures.
+references:
+- https://cert.gov.ua/article/6284730
+tags:
+- attack.T1685
+date: '2026-03-16'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: MpCmdRun.exe
+  selection_1:
+    OriginalFileName: MpCmdRun.exe
+  selection_2:
+    CommandLine|contains: '*-RemoveDefinitions *'
+  condition: selection_0 and selection_1 and selection_2

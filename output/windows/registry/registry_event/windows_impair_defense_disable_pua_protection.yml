@@ -1,0 +1,24 @@
+title: Windows Impair Defense Disable PUA Protection
+id: fbfef407-cfee-4866-88c1-f8de1c16147c
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a modification in the Windows registry to disable Windows Defender PUA protection by setting PUAProtection to 0. This detection leverages data from the Endpoint.Registry
+  datamodel, focusing on registry path changes related to Windows Defender. Disabling PUA protection is significant as it reduces defenses against Potentially Unwanted Applications (PUAs), which, while
+  not always malicious, can negatively impact user experience and security. If confirmed malicious, this activity could allow an attacker to introduce adware, browser toolbars, or other unwanted software,
+  potentially compromising system integrity and user productivity.
+references:
+- https://x.com/malmoeb/status/1742604217989415386?s=20
+- https://github.com/undergroundwires/privacy.sexy
+tags:
+- attack.T1685
+date: '2024-01-29'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\Windows Defender\PUAProtection'
+  selection_1:
+    Details: '0x00000000'
+  condition: selection_0 and selection_1

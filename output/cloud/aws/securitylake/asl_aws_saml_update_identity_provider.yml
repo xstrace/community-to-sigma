@@ -1,0 +1,23 @@
+title: ASL AWS SAML Update identity provider
+id: 635c26cc-0fd1-4098-8ec9-824bf9544b11
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects updates to the SAML provider in AWS. It leverages AWS CloudTrail logs to identify the `UpdateSAMLProvider` event, analyzing fields such as `sAMLProviderArn`,
+  `sourceIPAddress`, and `userIdentity` details. Monitoring updates to the SAML provider is crucial as it may indicate a perimeter compromise of federated credentials or unauthorized backdoor access set
+  by an attacker. If confirmed malicious, this activity could allow attackers to manipulate identity federation, potentially leading to unauthorized access to cloud resources and sensitive data.
+references:
+- https://www.cisa.gov/uscert/ncas/alerts/aa21-008a
+- https://www.splunk.com/en_us/blog/security/a-golden-saml-journey-solarwinds-continued.html
+- https://www.fireeye.com/content/dam/fireeye-www/blog/pdfs/wp-m-unc2452-2021-000343-01.pdf
+- https://www.cyberark.com/resources/threat-research-blog/golden-saml-newly-discovered-attack-technique-forges-authentication-to-cloud-apps
+tags:
+- attack.T1078
+date: '2022-10-04'
+logsource:
+  product: aws
+  service: securitylake
+detection:
+  selection_0:
+    operation: UpdateSAMLProvider
+  condition: selection_0

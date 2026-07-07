@@ -1,0 +1,22 @@
+title: AWS High Number Of Failed Authentications For User
+id: e3236f49-daf3-4b70-b808-9290912ac64d
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: The following analytic detects an AWS account experiencing more than 20 failed authentication attempts within a 5-minute window. It leverages AWS CloudTrail logs to identify multiple failed
+  ConsoleLogin events. This behavior is significant as it may indicate a brute force attack targeting the account. If confirmed malicious, the attacker could potentially gain unauthorized access, leading
+  to data breaches or further exploitation of the AWS environment. Security teams should consider adjusting the threshold based on their specific environment to reduce false positives.
+references:
+- https://www.trendmicro.com/cloudoneconformity/knowledge-base/aws/IAM/password-policy.html
+tags:
+- attack.T1201
+date: '2023-01-27'
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    eventName: ConsoleLogin
+  selection_1:
+    action: failure
+  condition: selection_0 and selection_1

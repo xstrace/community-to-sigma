@@ -1,0 +1,27 @@
+title: Windows ESX Admins Group Creation via Net
+id: 3d7df60b-3332-4667-8090-afe03e08dce0
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: This analytic detects attempts to create an "ESX Admins" group using the Windows net.exe or net1.exe commands. This activity may indicate an attempt to exploit the VMware ESXi Active Directory
+  Integration Authentication Bypass vulnerability (CVE-2024-37085). Attackers can use this method to gain unauthorized access to ESXi hosts by recreating the "ESX Admins" group after its deletion from Active
+  Directory.
+references:
+- https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24505
+- https://www.microsoft.com/en-us/security/blog/2024/07/29/ransomware-operators-exploit-esxi-hypervisor-vulnerability-for-mass-encryption/
+- https://www.securityweek.com/microsoft-says-ransomware-gangs-exploiting-just-patched-vmware-esxi-flaw/
+tags:
+- attack.T1136_002
+- attack.T1136_001
+date: '2024-07-30'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*group*'
+  selection_1:
+    CommandLine|contains: '*ESX Admins*'
+  selection_2:
+    CommandLine|contains: '*/add*'
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,22 @@
+title: MCP Postgres Suspicious Query
+id: 6a168ce8-9a39-4492-9416-a67abdc56c53
+status: stable
+level: medium
+author: Rod Soto
+description: This detection identifies potentially malicious SQL queries executed through MCP PostgreSQL server connections, monitoring for privilege escalation attempts, credential theft, and schema reconnaissance.
+  These patterns are commonly observed in SQL injection attacks, compromised application credentials, and insider threat scenarios targeting database assets.
+references:
+- https://splunkbase.splunk.com/app/8377
+- https://www.nodejs-security.com/blog/the-tale-of-the-vulnerable-mcp-database-server
+- https://www.splunk.com/en_us/blog/security/securing-ai-agents-model-context-protocol.html
+tags:
+- attack.T1555
+date: '2026-02-17'
+logsource:
+  category: application
+detection:
+  selection_0:
+    method: query
+  selection_1:
+    direction: inbound
+  condition: selection_0 and selection_1

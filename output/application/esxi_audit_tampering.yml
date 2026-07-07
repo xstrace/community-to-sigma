@@ -1,0 +1,25 @@
+title: ESXi Audit Tampering
+id: c48a155b-2861-417a-813c-220f5272cf01
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: This detection identifies the use of the esxcli system auditrecords commands, which can be used to tamper with logging on an ESXi host. This action may indicate an attempt to evade detection
+  or hinder forensic analysis by preventing the recording of system-level audit events.
+references:
+- https://detect.fyi/detecting-and-responding-to-esxi-compromise-with-splunk-f33998ce7823
+tags:
+- attack.T1690
+- attack.T1070
+date: '2025-07-11'
+logsource:
+  category: application
+detection:
+  selection_0:
+    Message|contains: '*esxcli system auditrecords*'
+  selection_1:
+    Message|contains:
+    - '*remote*'
+    - '*local*'
+  filter_2:
+    Message|contains: '*[shell*'
+  condition: (selection_0 and selection_1) and not (filter_2)

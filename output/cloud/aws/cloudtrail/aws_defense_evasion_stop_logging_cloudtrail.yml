@@ -1,0 +1,26 @@
+title: AWS Defense Evasion Stop Logging Cloudtrail
+id: 8a2f3ca2-4eb5-4389-a549-14063882e537
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: The following analytic detects `StopLogging` events in AWS CloudTrail logs. It leverages CloudTrail event data to identify when logging is intentionally stopped, excluding console-based actions
+  and focusing on successful attempts. This activity is significant because adversaries may stop logging to evade detection and operate stealthily within the compromised environment. If confirmed malicious,
+  this action could allow attackers to perform further activities without being logged, hindering incident response and forensic investigations, and potentially leading to unauthorized access or data exfiltration.
+references:
+- https://attack.mitre.org/techniques/T1562/008/
+tags:
+- attack.T1685_002
+date: '2022-07-12'
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    eventName: StopLogging
+  selection_1:
+    eventSource: cloudtrail.amazonaws.com
+  selection_2:
+    userAgent!: console.amazonaws.com
+  selection_3:
+    errorCode: success
+  condition: selection_0 and selection_1 and selection_2 and selection_3

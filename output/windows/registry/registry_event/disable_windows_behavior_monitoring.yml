@@ -1,0 +1,35 @@
+title: Disable Windows Behavior Monitoring
+id: 79439cae-9200-11eb-a4d3-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic identifies modifications in the registry to disable Windows Defender's real-time behavior monitoring. It leverages data from the Endpoint.Registry data model, specifically
+  monitoring changes to registry paths associated with Windows Defender settings. This activity is significant because disabling real-time protection is a common tactic used by malware such as RATs, bots,
+  or Trojans to evade detection. If confirmed malicious, this action could allow an attacker to execute code, escalate privileges, or persist in the environment without being detected by antivirus software.
+references:
+- https://tccontre.blogspot.com/2020/01/remcos-rat-evading-windows-defender-av.html
+tags:
+- attack.T1685
+date: '2021-03-31'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection\DisableBehaviorMonitoring'
+  selection_1:
+    TargetObject|contains: '*\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection\DisableOnAccessProtection'
+  selection_2:
+    TargetObject|contains: '*\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection\DisableScanOnRealtimeEnable'
+  selection_3:
+    TargetObject|contains: '*\SOFTWARE\Microsoft\Windows Defender\Real-Time Protection\DisableRealtimeMonitoring'
+  selection_4:
+    TargetObject|contains: '*\Real-Time Protection\DisableIntrusionPreventionSystem'
+  selection_5:
+    TargetObject|contains: '*\Real-Time Protection\DisableIOAVProtection'
+  selection_6:
+    TargetObject|contains: '*\Real-Time Protection\DisableScriptScanning'
+    Details:
+    - 1
+    - '0x00000001'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4 and selection_5 and selection_6

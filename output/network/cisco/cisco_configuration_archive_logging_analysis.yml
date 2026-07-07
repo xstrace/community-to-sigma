@@ -1,0 +1,33 @@
+title: Cisco Configuration Archive Logging Analysis
+id: f52d5c0b-d45d-4304-b300-a4f6a1130dec
+status: stable
+level: medium
+author: Bhavin Patel, Michael Haag, Splunk
+description: This analytic provides comprehensive monitoring of configuration changes on Cisco devices by analyzing archive logs. Configuration archive logging captures all changes made to a device's configuration,
+  providing a detailed audit trail that can be used to identify suspicious or malicious activities. This detection is particularly valuable for identifying patterns of malicious configuration changes that
+  might indicate an attacker's presence, such as the creation of backdoor accounts, SNMP community string modifications, and TFTP server configurations for data exfiltration. By analyzing these logs, security
+  teams can gain a holistic view of configuration changes across sessions and users, helping to detect sophisticated attack campaigns like those conducted by threat actors such as Static Tundra.
+references:
+- https://blog.talosintelligence.com/static-tundra/
+- https://tools.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-20180328-smi2
+- https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/config-mgmt/configuration/15-mt/config-mgmt-15-mt-book/cm-config-logger.html
+tags:
+- attack.T1685
+- attack.T1098
+- attack.T1505_003
+date: '2025-08-21'
+logsource:
+  category: process_creation
+  product: cisco
+detection:
+  selection_0:
+    CommandLine|contains: '*username*privilege 15*'
+  selection_1:
+    CommandLine|contains: '*username*password*'
+  selection_2:
+    CommandLine|contains: '*USER TABLE MODIFIED*'
+  selection_3:
+    CommandLine|contains: '*tftp-server*'
+  selection_4:
+    CommandLine|contains: '*snmp-server community*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

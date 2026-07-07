@@ -1,0 +1,20 @@
+title: Windows BitLockerToGo Process Execution
+id: 68cbc9e9-2882-46f2-b636-3b5080589d58
+status: stable
+level: medium
+author: Michael Haag, Nasreddine Bencherchali, Splunk
+description: The following analytic detects BitLockerToGo.exe execution, which has been observed being abused by Lumma stealer malware. The malware leverages this legitimate Windows utility to manipulate
+  registry keys, search for cryptocurrency wallets and credentials, and exfiltrate sensitive data. This activity is significant because BitLockerToGo.exe provides functionality for viewing, copying, and
+  writing files as well as modifying registry branches - capabilities that the Lumma stealer exploits. However, note that if legitimate use of BitLockerToGo.exe is in the organization, this detection will
+references:
+- https://securelist.com/fake-captcha-delivers-lumma-amadey/114312/
+tags:
+- attack.T1218
+date: '2021-07-29'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: bitlockertogo.exe
+  condition: selection_0

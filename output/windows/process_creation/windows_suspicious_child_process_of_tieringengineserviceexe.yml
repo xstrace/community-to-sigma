@@ -1,0 +1,47 @@
+title: Windows Suspicious Child Process of TieringEngineService.exe
+id: 69edec6c-877e-4423-9b9b-025b589123a8
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects the RedSun privilege escalation exploit delivering a SYSTEM-level shell to the attacker's session.
+  RedSun replaces the legitimate TieringEngineService.exe with a malicious binary, which launches a process as SYSTEM, usually some sort of shell or shell spawner (conhost.exe, cmd.exe, PowerShell, etc.) in the attacker's active session.
+references:
+- https://github.com/Nightmare-Eclipse/RedSun
+- https://www.huntress.com/blog/nightmare-eclipse-intrusion
+tags:
+- attack.T1068
+date: '2026-05-01'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: TieringEngineService.exe
+  selection_1:
+    CommandLine|contains:
+    - '*bitsadmin.exe*'
+    - '*cmd.exe*'
+    - '*conhost.exe*'
+    - '*cscript.exe*'
+    - '*curl.exe*'
+    - '*powershell.exe*'
+    - '*pwsh.exe*'
+    - '*rundll32.exe*'
+    - '*wmic.exe*'
+  selection_2:
+    Image|contains:
+    - bitsadmin.exe
+    - cmd.exe
+    - conhost.exe
+    - cscript.exe
+    - curl.exe
+    - powershell.exe
+    - pwsh.exe
+    - rundll32.exe
+    - wmic.exe
+  selection_3:
+    User|contains:
+    - '*AUTHORITY*'
+    - '*System*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

@@ -1,0 +1,22 @@
+title: Windows Modify Registry USeWuServer
+id: c427bafb-0b2c-4b18-ad85-c03c6fed9e75
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects a suspicious modification to the Windows Update configuration registry key "UseWUServer." It leverages data from the Endpoint.Registry data model to identify
+  changes where the registry value is set to "0x00000001." This activity is significant because it is commonly used by adversaries, including malware like RedLine Stealer, to bypass detection mechanisms
+  and potentially exploit zero-day vulnerabilities. If confirmed malicious, this modification could allow attackers to evade defenses, persist on the target host, and deploy additional malicious payloads.
+references:
+- https://learn.microsoft.com/de-de/security-updates/windowsupdateservices/18127499
+tags:
+- attack.T1112
+date: '2023-04-26'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU\UseWUServer'
+  selection_1:
+    Details: '0x00000001'
+  condition: selection_0 and selection_1

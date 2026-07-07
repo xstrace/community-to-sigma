@@ -1,0 +1,27 @@
+title: Windows Remote Image Load
+id: 041aaae4-03de-465c-b9cb-9ed0d1e10454
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  The following analytic detects image load events where a process loads a file from a remote share path.
+  This activity is significant because remote DLL or image loading can be abused for execution, defense evasion, or lateral movement while leaving the payload hosted on another system.
+  If confirmed malicious, an attacker may be loading code into a local process from attacker-controlled infrastructure.
+references:
+- https://thehackernews.com/2024/08/microsoft-reveals-four-openvpn-flaws.html
+- https://www.microsoft.com/en-us/security/blog/2024/08/08/chained-for-attack-openvpn-vulnerabilities-discovered-leading-to-rce-and-lpe/
+tags:
+- attack.T1129
+- attack.T1059
+- attack.T1068
+- attack.T1203
+date: '2026-05-05'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 7
+  selection_1:
+    ImageLoaded|contains: \\*
+  condition: selection_0 and selection_1

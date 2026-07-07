@@ -1,0 +1,34 @@
+title: Windows Special Privileged Logon On Multiple Hosts
+id: 4c461f5a-c2cc-4e86-b132-c262fc9edca7
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects a user authenticating with special privileges on 30 or more remote endpoints within a 5-minute window. It leverages Event ID 4672 from Windows Security logs to
+  identify this behavior. This activity is significant as it may indicate lateral movement or remote code execution by an adversary. If confirmed malicious, the attacker could gain extensive control over
+  the network, potentially leading to privilege escalation, data exfiltration, or further compromise of the environment. Security teams should adjust detection thresholds based on their specific environment.
+references:
+- https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4672
+- https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/dn319113(v=ws.11)
+- https://thedfirreport.com/2023/01/23/sharefinder-how-threat-actors-discover-file-shares/
+- https://attack.mitre.org/tactics/TA0008/
+tags:
+- attack.T1087
+- attack.T1021_002
+- attack.T1135
+date: '2023-03-23'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4672
+  filter_1:
+    Caller_User_Name:
+    - DWM-1
+    - DWM-2
+    - DWM-3
+    - LOCAL SERVICE
+    - NETWORK SERVICE
+    - SYSTEM
+    - '*$'
+  condition: (selection_0) and not (filter_1)

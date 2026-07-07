@@ -1,0 +1,42 @@
+title: Linux Auditd Database File And Directory Discovery
+id: f616c4f3-bde9-41cf-856c-019b65f668bb
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects suspicious database file and directory discovery activities, which may signal an attacker attempt to locate and assess critical database assets on a compromised
+  system. This behavior is often a precursor to data theft, unauthorized access, or privilege escalation, as attackers seek to identify valuable information stored in databases. By monitoring for unusual
+  or unauthorized attempts to locate database files and directories, this analytic aids in early detection of potential reconnaissance or data breach efforts, enabling security teams to respond swiftly
+  and mitigate the risk of further compromise.
+references:
+- https://www.splunk.com/en_us/blog/security/deep-dive-on-persistence-privilege-escalation-technique-and-detection-in-linux-platform.html
+- https://github.com/peass-ng/PEASS-ng/tree/master/linPEAS
+tags:
+- attack.T1083
+date: '2024-08-23'
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    execve_command|contains:
+    - '*find*'
+    - '*grep*'
+  selection_1:
+    execve_command|contains:
+    - '*.db*'
+    - '*.sql*'
+    - '*.sqlite*'
+    - '*.mdb*'
+    - '*.accdb*'
+    - '*.mdf*'
+    - '*.ndf*'
+    - '*.ldf*'
+    - '*.frm*'
+    - '*.myd*'
+    - '*.myi*'
+    - '*.dbf*'
+    - '*.db2*'
+    - '*.dbc*'
+    - '*.fpt*'
+    - '*.ora*'
+  condition: selection_0 and selection_1

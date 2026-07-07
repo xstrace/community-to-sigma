@@ -1,0 +1,31 @@
+title: Linux Gdrive Binary Activity
+id: a42f8029-5472-4c33-8943-bb17bb07466a
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: The following analytic detects the execution of the 'gdrive' tool on a Linux host. This tool allows standard users to perform tasks associated with Google Drive via the command line. This is
+  used by actors to stage tools as well as exfiltrate data. The detection leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line executions. If confirmed
+  malicious, this could lead to compromise of systems or sensitive data being stolen.
+references:
+- https://cloud.google.com/blog/topics/threat-intelligence/uncovering-unc3886-espionage-operations
+tags:
+- attack.T1567
+date: '2022-04-26'
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    Image: gdrive
+  selection_1:
+    CommandLine|contains:
+    - '* download *'
+    - '* upload *'
+    - '* list*'
+    - '* update *'
+    - '* sync *'
+    - '* share *'
+    - '* account add*'
+    - '* drives *'
+    - '* files *'
+  condition: selection_0 and selection_1

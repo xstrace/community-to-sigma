@@ -1,0 +1,21 @@
+title: Registry Keys Used For Privilege Escalation
+id: c9f4b923-f8af-4155-b697-1354f5bcbc5e
+status: stable
+level: medium
+author: David Dorsey, Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic detects modifications to registry keys under "Image File Execution Options" that can be used for privilege escalation. It leverages data from the Endpoint.Registry data
+  model, specifically monitoring changes to registry paths and values like GlobalFlag and Debugger. This activity is significant because attackers can use these modifications to intercept executable calls
+  and attach malicious binaries to legitimate system binaries. If confirmed malicious, this could allow attackers to execute arbitrary code with elevated privileges, leading to potential system compromise
+  and persistent access.
+references:
+- https://blog.malwarebytes.com/101/2015/12/an-introduction-to-image-file-execution-options/
+tags:
+- attack.T1546_012
+date: '2020-04-29'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*Microsoft\Windows NT\CurrentVersion\Image File Execution Options*'
+  condition: selection_0

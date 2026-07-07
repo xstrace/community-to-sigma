@@ -1,0 +1,20 @@
+title: ASL AWS Network Access Control List Deleted
+id: e010ddf5-e9a5-44e5-bdd6-0c919ba8fc8b
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects the deletion of AWS Network Access Control Lists (ACLs). It leverages AWS CloudTrail logs to identify events where a user deletes a network ACL entry. This activity
+  is significant because deleting a network ACL can remove critical access restrictions, potentially allowing unauthorized access to cloud instances. If confirmed malicious, this action could enable attackers
+  to bypass network security controls, leading to unauthorized access, data exfiltration, or further compromise of the cloud environment.
+tags:
+- attack.T1686_001
+date: '2022-10-04'
+logsource:
+  product: aws
+  service: securitylake
+detection:
+  selection_0:
+    operation: DeleteNetworkAclEntry
+  selection_1:
+    sc-status: Success
+  condition: selection_0 and selection_1

@@ -1,0 +1,27 @@
+title: Esentutl SAM Copy
+id: d372f928-ce4f-11eb-a762-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of `esentutl.exe` to access credentials stored in the ntds.dit or SAM file. This detection leverages data from Endpoint Detection and Response (EDR) agents,
+  focusing on process execution logs that include command-line details. This activity is significant because it may indicate an attempt to extract sensitive credential information, which is a common tactic
+  in lateral movement and privilege escalation. If confirmed malicious, this could allow an attacker to gain unauthorized access to user credentials, potentially compromising the entire network.
+references:
+- https://github.com/redcanaryco/atomic-red-team/blob/6a570c2a4630cf0c2bd41a2e8375b5d5ab92f700/atomics/T1003.002/T1003.002.md
+- https://attack.mitre.org/software/S0404/
+tags:
+- attack.T1003_002
+date: '2021-08-18'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: esentutl.exe
+  selection_1:
+    OriginalFileName: esentutl.exe
+  selection_2:
+    CommandLine|contains:
+    - '*ntds*'
+    - '*SAM*'
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,39 @@
+title: Linux Dirty Frag Kernel Privilege Escalation
+id: 517e7bf8-d0aa-46ac-80e1-f9f498944b71
+status: stable
+level: medium
+author: Axsel Riando Soplanit, Alexander Wijaya, Matthew Roytua, Muhammad Rafdi Aufar Ahmad, Brian Stevan Ambarita, Ensign Infosecurity
+description: |-
+  The following analytic detects exploitation of Dirty Frag (CVE-2026-43284 and CVE-2026-43500), a Linux kernel local privilege escalation vulnerability.
+  The exploit corrupts the kernel page cache via the IPsec ESP or RxRPC subsystems using a high-frequency splice() syscall loop, followed by a privilege transition to root in the same audit session.
+  This analytic anchors on the exploit-specific behavioral signature, a sustained splice() spray (50 or more calls within a 60-second window) from an unprivileged process executing from a user-writable path (/home, /tmp, /dev/shm, /var/tmp, /run/user, /root), followed within 5 minutes by execution of a set-uid binary in the same auditd session.
+references:
+- https://www.cve.org/CVERecord?id=CVE-2026-43284
+- https://www.cve.org/CVERecord?id=CVE-2026-43500
+- https://www.cve.org/CVERecord?id=CVE-2026-31431
+- https://github.com/V4bel/dirtyfrag
+- https://www.openwall.com/lists/oss-security/2026/05/07/8
+- https://www.microsoft.com/en-us/security/blog/2026/05/08/active-attack-dirty-frag-linux-vulnerability-expands-post-compromise-risk/
+- https://attack.mitre.org/techniques/T1068/
+- https://attack.mitre.org/techniques/T1548/001/
+tags:
+- attack.T1548_001
+- attack.T1068
+date: '2026-07-06'
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection_0:
+    type: SYSCALL
+  selection_1:
+    key: splice_user
+  selection_2:
+    exe|contains:
+    - /home/*
+    - /tmp/*
+    - /var/tmp/*
+    - /dev/shm/*
+    - /run/user/*
+    - /root/*
+  condition: selection_0 and selection_1 and selection_2

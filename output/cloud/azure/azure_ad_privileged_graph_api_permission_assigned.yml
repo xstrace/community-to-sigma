@@ -1,0 +1,27 @@
+title: Azure AD Privileged Graph API Permission Assigned
+id: 5521f8c5-1aa3-473c-9eb7-853701924a06
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the assignment of high-risk Graph API permissions in Azure AD, specifically Application.ReadWrite.All, AppRoleAssignment.ReadWrite.All, and RoleManagement.ReadWrite.Directory.
+  It uses azure_monitor_aad data to scan AuditLogs for 'Update application' operations, identifying when these permissions are assigned. This activity is significant as it grants broad control over Azure
+  AD, including application and directory settings. If confirmed malicious, it could lead to unauthorized modifications and potential security breaches, compromising the integrity and security of the Azure
+  AD environment. Immediate investigation is required.
+references:
+- https://cloudbrothers.info/en/azure-attack-paths/
+- https://github.com/mandiant/Mandiant-Azure-AD-Investigator/blob/master/MandiantAzureADInvestigator.json
+- https://learn.microsoft.com/en-us/graph/permissions-reference
+- https://www.microsoft.com/en-us/security/blog/2024/01/25/midnight-blizzard-guidance-for-responders-on-nation-state-attack/
+- https://posts.specterops.io/azure-privilege-escalation-via-azure-api-permissions-abuse-74aee1006f48
+tags:
+- attack.T1003_002
+date: '2024-02-14'
+logsource:
+  product: azure
+  service: aad
+detection:
+  selection_0:
+    category: AuditLogs
+  selection_1:
+    operationName: Update application
+  condition: selection_0 and selection_1

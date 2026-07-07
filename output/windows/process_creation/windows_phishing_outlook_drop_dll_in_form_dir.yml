@@ -1,0 +1,20 @@
+title: Windows Phishing Outlook Drop Dll In FORM Dir
+id: fca01769-5163-4b3a-ae44-de874adfc9bc
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the creation of a DLL file by an outlook.exe process in the AppData\Local\Microsoft\FORMS directory. This detection leverages data from the Endpoint.Processes
+  and Endpoint.Filesystem datamodels, focusing on process and file creation events. This activity is significant as it may indicate an attempt to exploit CVE-2024-21378, where a custom MAPI form loads a
+  potentially malicious DLL. If confirmed malicious, this could allow an attacker to execute arbitrary code, leading to further system compromise or data exfiltration.
+references:
+- https://www.netspi.com/blog/technical/red-team-operations/microsoft-outlook-remote-code-execution-cve-2024-21378/
+tags:
+- attack.T1566
+date: '2024-04-04'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: outlook.exe
+  condition: selection_0

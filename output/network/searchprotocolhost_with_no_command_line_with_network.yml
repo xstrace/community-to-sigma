@@ -1,0 +1,27 @@
+title: SearchProtocolHost with no Command Line with Network
+id: b690df8c-a145-11eb-a38b-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects instances of searchprotocolhost.exe running without command line arguments but with an active network connection. This behavior is identified using Endpoint Detection
+  and Response (EDR) telemetry, focusing on process execution and network traffic data. It is significant because searchprotocolhost.exe typically runs with specific command line arguments, and deviations
+  from this norm can indicate malicious activity, such as Cobalt Strike usage. If confirmed malicious, this activity could allow attackers to establish network connections for command and control, potentially
+  leading to data exfiltration or further system compromise.
+references:
+- https://github.com/mandiant/red_team_tool_countermeasures/blob/master/rules/PGF/supplemental/hxioc/SUSPICIOUS%20EXECUTION%20OF%20SEARCHPROTOCOLHOST%20(METHODOLOGY).ioc
+tags:
+- attack.T1055
+date: '2021-04-19'
+logsource:
+  category: all_traffic
+detection:
+  selection_0:
+    Image: searchprotocolhost.exe
+  selection_1:
+    OriginalFileName: searchprotocolhost.exe
+  selection_2:
+    CommandLine|contains:
+    - '*searchprotocolhost'
+    - '*searchprotocolhost.exe'
+    - '*searchprotocolhost.exe\"'
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,21 @@
+title: Cisco Secure Firewall - High Volume of Intrusion Events Per Host
+id: 9f2295a0-0dcb-4a5f-b013-8a6f2a3c11f6
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects internal systems that generate an unusually high volume of intrusion detections within a 30-minute window. It leverages Cisco Secure Firewall Threat Defense logs, specifically focusing on the IntrusionEvent event type, to identify hosts that trigger more than 15 Snort-based signatures during that time. A sudden spike in intrusion alerts originating from a single host may indicate suspicious or malicious activity such as malware execution, command-and-control communication, vulnerability scanning, or lateral movement. In some cases, this behavior may also be caused by misconfigured or outdated software repeatedly tripping detection rules. Systems exhibiting this pattern should be triaged promptly, as repeated Snort rule matches from a single source are often early indicators of compromise, persistence, or active exploitation attempts.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/firepower/741/api/FQE/secure_firewall_estreamer_fqe_guide_740.pdf
+tags:
+- attack.T1059
+- attack.T1071
+- attack.T1595_002
+date: '2025-04-16'
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: IntrusionEvent
+  condition: selection_0

@@ -1,0 +1,40 @@
+title: Internal Vertical Port Scan
+id: 40d2dc41-9bbf-421a-a34b-8611271a6770
+status: stable
+level: medium
+author: Dean Luxton, Splunk
+description: This analytic detects instances where an internal host attempts to communicate with over 500 ports on a single destination IP address. It includes filtering criteria to exclude applications
+  performing scans over ephemeral port ranges, focusing on potential reconnaissance or scanning activities. Monitoring network traffic logs allows for timely detection and response to such behavior, enhancing
+  network security by identifying and mitigating potential threats promptly.
+tags:
+- attack.T1046
+date: '2020-01-19'
+logsource:
+  category: network_connection
+detection:
+  selection_0:
+    SourceIp|contains:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+    - 100.64.0.0/10
+    - 127.0.0.0/8
+    - 169.254.0.0/16
+    - 192.0.0.0/24
+    - 192.0.0.0/29
+    - 192.0.0.8/32
+    - 192.0.0.9/32
+    - 192.0.0.10/32
+    - 192.0.0.170/32
+    - 192.0.0.171/32
+    - 192.0.2.0/24
+    - 192.31.196.0/24
+    - 192.52.193.0/24
+    - 192.88.99.0/24
+    - 224.0.0.0/4
+    - 192.175.48.0/24
+    - 198.18.0.0/15
+    - 198.51.100.0/24
+    - 203.0.113.0/24
+    - 240.0.0.0/4
+  condition: selection_0

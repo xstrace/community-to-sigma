@@ -1,0 +1,29 @@
+title: Windows Process Injection Of Wermgr to Known Browser
+id: aec755a5-3a2c-4be0-ab34-6540e68644e9
+status: deprecated
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies the suspicious remote thread execution of the wermgr.exe process into known browsers such as firefox.exe, chrome.exe, and others. It leverages Sysmon EventCode
+  8 logs to detect this behavior by monitoring SourceImage and TargetImage fields. This activity is significant because it is indicative of Qakbot malware, which injects malicious code into legitimate processes
+  to steal information. If confirmed malicious, this activity could allow attackers to execute arbitrary code, escalate privileges, and exfiltrate sensitive data from the compromised host.
+references:
+- https://news.sophos.com/en-us/2022/03/10/qakbot-decoded/
+- https://www.trellix.com/en-us/about/newsroom/stories/research/demystifying-qbot-malware.html
+tags:
+- attack.T1055_001
+date: '2022-10-28'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 8
+  selection_1:
+    SourceImage|contains: '*\wermgr.exe'
+  selection_2:
+    TargetImage|contains:
+    - '*\firefox.exe'
+    - '*\chrome.exe'
+    - '*\iexplore.exe'
+    - '*\microsoftedgecp.exe'
+  condition: selection_0 and selection_1 and selection_2

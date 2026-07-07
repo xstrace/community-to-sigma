@@ -1,0 +1,24 @@
+title: Windows Disable Internet Explorer Addons
+id: 65224d8b-b95d-44ec-bb44-408d830c1258
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: |
+  The following analytic detects the execution of iexplore.exe (Internet Explorer) with the -extoff command-line flag, which disables all browser extensions. This flag is commonly abused by adversaries to launch a clean browser session that bypasses security controls such as antivirus browser extensions, toolbars, or group policy-enforced add-ons.
+  Malicious documents or scripts may leverage iexplore.exe -extoff to open phishing pages, command-and-control interfaces, or download additional payloads in an environment free from security monitoring plugins. While this flag may be used legitimately by IT administrators for troubleshooting purposes, its use in modern enterprise environments is rare and should be considered suspicious—particularly when launched by Office applications, scripting engines (e.g., PowerShell, WScript), or scheduled tasks.
+references:
+- https://www.hybrid-analysis.com/sample/e285feeca968b3ca22017a64363eea5e69ccd519696671df523291b089597875/588175f1aac2edf92bbed32f
+tags:
+- attack.T1176_001
+date: '2025-05-28'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: iexplore.exe
+  selection_1:
+    OriginalFileName: IEXPLORE.EXE
+  selection_2:
+    CommandLine|contains: '*-extoff*'
+  condition: selection_0 and selection_1 and selection_2

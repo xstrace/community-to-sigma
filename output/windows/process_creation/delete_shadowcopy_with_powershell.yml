@@ -1,0 +1,27 @@
+title: Delete ShadowCopy With PowerShell
+id: 5ee2bcd0-b2ff-11eb-bb34-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the use of PowerShell to delete shadow copies via the WMIC PowerShell module. It leverages EventCode 4104 and searches for specific keywords like "ShadowCopy,"
+  "Delete," or "Remove" within the ScriptBlockText. This activity is significant because deleting shadow copies is a common tactic used by ransomware, such as DarkSide, to prevent data recovery. If confirmed
+  malicious, this action could lead to irreversible data loss and hinder recovery efforts, significantly impacting business continuity and data integrity.
+references:
+- https://www.mandiant.com/resources/shining-a-light-on-darkside-ransomware-operations
+- https://www.techtarget.com/searchwindowsserver/tutorial/Set-up-PowerShell-script-block-logging-for-added-security
+tags:
+- attack.T1490
+date: '2021-05-12'
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: '*ShadowCopy*'
+  selection_2:
+    ScriptBlockText|contains: '*Delete*'
+  selection_3:
+    ScriptBlockText|contains: '*Remove*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

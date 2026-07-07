@@ -1,0 +1,32 @@
+title: Windows Admin Permission Discovery
+id: e08620cb-9488-4052-832d-97bcc0afd414
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies the creation of a suspicious file named 'win.dat' in the root directory (C:\). It leverages data from the Endpoint.Filesystem datamodel to detect this activity.
+  This behavior is significant as it is commonly used by malware like NjRAT to check for administrative privileges on a compromised host. If confirmed malicious, this activity could indicate that the malware
+  has administrative access, allowing it to perform high-privilege actions, potentially leading to further system compromise and persistence.
+references:
+- https://malpedia.caad.fkie.fraunhofer.de/details/win.njrat
+tags:
+- attack.T1069_001
+date: '2023-09-21'
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|contains:
+    - '*.exe'
+    - '*.dll'
+    - '*.sys'
+    - '*.com'
+    - '*.vbs'
+    - '*.vbe'
+    - '*.js'
+    - '*.bat'
+    - '*.cmd'
+    - '*.pif'
+    - '*.lnk'
+    - '*.dat'
+  condition: selection_0

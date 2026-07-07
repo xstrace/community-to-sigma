@@ -1,0 +1,22 @@
+title: Zscaler Privacy Risk Destinations Threat Blocked
+id: 5456bdef-d765-4565-8e1f-61ca027bc50d
+status: stable
+level: medium
+author: Gowthamaraj Rajendran, Rod Soto, Splunk
+description: The following analytic identifies blocked destinations within a network that are deemed privacy risks by Zscaler. It leverages web proxy logs, focusing on entries marked as "Privacy Risk."
+  Key data points such as device owner, user, URL category, destination URL, and IP are analyzed. This activity is significant for a SOC as it helps monitor and manage privacy risks, ensuring a secure network
+  environment. If confirmed malicious, this activity could indicate attempts to access or exfiltrate sensitive information, posing a significant threat to data privacy and security.
+references:
+- https://help.zscaler.com/zia/nss-feed-output-format-web-logs
+tags:
+- attack.T1566
+date: '2024-04-17'
+logsource:
+  category: proxy
+  service: zscaler
+detection:
+  selection_0:
+    action: blocked
+  selection_1:
+    urlclass: Privacy Risk
+  condition: selection_0 and selection_1

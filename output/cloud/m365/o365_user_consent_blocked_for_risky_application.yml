@@ -1,0 +1,30 @@
+title: O365 User Consent Blocked for Risky Application
+id: 242e4d30-cb59-4051-b0cf-58895e218f40
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies instances where Office 365 has blocked a user's attempt to grant consent to an application deemed risky or potentially malicious. This detection leverages
+  O365 audit logs, specifically focusing on failed user consent actions due to system-driven blocks. Monitoring these blocked consent attempts is crucial as it highlights potential threats early on, indicating
+  that a user might be targeted or that malicious applications are attempting to infiltrate the organization. If confirmed malicious, this activity suggests that O365's security measures successfully prevented
+  a harmful application from accessing organizational data, warranting immediate investigation.
+references:
+- https://attack.mitre.org/techniques/T1528/
+- https://www.microsoft.com/en-us/security/blog/2022/09/22/malicious-oauth-applications-used-to-compromise-email-servers-and-spread-spam/
+- https://learn.microsoft.com/en-us/azure/active-directory/manage-apps/protect-against-consent-phishing
+- https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
+- https://www.alteredsecurity.com/post/introduction-to-365-stealer
+- https://github.com/AlteredSecurity/365-Stealer
+tags:
+- attack.T1528
+date: '2023-12-06'
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: Consent to application.
+  selection_2:
+    ResultStatus: Failure
+  condition: selection_0 and selection_1 and selection_2

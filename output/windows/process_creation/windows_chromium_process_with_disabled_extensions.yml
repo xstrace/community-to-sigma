@@ -1,0 +1,29 @@
+title: Windows Chromium Process with Disabled Extensions
+id: ce245717-779b-483b-bc52-fc7a94729973
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects instances of Chromium-based browser processes on Windows launched with extensions explicitly disabled via command-line arguments. Disabling extensions can be
+  used by automation frameworks, testing tools, or headless browser activity, but may also indicate defense evasion or abuse of browser functionality by malicious scripts or malware. This behavior reduces
+  browser visibility and bypasses user-installed security extensions, making it relevant for detecting non-interactive execution, suspicious automation, or living-off-the-land techniques. Analysts should
+  validate execution context, parent process, and command-line parameters to determine legitimacy.
+references:
+- https://www.trendmicro.com/en_us/research/26/a/analysis-of-the-evelyn-stealer-campaign.html
+- https://peter.sh/experiments/chromium-command-line-switches/
+tags:
+- attack.T1497
+date: '2026-02-02'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image|contains:
+    - Chrome.exe
+    - Brave.exe
+    - Opera.exe
+    - Vivaldi.exe
+    - msedge.exe
+  selection_1:
+    CommandLine|contains: '*--disable-extensions*'
+  condition: selection_0 and selection_1

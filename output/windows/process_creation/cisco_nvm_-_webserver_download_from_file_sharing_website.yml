@@ -1,0 +1,60 @@
+title: Cisco NVM - Webserver Download From File Sharing Website
+id: 1984f997-3b49-4d4b-a7e9-dc5dbf88370e
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects unexpected outbound network connections initiated by known webserver processes such as `httpd.exe`, `nginx.exe`, or `tomcat.exe` to common file sharing or public content hosting services like GitHub, Discord CDN, Transfer.sh, or Pastebin.
+  Webservers are rarely expected to perform outbound downloads, especially to dynamic or anonymous file hosting domains. This behavior is often associated with server compromise,
+  where an attacker uses a reverse shell, webshell, or injected task to fetch malware or tools post-exploitation.
+  The detection leverages Cisco Network Visibility Module flow data, enriched with process context, to identify this highly suspicious behavior.
+references:
+- https://www.cisa.gov/news-events/alerts/2023/04/13/cisa-adds-3-known-exploited-vulnerabilities-kev-catalog
+- https://www.microsoft.com/en-us/security/blog/2024/01/17/new-ttps-observed-in-mint-sandstorm-campaign-targeting-high-profile-individuals-at-universities-and-research-orgs/
+- https://research.splunk.com/endpoint/4e8391eb-527e-4e39-9a17-c5bde2f89158/
+tags:
+- attack.T1105
+- attack.T1190
+date: '2025-07-01'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image|contains:
+    - http*.exe
+    - nginx*.exe
+    - php*.exe
+    - php-cgi*.exe
+    - tomcat*.exe
+  selection_1:
+    dest_hostname|contains:
+    - '*.githubusercontent.com*'
+    - '*anonfiles.com*'
+    - '*cdn.discordapp.com*'
+    - '*ddns.net*'
+    - '*dl.dropboxusercontent.com*'
+    - '*ghostbin.co*'
+    - '*glitch.me*'
+    - '*gofile.io*'
+    - '*hastebin.com*'
+    - '*mediafire.com*'
+    - '*mega.nz*'
+    - '*onrender.com*'
+    - '*pages.dev*'
+    - '*paste.ee*'
+    - '*pastebin.*'
+    - '*pastetext.net*'
+    - '*privatlab.*'
+    - '*send.exploit.in*'
+    - '*sendspace.com*'
+    - '*storage.googleapis.com*'
+    - '*storjshare.io*'
+    - '*supabase.co*'
+    - '*temp.sh*'
+    - '*transfer.sh*'
+    - '*trycloudflare.com*'
+    - '*ufile.io*'
+    - '*w3spaces.com*'
+    - '*workers.dev*'
+  condition: selection_0 and selection_1

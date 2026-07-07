@@ -1,0 +1,22 @@
+title: O365 Mailbox Email Forwarding Enabled
+id: 0b6bc75c-05d1-4101-9fc3-97e706168f24
+status: stable
+level: medium
+author: Patrick Bareiss, Mauricio Velazco, Splunk
+description: The following analytic identifies instances where email forwarding has been enabled on mailboxes within an Office 365 environment. It detects this activity by monitoring the Set-Mailbox operation
+  within the o365_management_activity logs, specifically looking for changes to the ForwardingAddress or ForwardingSmtpAddress parameters. This activity is significant as unauthorized email forwarding can
+  lead to data exfiltration and unauthorized access to sensitive information. If confirmed malicious, attackers could intercept and redirect emails, potentially compromising confidential communications
+  and leading to data breaches.
+references:
+- https://attack.mitre.org/techniques/T1114/003/
+- https://learn.microsoft.com/en-us/exchange/recipients/user-mailboxes/email-forwarding?view=exchserver-2019
+tags:
+- attack.T1114_003
+date: '2024-04-17'
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Operation: Set-Mailbox
+  condition: selection_0

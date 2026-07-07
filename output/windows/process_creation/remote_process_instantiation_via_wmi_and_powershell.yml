@@ -1,0 +1,27 @@
+title: Remote Process Instantiation via WMI and PowerShell
+id: 112638b4-4634-11ec-b9ab-3e22fbd008af
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of `powershell.exe` using the `Invoke-WmiMethod` cmdlet to start a process on a remote endpoint via WMI. It leverages data from Endpoint Detection
+  and Response (EDR) agents, focusing on command-line executions and process telemetry. This activity is significant as it indicates potential lateral movement or remote code execution attempts by adversaries.
+  If confirmed malicious, this could allow attackers to execute arbitrary code on remote systems, leading to further compromise and persistence within the network.
+references:
+- https://attack.mitre.org/techniques/T1047/
+- https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/invoke-wmimethod?view=powershell-5.1
+tags:
+- attack.T1047
+date: '2021-11-15'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*Invoke-WmiMethod*'
+  selection_1:
+    CommandLine|contains: '*-CN*'
+  selection_2:
+    CommandLine|contains: '*-Class Win32_Process*'
+  selection_3:
+    CommandLine|contains: '*-Name create*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

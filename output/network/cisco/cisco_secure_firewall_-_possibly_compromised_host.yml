@@ -1,0 +1,22 @@
+title: Cisco Secure Firewall - Possibly Compromised Host
+id: 244a77bb-3b2a-46f1-bf2c-b4f7cd29276d
+status: experimental
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic highlights high-impact intrusion events assigned by Cisco Secure Firewall.
+  This detection leverages Cisco Secure Firewall Threat Defense logs and specifically the IntrusionEvent event type and `Impact` field assigned by Cisco Secure Firewall looking for an impact score of 1 or 2. If confirmed malicious this may indicate a potential compromised host.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/firepower/741/api/FQE/secure_firewall_estreamer_fqe_guide_740.pdf
+tags:
+- attack.T1203
+- attack.T1059
+- attack.T1587_001
+date: '2025-04-16'
+logsource:
+  product: cisco
+  service: firewall
+detection:
+  selection_0:
+    EventType: IntrusionEvent
+  condition: selection_0

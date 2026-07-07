@@ -1,0 +1,20 @@
+title: Okta User Logins from Multiple Cities
+id: a3d1df37-c2a9-41d0-aa8f-59f82d6192a8
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: The following analytic identifies instances where the same Okta user logs in from different cities within a 24-hour period. This detection leverages Okta Identity Management logs, analyzing
+  login events and their geographic locations. Such behavior is significant as it may indicate a compromised account, with an attacker attempting unauthorized access from multiple locations. If confirmed
+  malicious, this activity could lead to account takeovers and data breaches, allowing attackers to access sensitive information and potentially escalate their privileges within the environment.
+references:
+- https://attack.mitre.org/techniques/T1110/003/
+tags:
+- attack.T1586_003
+date: '2020-04-02'
+logsource:
+  category: authentication
+  product: okta
+detection:
+  selection_0:
+    Signature: user.session.start
+  condition: selection_0

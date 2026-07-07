@@ -1,0 +1,26 @@
+title: Windows Phishing Recent ISO Exec Registry
+id: cb38ee66-8ae5-47de-bd66-231c7bbc0b2c
+status: stable
+level: medium
+author: Teoderick Contreras, Bhavin Patel, Splunk
+description: The following analytic detects the creation of registry artifacts when an ISO container is opened, clicked, or mounted on a Windows operating system. It leverages data from the Endpoint.Registry
+  data model, specifically monitoring registry keys related to recent ISO or IMG file executions. This activity is significant as adversaries increasingly use container-based phishing campaigns to bypass
+  macro-based document execution controls. If confirmed malicious, this behavior could indicate an initial access attempt, potentially leading to further exploitation, persistence, or data exfiltration
+  within the environment.
+references:
+- https://www.microsoft.com/security/blog/2021/05/27/new-sophisticated-email-based-attack-from-nobelium/
+- https://unit42.paloaltonetworks.com/brute-ratel-c4-tool/
+- https://isc.sans.edu/diary/Recent+AZORult+activity/25120
+- https://tccontre.blogspot.com/2020/01/remcos-rat-evading-windows-defender-av.html
+tags:
+- attack.T1566_001
+date: '2022-08-30'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs\.iso*'
+  selection_1:
+    TargetObject|contains: '*\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs\.img*'
+  condition: selection_0 and selection_1

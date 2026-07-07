@@ -1,0 +1,24 @@
+title: Windows Modify Registry ValleyRat PWN Reg Entry
+id: 6947c44e-be1f-4dd9-b198-bc42be5be196
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects modifications to the Windows Registry specifically targeting `.pwn` file associations related to the ValleyRAT malware. ValleyRAT may create or alter registry
+  entries to associate `.pwn` files with malicious processes, allowing it to execute harmful scripts or commands when these files are opened. By monitoring for unusual changes in registry keys linked to
+  `.pwn` extensions, this detection enables security analysts to identify potential ValleyRAT infection attempts. Early detection of these modifications helps mitigate unauthorized execution and prevents
+  further exploitation of the system.
+references:
+- https://www.proofpoint.com/us/blog/threat-insight/chinese-malware-appears-earnest-across-cybercrime-threat-landscape
+- https://www.fortinet.com/blog/threat-research/valleyrat-campaign-targeting-chinese-speakers
+tags:
+- attack.T1112
+date: '2024-09-18'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*.pwn\Shell\Open\command'
+  selection_1:
+    Details: .pwn
+  condition: selection_0 and selection_1

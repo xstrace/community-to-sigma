@@ -1,0 +1,25 @@
+title: Clop Common Exec Parameter
+id: 5a8a2a72-8322-11eb-9ee9-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies the execution of CLOP ransomware variants using specific arguments ("runrun" or "temp.dat") to trigger their malicious activities. This detection leverages
+  data from Endpoint Detection and Response (EDR) agents, focusing on process names and command-line arguments. Monitoring this activity is crucial as it indicates potential ransomware behavior, which can
+  lead to file encryption on network shares or local machines. If confirmed malicious, this activity could result in significant data loss and operational disruption due to encrypted files, highlighting
+  the need for immediate investigation and response.
+references:
+- https://www.mandiant.com/resources/fin11-email-campaigns-precursor-for-ransomware-data-theft
+- https://blog.virustotal.com/2020/11/keep-your-friends-close-keep-ransomware.html
+tags:
+- attack.T1204
+date: '2021-03-17'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image|contains: '*temp.dat*'
+    CommandLine|contains: '*runrun*'
+  selection_1:
+    CommandLine|contains: '*temp.dat*'
+  condition: selection_0 and selection_1

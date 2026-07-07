@@ -1,0 +1,25 @@
+title: GitHub Enterprise Register Self Hosted Runner
+id: b27685a2-8826-4123-ab78-2d9d0d419ed0
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic identifies when a self-hosted runner is created in GitHub Enterprise. The detection monitors GitHub Enterprise audit logs for actions related to creating new self-hosted
+  runners at the organization or enterprise level. his behavior warrants monitoring because self-hosted runners execute workflow jobs on customer-controlled infrastructure, which could be exploited by attackers
+  to execute malicious code, access sensitive data, or pivot to other systems. While self-hosted runners are a legitimate feature, their creation should be carefully controlled as compromised runners pose
+  significant security risks. The impact includes potential remote code execution, data exfiltration, and lateral movement within the environment if a runner is compromised. SOC teams should investigate
+  unexpected runner creation events to verify they are authorized and properly secured, especially if created by unfamiliar users or in unusual contexts.
+references:
+- https://www.wiz.io/blog/shai-hulud-2-0-ongoing-supply-chain-attack
+- https://www.googlecloudcommunity.com/gc/Community-Blog/Monitoring-for-Suspicious-GitHub-Activity-with-Google-Security/ba-p/763610
+- https://docs.github.com/en/enterprise-cloud@latest/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/streaming-the-audit-log-for-your-enterprise#setting-up-streaming-to-splunk
+tags:
+- attack.T1685
+- attack.T1195
+date: '2025-01-15'
+logsource:
+  product: github
+  service: enterprise
+detection:
+  selection_0:
+    action: enterprise.register_self_hosted_runner
+  condition: selection_0

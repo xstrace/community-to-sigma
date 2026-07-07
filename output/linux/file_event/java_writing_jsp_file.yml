@@ -1,0 +1,26 @@
+title: Java Writing JSP File
+id: eb65619c-4f8d-4383-a975-d352765d344b
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the Java process writing a .jsp file to disk, which may indicate a web shell being deployed. It leverages data from the Endpoint datamodel, specifically monitoring
+  process and filesystem activities. This activity is significant because web shells can provide attackers with remote control over the compromised server, leading to further exploitation. If confirmed
+  malicious, this could allow unauthorized access, data exfiltration, or further compromise of the affected system, posing a severe security risk.
+references:
+- https://www.microsoft.com/security/blog/2022/04/04/springshell-rce-vulnerability-guidance-for-protecting-against-and-detecting-cve-2022-22965/
+- https://github.com/TheGejr/SpringShell
+- https://www.tenable.com/blog/spring4shell-faq-spring-framework-remote-code-execution-vulnerability
+tags:
+- attack.T1190
+- attack.T1133
+date: '2022-04-05'
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection_0:
+    Image|contains:
+    - java
+    - java.exe
+    - javaw.exe
+  condition: selection_0

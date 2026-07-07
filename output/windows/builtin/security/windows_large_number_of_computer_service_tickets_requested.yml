@@ -1,0 +1,27 @@
+title: Windows Large Number of Computer Service Tickets Requested
+id: 386ad394-c9a7-4b4f-b66f-586252de20f0
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects a high volume of Kerberos service ticket requests, specifically more than 30, from a single source within a 5-minute window. It leverages Event ID 4769, which
+  logs when a Kerberos service ticket is requested, focusing on requests with computer names as the Service Name. This behavior is significant as it may indicate malicious activities such as lateral movement,
+  malware staging, or reconnaissance. If confirmed malicious, an attacker could gain unauthorized access to multiple endpoints, potentially compromising the entire network.
+references:
+- https://thedfirreport.com/2023/01/23/sharefinder-how-threat-actors-discover-file-shares/
+- https://attack.mitre.org/techniques/T1135/
+- https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4769
+tags:
+- attack.T1135
+- attack.T1078
+date: '2023-03-21'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 4769
+  selection_1:
+    ServiceName|contains: '*$'
+  selection_2:
+    TargetUserName!|contains: '*$'
+  condition: selection_0 and selection_1 and selection_2

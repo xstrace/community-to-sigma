@@ -1,0 +1,41 @@
+title: Windows Protocol Tunneling with Plink
+id: 8aac5e1e-0fab-4437-af0b-c6e60af23eed
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: This analytic detects the use of Plink (including renamed versions like pvhost.exe) for protocol tunneling, which may be used for egress or lateral movement within an organization. It identifies
+  specific command-line options (-R, -L, -D, -l, -N, -P, -pw) commonly used for port forwarding and tunneling by analyzing process execution logs from Endpoint Detection and Response (EDR) agents. This
+  activity is significant as it may indicate an attempt to bypass network security controls or establish unauthorized connections. If confirmed malicious, this could allow an attacker to exfiltrate data,
+  move laterally across the network, or maintain persistent access, posing a severe threat to the organization's security. The detection covers both the original Plink executable and potential renamed versions,
+  enhancing its ability to catch evasion attempts.
+references:
+- https://thedfirreport.com/2022/06/06/will-the-real-msiexec-please-stand-up-exploit-leads-to-data-exfiltration/
+- https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
+- https://attack.mitre.org/techniques/T1572/
+- https://documentation.help/PuTTY/using-cmdline-portfwd.html#S3.8.3.5
+- https://media.defense.gov/2024/Jul/25/2003510137/-1/-1/0/Joint-CSA-North-Korea-Cyber-Espionage-Advance-Military-Nuclear-Programs.PDF
+- https://blog.talosintelligence.com/lazarus-three-rats/
+tags:
+- attack.T1572
+- attack.T1021_004
+date: '2022-06-17'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: plink.exe
+  selection_1:
+    Image: pvhost.exe
+  selection_2:
+    OriginalFileName: Plink
+  selection_3:
+    CommandLine|contains:
+    - '*-R *'
+    - '*-L *'
+    - '*-D *'
+    - '*-l *'
+    - '*-N *'
+    - '*-P *'
+    - '*-pw *'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

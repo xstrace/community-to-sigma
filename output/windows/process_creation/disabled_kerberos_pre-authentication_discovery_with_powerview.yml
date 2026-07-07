@@ -1,0 +1,27 @@
+title: Disabled Kerberos Pre-Authentication Discovery With PowerView
+id: b0b34e2c-90de-11ec-baeb-acde48001122
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of the `Get-DomainUser` commandlet with the `-PreauthNotRequired` parameter using PowerShell Script Block Logging (EventCode=4104). This command
+  is part of PowerView, a tool used for enumerating Windows Active Directory networks. Identifying domain accounts with Kerberos Pre-Authentication disabled is significant because adversaries can leverage
+  this information to attempt offline password cracking. If confirmed malicious, this activity could lead to unauthorized access to domain accounts, potentially compromising sensitive information and escalating
+  privileges within the network.
+references:
+- https://attack.mitre.org/techniques/T1558/004/
+- https://m0chan.github.io/2019/07/31/How-To-Attack-Kerberos-101.html
+- https://stealthbits.com/blog/cracking-active-directory-passwords-with-as-rep-roasting/
+tags:
+- attack.T1558_004
+date: '2022-02-18'
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: '*Get-DomainUser*'
+  selection_2:
+    ScriptBlockText|contains: '*PreauthNotRequired*'
+  condition: selection_0 and selection_1 and selection_2

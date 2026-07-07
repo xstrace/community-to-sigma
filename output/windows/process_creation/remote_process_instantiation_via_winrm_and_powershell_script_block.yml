@@ -1,0 +1,25 @@
+title: Remote Process Instantiation via WinRM and PowerShell Script Block
+id: 7d4c618e-4716-11ec-951c-3e22fbd008af
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of PowerShell commands that use the `Invoke-Command` cmdlet to start a process on a remote endpoint via the WinRM protocol. It leverages PowerShell
+  Script Block Logging (EventCode=4104) to identify such activities. This behavior is significant as it may indicate lateral movement or remote code execution attempts by adversaries. If confirmed malicious,
+  this activity could allow attackers to execute arbitrary code on remote systems, potentially leading to further compromise and persistence within the network.
+references:
+- https://attack.mitre.org/techniques/T1021/006/
+- https://pentestlab.blog/2018/05/15/lateral-movement-winrm/
+tags:
+- attack.T1021_006
+date: '2021-11-15'
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: '*Invoke-Command*'
+  selection_2:
+    ScriptBlockText|contains: '*-ComputerName*'
+  condition: selection_0 and selection_1 and selection_2

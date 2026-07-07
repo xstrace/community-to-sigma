@@ -1,0 +1,24 @@
+title: HTTP Rapid POST with Mixed Status Codes
+id: c8c987d6-3a1a-4555-9a52-eea0741b6113
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: This detection identifies rapid-fire POST request attacks where an attacker sends more than 20 POST requests within a 5-second window, potentially attempting to exploit race conditions or overwhelm
+  request handling. The pattern is particularly suspicious when responses vary in size or status codes, indicating successful exploitation attempts or probing for vulnerable endpoints.
+references:
+- https://portswigger.net/web-security/request-smuggling#what-is-http-request-smuggling
+- https://portswigger.net/research/http1-must-die
+- https://www.vaadata.com/blog/what-is-http-request-smuggling-exploitations-and-security-best-practices/
+- https://www.securityweek.com/new-http-request-smuggling-attacks-impacted-cdns-major-orgs-millions-of-websites/
+tags:
+- attack.T1071_001
+- attack.T1190
+- attack.T1595
+date: '2025-10-21'
+logsource:
+  category: webserver
+  service: nginx
+detection:
+  selection_0:
+    cs-method: POST
+  condition: selection_0

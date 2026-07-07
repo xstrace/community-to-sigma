@@ -1,0 +1,46 @@
+title: Cisco NVM - Outbound Connection to Suspicious Port
+id: fc32a8d5-bc79-4437-b48f-4646ab7bed9d
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  The following analytic detects any outbound network connection from an endpoint process to a known suspicious or non-standard port.
+  It leverages Cisco Network Visibility Module flow data logs to identify potentially suspicious behavior by looking at processes
+  communicating over ports like 4444, 2222, or 51820 are commonly used by tools like Metasploit, SliverC2 or other pentest, red team or malware.
+  These connections are worth investigating further, especially when initiated by unexpected or non-network-native binaries.
+references:
+- https://mthcht.medium.com/hunting-for-suspicious-ports-activities-50ef56d5cef
+tags:
+- attack.T1571
+date: '2025-07-01'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  filter_0:
+    dest:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+    - 100.64.0.0/10
+    - 127.0.0.0/8
+    - 169.254.0.0/16
+    - 192.0.0.0/24
+    - 192.0.0.0/29
+    - 192.0.0.8/32
+    - 192.0.0.9/32
+    - 192.0.0.10/32
+    - 192.0.0.170/32
+    - 192.0.0.171/32
+    - 192.0.2.0/24
+    - 192.31.196.0/24
+    - 192.52.193.0/24
+    - 192.88.99.0/24
+    - 224.0.0.0/4
+    - 192.175.48.0/24
+    - 198.18.0.0/15
+    - 198.51.100.0/24
+    - 203.0.113.0/24
+    - 240.0.0.0/4
+    - ::1
+  condition: filter_0

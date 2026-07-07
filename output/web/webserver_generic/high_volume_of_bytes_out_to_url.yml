@@ -1,0 +1,22 @@
+title: High Volume of Bytes Out to Url
+id: c8a6b56d-16dd-4e9c-b4bd-527742ead98d
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: The following analytic detects a high volume of outbound web traffic, specifically over 1GB of data sent to a URL within a 2-minute window. It leverages the Web data model to identify significant
+  uploads by analyzing the sum of bytes out. This activity is significant as it may indicate potential data exfiltration by malware or malicious insiders. If confirmed as malicious, this behavior could
+  lead to unauthorized data transfer, resulting in data breaches and loss of sensitive information. Immediate investigation is required to determine the legitimacy of the transfer and mitigate any potential
+  threats.
+references:
+- https://attack.mitre.org/techniques/T1567/
+- https://www.trendmicro.com/en_us/research/20/l/pawn-storm-lack-of-sophistication-as-a-strategy.html
+- https://www.bleepingcomputer.com/news/security/hacking-group-s-new-malware-abuses-google-and-facebook-services/
+tags:
+- attack.T1567
+date: '2024-03-06'
+logsource:
+  category: webserver
+detection:
+  selection_0:
+    sum_bytes_out: 1070000000
+  condition: selection_0

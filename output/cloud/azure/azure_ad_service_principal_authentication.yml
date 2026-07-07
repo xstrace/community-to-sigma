@@ -1,0 +1,24 @@
+title: Azure AD Service Principal Authentication
+id: 5a2ec401-60bb-474e-b936-1e66e7aa4060
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic identifies authentication events of service principals in Azure Active Directory. It leverages the `azure_monitor_aad` data source, specifically targeting "Sign-in activity"
+  within ServicePrincipalSignInLogs. This detection gathers details such as sign-in frequency, timing, source IPs, and accessed resources. Monitoring these events is significant for SOC teams to distinguish
+  between normal application authentication and potential anomalies, which could indicate compromised credentials or malicious activities. If confirmed malicious, attackers could gain unauthorized access
+  to resources, leading to data breaches or further exploitation within the environment.
+references:
+- https://attack.mitre.org/techniques/T1078/004/
+- https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-sign-ins#service-principal-sign-ins
+tags:
+- attack.T1078_004
+date: '2024-02-14'
+logsource:
+  product: azure
+  service: aad
+detection:
+  selection_0:
+    operationName: Sign-in activity
+  selection_1:
+    category: ServicePrincipalSignInLogs
+  condition: selection_0 and selection_1

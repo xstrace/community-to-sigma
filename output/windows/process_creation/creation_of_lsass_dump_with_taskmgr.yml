@@ -1,0 +1,26 @@
+title: Creation of lsass Dump with Taskmgr
+id: b2fbe95a-9c62-4c12-8a29-24b97e84c0cd
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the creation of an lsass.exe process dump using Windows Task Manager. It leverages Sysmon EventID 11 to identify file creation events where the target filename
+  matches *lsass*.dmp. This activity is significant because creating an lsass dump can be a precursor to credential theft, as the dump file contains sensitive information such as user passwords. If confirmed
+  malicious, an attacker could use the lsass dump to extract credentials and escalate privileges, potentially compromising the entire network.
+references:
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1003.001/T1003.001.md#atomic-test-5---dump-lsassexe-memory-using-windows-task-manager
+- https://attack.mitre.org/techniques/T1003/001/
+- https://2017.zeronights.org/wp-content/uploads/materials/ZN17_Kheirkhabarov_Hunting_for_Credentials_Dumping_in_Windows_Environment.pdf
+tags:
+- attack.T1003_001
+date: '2019-12-11'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 11
+  selection_1:
+    Image: taskmgr.exe
+  selection_2:
+    TargetFilename|contains: '*lsass*'
+  condition: selection_0 and selection_1 and selection_2

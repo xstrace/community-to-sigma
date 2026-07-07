@@ -1,0 +1,26 @@
+title: O365 External Identity Policy Changed
+id: 29af1725-7a72-4d2d-8a18-e697e79a62d3
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic identifies when changes are made to the external guest policies within Azure AD. With Azure AD B2B collaboration, users and administrators can invite external users to
+  collaborate with internal users. This detection also attempts to highlight what may have changed. External guest account invitations should be monitored by security teams as they could potentially lead
+  to unauthorized access. An example of this attack vector was described at BlackHat 2022 by security researcher Dirk-Jan during his tall `Backdooring and Hijacking Azure AD Accounts by Abusing External
+  Identities`.
+references:
+- https://medium.com/tenable-techblog/roles-allowing-to-abuse-entra-id-federation-for-persistence-and-privilege-escalation-df9ca6e58360
+- https://learn.microsoft.com/en-us/entra/external-id/external-identities-overview
+tags:
+- attack.T1136_003
+date: '2024-04-13'
+logsource:
+  product: m365
+  service: management
+detection:
+  selection_0:
+    Workload: AzureActiveDirectory
+  selection_1:
+    Operation: Update policy.
+  selection_2:
+    ID: B2BManagementPolicy
+  condition: selection_0 and selection_1 and selection_2

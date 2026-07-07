@@ -1,0 +1,25 @@
+title: Windows AD DCShadow Privileges ACL Addition
+id: ae915743-1aa8-4a94-975c-8062ebc8b723
+status: stable
+level: medium
+author: Dean Luxton
+description: This detection identifies an Active Directory access-control list (ACL) modification event, which applies the minimum required extended rights to perform the DCShadow attack.
+references:
+- https://www.labofapenetrationtester.com/2018/04/dcshadow.html
+- https://github.com/samratashok/nishang/blob/master/ActiveDirectory/Set-DCShadowPermissions.ps1
+- https://trustedsec.com/blog/a-hitchhackers-guide-to-dacl-based-detections-part-1-a
+- https://lantern.splunk.com/Security/Product_Tips/Enterprise_Security/Enabling_an_audit_trail_from_Active_Directory
+tags:
+- attack.T1484
+- attack.T1207
+- attack.T1222_001
+date: '2024-07-01'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5136
+  selection_1:
+    ObjectClass: domainDNS
+  condition: selection_0 and selection_1

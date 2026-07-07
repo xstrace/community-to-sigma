@@ -1,0 +1,27 @@
+title: GetWmiObject Ds Computer with PowerShell Script Block
+id: 29b99201-723c-4118-847a-db2b3d3fb8ea
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects the execution of the `Get-WmiObject` cmdlet with the `DS_Computer` class parameter via PowerShell Script Block Logging (EventCode=4104). This detection leverages
+  script block text to identify queries targeting domain computers using WMI. Monitoring this activity is crucial as adversaries and Red Teams may use it for Active Directory Discovery and situational awareness.
+  If confirmed malicious, this behavior could allow attackers to map out domain computers, facilitating further attacks such as lateral movement or privilege escalation.
+references:
+- https://attack.mitre.org/techniques/T1018/
+- https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-wmiobject?view=powershell-5.1
+tags:
+- attack.T1018
+date: '2021-09-01'
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains: '*Get-WmiObject*'
+  selection_2:
+    ScriptBlockText|contains: '*namespace root\directory\ldap*'
+  selection_3:
+    ScriptBlockText|contains: '*class ds_computer*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

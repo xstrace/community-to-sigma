@@ -1,0 +1,27 @@
+title: HTTP Scripting Tool User Agent
+id: 04430b4e-5ca8-4e88-98b5-d6bcf54f8393
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: This Splunk query analyzes web access logs to identify and categorize non-browser user agents, detecting various types of security tools, scripting languages, automation frameworks, and suspicious
+  patterns. This activity can signify malicious actors attempting to interact with web endpoints in non-standard ways.
+references:
+- https://portswigger.net/web-security/request-smuggling#what-is-http-request-smuggling
+- https://portswigger.net/research/http1-must-die
+- https://www.vaadata.com/blog/what-is-http-request-smuggling-exploitations-and-security-best-practices/
+- https://www.securityweek.com/new-http-request-smuggling-attacks-impacted-cdns-major-orgs-millions-of-websites/
+- https://github.com/SigmaHQ/sigma/blob/master/rules/web/proxy_generic/proxy_ua_hacktool.yml
+- https://help.aikido.dev/zen-firewall/miscellaneous/bot-protection-details
+tags:
+- attack.T1071_001
+date: '2025-10-21'
+logsource:
+  category: webserver
+detection:
+  selection_0:
+    cs-user-agent|contains: '*'
+  filter_1:
+    cs-user-agent:
+    - '-'
+    - unknown
+  condition: (selection_0) and not (filter_1)

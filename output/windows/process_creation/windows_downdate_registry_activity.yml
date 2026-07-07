@@ -1,0 +1,25 @@
+title: Windows Downdate Registry Activity
+id: d984fca1-ba3a-4f89-aa58-800e235fdf53
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects the setting of a pending.xml file associated with the Windows Downdate attack which forces a Windows downgrade to enable exploitation.
+  Looks for uses of a pending.xml outside of typical locations.
+references:
+- https://www.safebreach.com/blog/downgrade-attacks-using-windows-updates/
+tags:
+- attack.T1112
+- attack.T1689
+date: '2022-09-08'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_1:
+    TargetObject|contains:
+    - '*PoqexecCmdline'
+    - '*COMPONENTS\PendingXmlIdentifier'
+  filter_2:
+    ProcessPath|contains: '*:\Windows\WinSxS\*'
+  condition: (selection_1) and not (filter_2)

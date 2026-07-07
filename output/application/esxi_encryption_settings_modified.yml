@@ -1,0 +1,25 @@
+title: ESXi Encryption Settings Modified
+id: dbbbe26f-83fe-4ee3-8b77-ccf7fbd416c8
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: Detects the disabling of critical encryption enforcement settings on an ESXi host, such as secure boot or executable verification requirements, which may indicate an attempt to weaken hypervisor
+  integrity or allow unauthorized code execution.
+tags:
+- attack.T1685
+date: '2025-07-11'
+logsource:
+  category: application
+detection:
+  selection_0:
+    Message|contains: '*system settings encryption set*'
+  filter_1:
+    Message|contains: '*shell.*'
+  selection_2:
+    Message|contains:
+    - '* -s *'
+    - '* -e *'
+    - '*--require-secure-boot*'
+    - '*require-exec-installed-only*'
+    - execInstalledOnly
+  condition: (selection_0 and selection_2) and not (filter_1)

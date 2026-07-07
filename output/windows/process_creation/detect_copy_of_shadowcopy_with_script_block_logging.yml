@@ -1,0 +1,31 @@
+title: Detect Copy of ShadowCopy with Script Block Logging
+id: 9251299c-ea5b-11eb-a8de-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects the use of PowerShell commands to copy the SAM, SYSTEM, or SECURITY hives, which are critical for credential theft. It leverages PowerShell Script Block Logging
+  (EventCode=4104) to capture and analyze the full command executed. This activity is significant as it indicates an attempt to exfiltrate sensitive registry hives for offline password cracking. If confirmed
+  malicious, this could lead to unauthorized access to credentials, enabling further compromise of the system and potential lateral movement within the network.
+references:
+- https://msrc.microsoft.com/update-guide/vulnerability/CVE-2021-36934
+- https://github.com/GossiTheDog/HiveNightmare
+- https://github.com/JumpsecLabs/Guidance-Advice/tree/main/SAM_Permissions
+tags:
+- attack.T1003_002
+date: '2021-07-21'
+logsource:
+  product: windows
+  service: powershell
+detection:
+  selection_0:
+    EventID: 4104
+  selection_1:
+    ScriptBlockText|contains:
+    - '*copy*'
+    - '*[System.IO.File]::Copy*'
+  selection_2:
+    ScriptBlockText|contains:
+    - '*System32\config\SAM*'
+    - '*System32\config\SYSTEM*'
+    - '*System32\config\SECURITY*'
+  condition: selection_0 and selection_1 and selection_2

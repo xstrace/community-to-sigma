@@ -1,0 +1,22 @@
+title: Kubernetes Access Scanning
+id: 2f4abe6d-5991-464d-8216-f90f42999764
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects potential scanning activities within a Kubernetes environment. It identifies unauthorized access attempts, probing of public APIs, or attempts to exploit known
+  vulnerabilities by monitoring Kubernetes audit logs for repeated failed access attempts or unusual API requests. This activity is significant for a SOC as it may indicate an attacker's preliminary reconnaissance
+  to gather information about the system. If confirmed malicious, this activity could lead to unauthorized access to sensitive systems or data, posing a severe security risk.
+references:
+- https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/
+tags:
+- attack.T1046
+date: '2023-12-20'
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    groups{}": system:unauthenticated
+  selection_1:
+    code": 403
+  condition: selection_0 and selection_1

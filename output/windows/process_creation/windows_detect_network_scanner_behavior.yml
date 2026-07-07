@@ -1,0 +1,37 @@
+title: Windows Detect Network Scanner Behavior
+id: 78e678d2-bf64-4fe6-aa52-2f7b11dddee7
+status: stable
+level: medium
+author: Steven Dick
+description: The following analytic detects when an application is used to connect a large number of unique ports/targets within a short time frame. Network enumeration may be used by adversaries as a method
+  of discovery, lateral movement, or remote execution. This analytic may require significant tuning depending on the organization and applications being actively used, highly recommended to pre-populate
+  the filter macro prior to activation.
+references:
+- https://attack.mitre.org/techniques/T1595
+tags:
+- attack.T1595_001
+- attack.T1595_002
+date: '2024-12-26'
+logsource:
+  category: all_traffic
+  product: windows
+detection:
+  selection_0:
+    sourcetype: XmlWinEventLog
+  selection_1:
+    app|contains: '*\*'
+  selection_2:
+    DestinationPort: 32000
+  filter_3:
+    DestinationPort:
+    - 8443
+    - 8080
+    - 5353
+    - 3268
+    - 443
+    - 389
+    - 88
+    - 80
+    - 53
+    - 25
+  condition: (selection_0 and selection_1 and selection_2) and not (filter_3)

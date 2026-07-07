@@ -1,0 +1,21 @@
+title: Windows Get-Variable.EXE Execution from WindowsApps Folder
+id: 7edb95b6-bccf-4d8c-8ada-d1c5520cf0ed
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  An attacker can obtain persistence by hijacking the PowerShell cmdlet 'Get-Variable' by placing Get-Variable.exe in the WindowsApps folder, which is part of the PowerShell path.
+  Whenever a PowerShell window is opened via a scheduled task, the malicious Get-Variable.exe will be run.
+  This activity was first associated with the Colibri malware.
+references:
+- https://thehackernews.com/2022/04/researchers-uncover-how-colibri-malware.html
+tags:
+- attack.T1574_008
+date: '2021-05-07'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image|contains: '*\AppData\Local\Microsoft\WindowsApps\Get-Variable.exe'
+  condition: selection_0

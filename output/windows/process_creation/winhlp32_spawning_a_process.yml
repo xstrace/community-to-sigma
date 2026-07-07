@@ -1,0 +1,28 @@
+title: Winhlp32 Spawning a Process
+id: d17dae9e-2618-11ec-b9f5-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic detects winhlp32.exe spawning a child process that loads a file from appdata, programdata, or temp directories. This detection leverages data from Endpoint Detection
+  and Response (EDR) agents, focusing on process creation events. This activity is significant because winhlp32.exe has known vulnerabilities and can be exploited to execute malicious code. If confirmed
+  malicious, an attacker could use this technique to execute arbitrary scripts, escalate privileges, or maintain persistence within the environment. Analysts should review parallel processes, module loads,
+  and file modifications for further suspicious behavior.
+references:
+- https://www.exploit-db.com/exploits/16541
+- https://tria.ge/210929-ap75vsddan
+- https://www.virustotal.com/gui/file/cb77b93150cb0f7fe65ce8a7e2a5781e727419451355a7736db84109fa215a89
+tags:
+- attack.T1055
+date: '2021-10-05'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage: winhlp32.exe
+  selection_1:
+    CommandLine|contains:
+    - '*\appdata\*'
+    - '*\programdata\*'
+    - '*\temp\*'
+  condition: selection_0 and selection_1

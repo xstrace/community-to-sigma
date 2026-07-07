@@ -1,0 +1,47 @@
+title: Common Ransomware Extensions
+id: a9e5c5db-db11-43ca-86a8-c852d1b2c0ec
+status: stable
+level: medium
+author: David Dorsey, Michael Haag, Splunk, Steven Dick
+description: The following analytic detects modifications to files with extensions commonly associated with ransomware. It leverages the Endpoint.Filesystem data model to identify changes in file extensions
+  that match known ransomware patterns. This activity is significant because it suggests an attacker is attempting to encrypt or alter files, potentially leading to severe data loss and operational disruption.
+  If confirmed malicious, this activity could result in the encryption of critical data, rendering it inaccessible and causing significant damage to the organization's data integrity and availability.
+references:
+- https://github.com/splunk/security_content/issues/2448
+tags:
+- attack.T1485
+date: '2019-10-16'
+logsource:
+  category: file_event
+  product: windows
+detection:
+  filter_0:
+    Image:
+    - '*.bat'
+    - '*.cmd'
+    - '*.com'
+    - '*.cpl'
+    - '*.dll'
+    - '*.doc'
+    - '*.docx'
+    - '*.exe'
+    - '*.gif'
+    - '*.jar'
+    - '*.jpeg'
+    - '*.jpg'
+    - '*.js'
+    - '*.lnk'
+    - '*.pif'
+    - '*.png'
+    - '*.ppt'
+    - '*.pptx'
+    - '*.ps1'
+    - '*.psm1'
+    - '*.scr'
+    - '*.sys'
+    - '*.txt'
+    - '*.vbs'
+    - '*.wsf'
+    - '*.xls'
+    - '*.xlsx'
+  condition: filter_0

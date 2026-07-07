@@ -1,0 +1,24 @@
+title: Cisco SD-WAN - Uncommon User-Agent Multi-URI Activity
+id: 201022d7-a35c-470a-93ff-ae335c42e69d
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This hunting search is designed to surface source IP activity using uncommon HTTP user-agents across multiple URI paths in Cisco SD-WAN Manager serviceproxy access logs.
+  It looks for source and user-agent combinations that access more than one distinct URI, then keeps only low-volume behavior (`requests<=50`) to reduce noise from normal high-volume traffic.
+  Use this hunt to pivot on `http_user_agent` and `src` and identify possible automation, scripted reconnaissance, or exploitation attempts.
+references:
+- https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-authbp-qwCX8D4v
+- https://github.com/zerozenxlabs/CVE-2026-20127---Cisco-SD-WAN-Preauth-RCE
+tags:
+- attack.T1595
+date: '2026-03-12'
+logsource:
+  category: network_connection
+  product: cisco
+detection:
+  selection_0:
+    requests: 50
+  selection_1:
+    uri_count: 1
+  condition: selection_0 and selection_1

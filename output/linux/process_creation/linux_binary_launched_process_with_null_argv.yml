@@ -1,0 +1,19 @@
+title: Linux Binary Launched Process with Null Argv
+id: 0085652a-e682-45a2-a40c-5bb68b8f260e
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: The following analytic detects kernel-level events where a setuid binary launches a shell or interpreter with a NULL argument vector, which occurs when a privilege escalation exploit gains
+  root and executes a process via execve() without constructing a legitimate argument array.
+references:
+- https://www.elastic.co/security-labs/copy-fail-dirtyfrag-linux-page-bugs-in-the-wild
+tags:
+- attack.T1068
+date: '2026-05-12'
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_0:
+    sourcetype: linux_messages_syslog
+  condition: selection_0

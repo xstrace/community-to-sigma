@@ -1,0 +1,24 @@
+title: Windows Azure Storage Utility Execution Via CLI
+id: 980648f3-f4cc-4d56-86cf-0d6e7aa5d34e
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  This analytic detects the execution of Azure Storage utilities such as AzCopy and Storage Explorer via the CLI.
+  These tools enable large-scale data transfers over trusted cloud channels, allowing malicious activity to blend with legitimate traffic and evade traditional network defenses.
+  Adversaries may leverage them post-compromise to stage or extract sensitive data from endpoints.
+  While legitimate administrative use is expected, anomalous execution patterns, unexpected users, or unusual parent processes should be treated as potential indicators of compromise and investigated promptly.
+references:
+- https://blog.talosintelligence.com/emerging-interlock-ransomware/
+tags:
+- attack.T1567_002
+date: '2021-05-07'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image|contains:
+    - AzCopy.exe
+    - StorageExplorer.exe
+  condition: selection_0

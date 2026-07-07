@@ -1,0 +1,25 @@
+title: ASL AWS IAM Successful Group Deletion
+id: 1bbe54f1-93d7-4764-8a01-ddaa12ece7ac
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects the successful deletion of a group within AWS IAM, leveraging CloudTrail IAM events. This action, while not inherently malicious, can serve as a precursor to
+  more sinister activities, such as unauthorized access or privilege escalation attempts. By monitoring for such deletions, the analytic aids in identifying potential preparatory steps towards an attack,
+  allowing for early detection and mitigation. The identification of this behavior is crucial for a SOC to prevent the potential impact of an attack, which could include unauthorized access to sensitive
+  resources or disruption of AWS environment operations.
+references:
+- https://awscli.amazonaws.com/v2/documentation/api/latest/reference/iam/delete-group.html
+- https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteGroup.html
+tags:
+- attack.T1069_003
+- attack.T1098
+date: '2024-05-22'
+logsource:
+  product: aws
+  service: securitylake
+detection:
+  selection_0:
+    operation: DeleteGroup
+  selection_1:
+    sc-status: Success
+  condition: selection_0 and selection_1

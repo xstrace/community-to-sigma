@@ -1,0 +1,42 @@
+title: Windows Potential AppDomainManager Hijack Artifacts Creation
+id: be19b369-fd0c-42be-ae97-c10b6c01638f
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the creation of an .exe file along with its corresponding .exe.config and a .dll in the same directory, which is a common pattern indicative of potential AppDomain
+  hijacking or CLR code injection attempts. This behavior may signal that a malicious actor is attempting to load a rogue assembly into a legitimate application's AppDomain, allowing code execution under
+  the context of a trusted process.
+references:
+- https://www.microsoft.com/en-us/security/blog/2025/11/03/sesameop-novel-backdoor-uses-openai-assistants-api-for-command-and-control/
+- https://attack.mitre.org/techniques/T1574/014/
+- https://gist.github.com/djhohnstein/afb93a114b848e16facf0b98cd7cb57b
+- https://www.scworld.com/brief/appdomain-manager-injection-exploited-for-cobalt-strike-beacon-delivery
+- https://jp.security.ntt/insights_resources/tech_blog/appdomainmanager-injection-en/
+tags:
+- attack.T1574_014
+date: '2026-01-07'
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_0:
+    Image|contains:
+    - '*.exe'
+    - '*.exe.config'
+    - '*.dll'
+  selection_1:
+    TargetFilename|contains:
+    - '*\windows\fonts\*'
+    - '*\temp\*'
+    - '*\users\public\*'
+    - '*\windows\debug\*'
+    - '*\Users\Administrator\Music\*'
+    - '*\Windows\servicing\*'
+    - '*\Users\Default\*'
+    - '*Recycle.bin*'
+    - '*\Windows\Media\*'
+    - '*\Windows\repair\*'
+    - '*\PerfLogs\*'
+  selection_2:
+    action: created
+  condition: selection_0 and selection_1 and selection_2

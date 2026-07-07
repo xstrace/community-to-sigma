@@ -1,0 +1,22 @@
+title: AWS ECR Container Scanning Findings Low Informational Unknown
+id: cbc95e44-7c22-443f-88fd-0424478f5589
+status: stable
+level: medium
+author: Patrick Bareiss, Eric McGinnis Splunk
+description: The following analytic identifies low, informational, or unknown severity findings from AWS Elastic Container Registry (ECR) image scans. It leverages AWS CloudTrail logs, specifically the
+  DescribeImageScanFindings event, to detect these findings. This activity is significant for a SOC as it helps in early identification of potential vulnerabilities or misconfigurations in container images,
+  which could be exploited if left unaddressed. If confirmed malicious, these findings could lead to unauthorized access, data breaches, or further exploitation within the containerized environment.
+references:
+- https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html
+tags:
+- attack.T1204_003
+date: '2021-08-18'
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    eventSource: ecr.amazonaws.com
+  selection_1:
+    eventName: DescribeImageScanFindings
+  condition: selection_0 and selection_1

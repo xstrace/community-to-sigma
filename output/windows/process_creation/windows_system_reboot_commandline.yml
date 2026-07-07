@@ -1,0 +1,36 @@
+title: Windows System Reboot CommandLine
+id: 97fc2b60-c8eb-4711-93f7-d26fade3686f
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic identifies the execution of the Windows command line to reboot a host machine using "shutdown.exe" with specific parameters. This detection leverages data from Endpoint
+  Detection and Response (EDR) agents, focusing on process names and command-line arguments. This activity is significant as it is often associated with advanced persistent threats (APTs) and remote access
+  trojans (RATs) like dcrat, which may use system reboots to disrupt operations, aid in system destruction, or inhibit recovery. If confirmed malicious, this could lead to system downtime, data loss, or
+  hindered incident response efforts.
+references:
+- https://attack.mitre.org/techniques/T1529/
+- https://www.mandiant.com/resources/analyzing-dark-crystal-rat-backdoor
+tags:
+- attack.T1529
+date: '2022-07-27'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: shutdown.exe
+  selection_1:
+    OriginalFileName: shutdown.exe
+  selection_2:
+    CommandLine|contains: '*shutdown*'
+  selection_3:
+    CommandLine|contains:
+    - '* /r*'
+    - '* -r*'
+  selection_4:
+    CommandLine|contains:
+    - '* /t*'
+    - '* -t*'
+    - '* /f*'
+    - '* -f*'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

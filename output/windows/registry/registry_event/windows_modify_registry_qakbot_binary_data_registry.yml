@@ -1,0 +1,23 @@
+title: Windows Modify Registry Qakbot Binary Data Registry
+id: 2e768497-04e0-4188-b800-70dd2be0e30d
+status: stable
+level: medium
+author: Teoderick Contreras, Bhavin Patel, Splunk
+description: The following analytic detects the creation of a suspicious registry entry by Qakbot malware, characterized by 8 random registry value names with encrypted binary data. This detection leverages
+  data from Endpoint Detection and Response (EDR) agents, focusing on registry modifications under the "SOFTWARE\\Microsoft\\" path by processes like explorer.exe. This activity is significant as it indicates
+  potential Qakbot infection, which uses the registry to store malicious code or configuration data. If confirmed malicious, this could allow attackers to maintain persistence and execute arbitrary code
+  on the compromised system.
+references:
+- https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog/decrypting-qakbots-encrypted-registry-keys/
+tags:
+- attack.T1112
+date: '2022-10-24'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\SOFTWARE\Microsoft\*'
+  selection_1:
+    Details: Binary Data
+  condition: selection_0 and selection_1

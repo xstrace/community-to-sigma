@@ -1,0 +1,20 @@
+title: Disable Security Logs Using MiniNt Registry
+id: 39ebdc68-25b9-11ec-aec7-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk, Steven Dick
+description: The following analytic detects a suspicious registry modification aimed at disabling security audit logs by adding a specific registry entry. It leverages data from the Endpoint.Registry data
+  model, focusing on changes to the "Control\\MiniNt" registry path. This activity is significant because it can prevent Windows from logging any events to the Security Log, effectively blinding security
+  monitoring efforts. If confirmed malicious, this technique could allow an attacker to operate undetected, making it difficult to trace their actions and compromising the integrity of security audits.
+references:
+- https://twitter.com/0gtweet/status/1182516740955226112
+tags:
+- attack.T1112
+date: '2021-10-05'
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_0:
+    TargetObject|contains: '*\Control\MiniNt\*'
+  condition: selection_0

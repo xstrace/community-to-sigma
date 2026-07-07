@@ -1,0 +1,30 @@
+title: Windows Network Connection From Program In Suspect Location
+id: 90fd571b-78d4-409e-a2de-0f0a80c75a84
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  The following analytic detects network connections from processes running out of suspicious Windows directories such as Recycle Bin, Public, PerfLogs, systemprofile, Fonts, IME, and Addins paths.
+  This activity is significant because malware often executes from writable or unusual directories while communicating with external infrastructure.
+  If confirmed malicious, the process may represent command-and-control, staging, or data exfiltration activity from a compromised endpoint.
+references:
+- https://github.com/Neo23x0/sigma/blob/master/rules/windows/sysmon/sysmon_susp_prog_location_network_connection.yml
+tags:
+- attack.T1011
+date: '2026-05-05'
+logsource:
+  category: all_traffic
+  product: windows
+detection:
+  selection_0:
+    app|contains:
+    - '*\$Recycle.Bin\*'
+    - '*\Config\SystemProfile\*'
+    - '*\PerfLogs\*'
+    - '*\Users\All Users\*'
+    - '*\Users\Default\*'
+    - '*\Users\Public\*'
+    - '*\Windows\addins\*'
+    - '*\Windows\Fonts\*'
+    - '*\Windows\IME\*'
+  condition: selection_0

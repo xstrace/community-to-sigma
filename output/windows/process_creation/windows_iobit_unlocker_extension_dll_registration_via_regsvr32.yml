@@ -1,0 +1,24 @@
+title: Windows IOBit Unlocker Extension DLL Registration via Regsvr32
+id: 2ba4b456-76e2-439d-bca6-fd5ef24cc53b
+status: stable
+level: medium
+author: Raven Tait, Splunk
+description: |-
+  Detects the IOBit Unlocker Extension being registered.
+  IObit Unlocker is a utility designed to resolve issues involving files or folders that cannot be deleted, moved, or renamed due to being locked by other processes or applications in Windows.
+  It's a powerful tool that can "unlock" these files or folders, terminating any processes that are using them.
+  This allows users to manipulate these previously inaccessible files or folders as needed.
+references:
+- https://thedfirreport.com/2024/04/01/from-onenote-to-ransomnote-an-ice-cold-intrusion/
+tags:
+- attack.T1218_010
+date: '2021-12-08'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*IObitUnlockerExtension.dll*'
+  selection_1:
+    Image: regsvr32.exe
+  condition: selection_0 and selection_1

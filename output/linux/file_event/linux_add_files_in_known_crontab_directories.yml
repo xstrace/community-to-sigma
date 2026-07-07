@@ -1,0 +1,23 @@
+title: Linux Add Files In Known Crontab Directories
+id: 023f3452-5f27-11ec-bf00-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects unauthorized file creation in known crontab directories on Unix-based systems. It leverages filesystem data to identify new files in directories such as /etc/cron*
+  and /var/spool/cron/*. This activity is significant as it may indicate an attempt by threat actors or malware to establish persistence on a compromised host. If confirmed malicious, this could allow attackers
+  to execute arbitrary code at scheduled intervals, potentially leading to further system compromise and unauthorized access to sensitive information.
+references:
+- https://www.sandflysecurity.com/blog/detecting-cronrat-malware-on-linux-instantly/
+- https://www.cyberciti.biz/faq/how-do-i-add-jobs-to-cron-under-linux-or-unix-oses/
+tags:
+- attack.T1053_003
+date: '2021-12-21'
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection_0:
+    TargetFilename|contains:
+    - '*/etc/cron*'
+    - '*/var/spool/cron/*'
+  condition: selection_0

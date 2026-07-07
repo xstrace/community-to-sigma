@@ -1,0 +1,23 @@
+title: GCP Authentication Failed During MFA Challenge
+id: 345f7e1d-a3fe-4158-abd8-e630f9878323
+status: stable
+level: medium
+author: Bhavin Patel, Mauricio Velazco, Splunk
+description: The following analytic detects failed authentication attempts during the Multi-Factor Authentication (MFA) challenge on a Google Cloud Platform (GCP) tenant. It uses Google Workspace login
+  failure events to identify instances where MFA methods were challenged but not successfully completed. This activity is significant as it may indicate an adversary attempting to access an account with
+  compromised credentials despite MFA protection. If confirmed malicious, this could lead to unauthorized access attempts, potentially compromising sensitive data and resources within the GCP environment.
+references:
+- https://attack.mitre.org/techniques/T1621/
+- https://attack.mitre.org/techniques/T1078/004/
+tags:
+- attack.T1078_004
+- attack.T1586_003
+- attack.T1621
+date: '2022-10-14'
+logsource:
+  product: google_workspace
+  service: login
+detection:
+  selection_0:
+    name: login_failure
+  condition: selection_0

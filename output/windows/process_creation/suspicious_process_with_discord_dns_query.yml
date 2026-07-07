@@ -1,0 +1,30 @@
+title: Suspicious Process With Discord DNS Query
+id: 4d4332ae-792c-11ec-89c1-acde48001122
+status: stable
+level: medium
+author: Teoderick Contreras, Mauricio Velazco, Splunk
+description: The following analytic identifies a process making a DNS query to Discord, excluding legitimate Discord application paths. It leverages Sysmon logs with Event ID 22 to detect DNS queries containing
+  "discord" in the QueryName field. This activity is significant because Discord can be abused by adversaries to host and download malicious files, as seen in the WhisperGate campaign. If confirmed malicious,
+  this could indicate malware attempting to download additional payloads from Discord, potentially leading to further code execution and compromise of the affected system.
+references:
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+- https://medium.com/s2wblog/analysis-of-destructive-malware-whispergate-targeting-ukraine-9d5d158f19f3
+- https://www.microsoft.com/security/blog/2022/01/15/destructive-malware-targeting-ukrainian-organizations/
+tags:
+- attack.T1059_005
+date: '2022-01-19'
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_0:
+    EventID: 22
+  selection_1:
+    QueryName|contains: '*discord*'
+  selection_2:
+    Image|contains: '*\AppData\Local\Discord\*'
+  selection_3:
+    Image|contains: '*\Program Files*'
+  selection_4:
+    Image: discord.exe
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

@@ -1,0 +1,27 @@
+title: Windows AD SID History Attribute Modified
+id: 1155e47d-307f-4247-beab-71071e3a458c
+status: stable
+level: medium
+author: Mauricio Velazco, Splunk
+description: The following analytic detects modifications to the SID History attribute in Active Directory by leveraging event code 5136. This detection uses logs from the `wineventlog_security` data source
+  to identify changes to the sIDHistory attribute. Monitoring this activity is crucial as the SID History attribute can be exploited by adversaries to inherit permissions from other accounts, potentially
+  granting unauthorized access. If confirmed malicious, this activity could allow attackers to maintain persistent access and escalate privileges within the domain, posing a significant security risk.
+references:
+- https://adsecurity.org/?p=1772
+- https://learn.microsoft.com/en-us/windows/win32/adschema/a-sidhistory?redirectedfrom=MSDN
+- https://learn.microsoft.com/en-us/defender-for-identity/security-assessment-unsecure-sid-history-attribute
+- https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/sid-history-injection
+tags:
+- attack.T1134_005
+date: '2022-11-17'
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_0:
+    EventID: 5136
+  selection_1:
+    AttributeLDAPDisplayName: sIDHistory
+  selection_2:
+    OperationType: '%%14674'
+  condition: selection_0 and selection_1 and selection_2

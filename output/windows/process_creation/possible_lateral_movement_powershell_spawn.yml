@@ -1,0 +1,43 @@
+title: Possible Lateral Movement PowerShell Spawn
+id: cb909b3e-512b-11ec-aa31-3e22fbd008af
+status: stable
+level: medium
+author: Mauricio Velazco, Michael Haag, Splunk
+description: |
+  The following analytic detects the spawning of a PowerShell process as a child or grandchild of commonly abused processes like services.exe, wmiprvse.exe, svchost.exe, wsmprovhost.exe, and mmc.exe.
+  It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process and parent process names, as well as command-line executions.
+  This activity is significant as it could indicates lateral movement or remote code execution attempts by adversaries.
+  If confirmed malicious, this behavior could allow attackers to execute code remotely, escalate privileges, or persist within the environment.
+references:
+- https://attack.mitre.org/techniques/T1021/003/
+- https://attack.mitre.org/techniques/T1021/006/
+- https://attack.mitre.org/techniques/T1047/
+- https://attack.mitre.org/techniques/T1053/005/
+- https://attack.mitre.org/techniques/T1543/003/
+tags:
+- attack.T1021_003
+- attack.T1021_006
+- attack.T1047
+- attack.T1053_005
+- attack.T1059_001
+- attack.T1218_014
+- attack.T1543_003
+date: '2021-11-29'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    ParentImage|contains:
+    - mmc.exe
+    - services.exe
+    - wmiprvse.exe
+    - wsmprovhost.exe
+  selection_1:
+    ParentImage: svchost.exe
+    ParentCommandLine:
+    - '*-k netsvcs*'
+    - '*-s Schedule*'
+  filter_2:
+    CommandLine: '*C:\Windows\CCM\*'
+  condition: (selection_0 and selection_1) and not (filter_2)

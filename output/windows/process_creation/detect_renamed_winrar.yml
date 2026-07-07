@@ -1,0 +1,24 @@
+title: Detect Renamed WinRAR
+id: 1b7bfb2c-b8e6-11eb-99ac-acde48001122
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: The following analytic identifies instances where `WinRAR.exe` has been renamed and executed. It leverages data from Endpoint Detection and Response (EDR) agents, focusing on process names
+  and original file names within the Endpoint data model. This activity is significant because renaming executables is a common tactic used by attackers to evade detection. If confirmed malicious, this
+  could indicate an attempt to bypass security controls, potentially leading to unauthorized data extraction or further system compromise.
+references:
+- https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1560.001/T1560.001.md
+tags:
+- attack.T1560_001
+date: '2021-06-03'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    OriginalFileName: WinRAR.exe
+  selection_1:
+    process_name!: rar.exe
+  selection_2:
+    process_name!: winrar.exe
+  condition: selection_0 and selection_1 and selection_2

@@ -1,0 +1,35 @@
+title: Detect New Open S3 Buckets over AWS CLI
+id: 39c61d09-8b30-4154-922b-2d0a694ecc22
+status: stable
+level: medium
+author: Patrick Bareiss, Splunk
+description: The following analytic detects the creation of open/public S3 buckets via the AWS CLI. It leverages AWS CloudTrail logs to identify events where a user has set bucket permissions to allow access
+  to "AuthenticatedUsers" or "AllUsers." This activity is significant because open S3 buckets can expose sensitive data to unauthorized users, leading to data breaches. If confirmed malicious, an attacker
+  could gain unauthorized access to potentially sensitive information stored in the S3 bucket, posing a significant security risk.
+tags:
+- attack.T1530
+date: '2021-01-12'
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    eventSource: s3.amazonaws.com
+    eventName: PutBucketAcl
+  selection_1:
+    accessControlList.x-amz-grant-read-acp|contains:
+    - '*AuthenticatedUsers'
+    - '*AllUsers'
+  selection_2:
+    accessControlList.x-amz-grant-write|contains:
+    - '*AuthenticatedUsers'
+    - '*AllUsers'
+  selection_3:
+    accessControlList.x-amz-grant-write-acp|contains:
+    - '*AuthenticatedUsers'
+    - '*AllUsers'
+  selection_4:
+    accessControlList.x-amz-grant-full-control|contains:
+    - '*AuthenticatedUsers'
+    - '*AllUsers'
+  condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4

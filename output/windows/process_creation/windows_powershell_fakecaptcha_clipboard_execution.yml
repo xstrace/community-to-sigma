@@ -1,0 +1,25 @@
+title: Windows PowerShell FakeCAPTCHA Clipboard Execution
+id: d81d4d3d-76b5-4f21-ab51-b17d5164c106
+status: stable
+level: medium
+author: Michael Haag, Splunk
+description: |
+  This detection identifies potential FakeCAPTCHA/ClickFix clipboard hijacking campaigns by looking for PowerShell execution with hidden window parameters and distinctive strings related to fake CAPTCHA verification. These campaigns use social engineering to trick users into pasting malicious PowerShell commands from their clipboard, typically delivering information stealers or remote access trojans.
+references:
+- https://urlhaus.abuse.ch/
+- https://www.proofpoint.com/us/blog/threat-insight/security-brief-clickfix-social-engineering-technique-floods-threat-landscape
+- https://reliaquest.com/blog/using-captcha-for-compromise/
+- https://attack.mitre.org/techniques/T1204/001/
+- https://github.com/MHaggis/ClickGrab
+tags:
+- attack.T1059_001
+- attack.T1204_001
+- attack.T1059_003
+date: '2025-05-19'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    CommandLine|contains: '*-w*h*'
+  condition: selection_0

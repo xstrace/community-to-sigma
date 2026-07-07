@@ -1,0 +1,22 @@
+title: AWS EC2 Snapshot Shared Externally
+id: 2a9b80d3-6340-4345-b5ad-290bf3d222c4
+status: stable
+level: medium
+author: Bhavin Patel, Splunk
+description: The following analytic detects when an EC2 snapshot is shared with an external AWS account by analyzing AWS CloudTrail events. This detection method leverages CloudTrail logs to identify modifications
+  in snapshot permissions, specifically when the snapshot is shared outside the originating AWS account. This activity is significant as it may indicate an attempt to exfiltrate sensitive data stored in
+  the snapshot. If confirmed malicious, an attacker could gain unauthorized access to the snapshot's data, potentially leading to data breaches or further exploitation of the compromised information.
+references:
+- https://labs.nettitude.com/blog/how-to-exfiltrate-aws-ec2-data/
+- https://stratus-red-team.cloud/attack-techniques/AWS/aws.exfiltration.ec2-share-ebs-snapshot/
+- https://hackingthe.cloud/aws/enumeration/loot_public_ebs_snapshots/
+tags:
+- attack.T1537
+date: '2021-07-20'
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_0:
+    eventName: ModifySnapshotAttribute
+  condition: selection_0

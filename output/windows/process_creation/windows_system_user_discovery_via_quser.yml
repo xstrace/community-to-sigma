@@ -1,0 +1,24 @@
+title: Windows System User Discovery Via Quser
+id: 0c3f3e09-e47a-410e-856f-a02a5c5fafb0
+status: stable
+level: medium
+author: Teoderick Contreras, Splunk
+description: The following analytic detects the execution of the Windows OS tool quser.exe, commonly used to gather information about user sessions on a Remote Desktop Session Host server. This detection
+  leverages data from Endpoint Detection and Response (EDR) agents, focusing on process execution logs. Monitoring this activity is crucial as quser.exe is often abused by post-exploitation tools like winpeas,
+  used in ransomware attacks to enumerate user sessions. If confirmed malicious, attackers could leverage this information to further compromise the system, maintain persistence, or escalate privileges.
+references:
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/quser
+- https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS
+- https://www.microsoft.com/en-us/security/blog/2022/10/14/new-prestige-ransomware-impacts-organizations-in-ukraine-and-poland/
+tags:
+- attack.T1033
+date: '2022-12-13'
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_0:
+    Image: quser.exe
+  selection_1:
+    OriginalFileName: quser.exe
+  condition: selection_0 and selection_1

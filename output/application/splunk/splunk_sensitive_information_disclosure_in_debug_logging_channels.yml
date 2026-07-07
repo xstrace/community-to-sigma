@@ -1,0 +1,26 @@
+title: Splunk Sensitive Information Disclosure in DEBUG Logging Channels
+id: 93dc7182-c5da-4085-82ec-401abf33d623
+status: stable
+level: medium
+author: Rod Soto, Eric McGinnis, Splunk
+description: In Splunk versions 9.3, 9.2, 9.1, 9.1.5 Applications which have been enabled with logging level DEBUG may write sensitive information such as keys, tokens, or other sensitive strings into the
+  internal index.
+references:
+- https://advisory.splunk.com/advisories/SVD-2024-0301
+- https://advisory.splunk.com/advisories/SVD-2024-1008
+- https://advisory.splunk.com/advisories/SVD-2024-1009
+tags:
+- attack.T1552
+date: '2024-10-14'
+logsource:
+  product: splunk
+  service: splunkd
+detection:
+  selection_0:
+    log_level: DEBUG
+  selection_1:
+    component|contains:
+    - REST_Calls
+    - AdminManager
+    - JSONWebToken
+  condition: selection_0 and selection_1

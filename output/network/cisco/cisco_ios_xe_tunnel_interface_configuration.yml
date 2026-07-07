@@ -1,0 +1,33 @@
+title: Cisco IOS XE Tunnel Interface Configuration
+id: 8654314d-8e4d-4971-9f35-b9d477bf668e
+status: stable
+level: medium
+author: Nasreddine Bencherchali
+description: |
+  This analytic detects creation of a Cisco IOS-XE tunnel interface with tunnel source, tunnel destination, and an IP address in the 10.10.12.0 network. The Salt Typhoon notes identify this tunnel configuration pattern as suspicious.
+references:
+- https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
+- https://blog.talosintelligence.com/salt-typhoon-analysis/
+tags:
+- attack.T1572
+- attack.T1090
+date: '2026-05-19'
+logsource:
+  product: cisco
+  service: ios
+detection:
+  selection_0:
+    facility|contains:
+    - HA_EM
+    - PARSER
+  selection_1:
+    mnemonic|contains:
+    - LOG
+    - CFGLOG_LOGGEDCMD
+  selection_2:
+    message_text|contains:
+    - '*interface Tunnel*'
+    - '*tunnel source*'
+    - '*tunnel destination*'
+    - '*ip address 10.10.12.*'
+  condition: selection_0 and selection_1 and selection_2
