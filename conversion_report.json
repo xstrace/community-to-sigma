@@ -1,14 +1,14 @@
 {
   "summary": {
-    "total": 2117,
-    "converted": 1917,
-    "skipped": 200,
+    "total": 2124,
+    "converted": 1919,
+    "skipped": 205,
     "errors": 0,
-    "conversion_rate": "90.6%"
+    "conversion_rate": "90.3%"
   },
   "skip_reasons": {
-    "No conditions extracted": 74,
-    "Unparseable SPL with complex patterns; No conditions extracted": 71,
+    "No conditions extracted": 78,
+    "Unparseable SPL with complex patterns; No conditions extracted": 72,
     "Risk datamodel (meta-correlation): Risk.All_Risk": 15,
     "Always-complex command: inputlookup": 7,
     "Complex macro: remote_access_software_usage_exceptions": 7,
@@ -28,6 +28,16 @@
     "Always-complex command: eventstats; Always-complex command: eventstats": 1
   },
   "converted": [
+    {
+      "source": "application/aws_bedrock_claude_excessive_use_of_tokens.yml",
+      "output": "cloud/aws/aws_bedrock_claude_excessive_use_of_tokens.yml",
+      "title": "AWS Bedrock Claude excessive use of tokens"
+    },
+    {
+      "source": "application/aws_bedrock_claude_high_risk_filesystem_and_exec_tool_invocation.yml",
+      "output": "cloud/aws/aws_bedrock_claude_high_risk_filesystem_and_exec_tool_invocation.yml",
+      "title": "AWS Bedrock Claude High Risk Filesystem and Exec Tool Invocation"
+    },
     {
       "source": "application/cisco_asa___aaa_policy_tampering.yml",
       "output": "network/cisco/cisco_asa_-_aaa_policy_tampering.yml",
@@ -2517,16 +2527,6 @@
       "source": "endpoint/detect_renamed_rclone.yml",
       "output": "windows/process_creation/detect_renamed_rclone.yml",
       "title": "Detect Renamed RClone"
-    },
-    {
-      "source": "endpoint/detect_renamed_winrar.yml",
-      "output": "windows/process_creation/detect_renamed_winrar.yml",
-      "title": "Detect Renamed WinRAR"
-    },
-    {
-      "source": "endpoint/detect_rtlo_in_file_name.yml",
-      "output": "windows/file/detect_rtlo_in_file_name.yml",
-      "title": "Detect RTLO In File Name"
     }
   ],
   "errors": []
