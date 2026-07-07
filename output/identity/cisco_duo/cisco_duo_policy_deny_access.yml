@@ -11,8 +11,21 @@ description: The following analytic identifies instances where a Duo administrat
 references:
 - https://splunkbase.splunk.com/app/7404
 tags:
-- attack.T1556
+- attack.t1556
 date: '2025-07-10'
+original_spl: |-
+  `cisco_duo_administrator` action=policy_update OR action=policy_create
+    | spath input=description
+    | search auth_status="Deny access"
+    | rename object as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY action actionlabel description
+         user admin_email
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `cisco_duo_policy_deny_access_filter`
+splunk_rule_id: abf39464-ed43-4d69-a56c-02750032a3fb
+splunk_rule_type: TTP
 logsource:
   product: cisco
   service: duo

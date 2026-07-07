@@ -8,18 +8,29 @@ description: The following analytic detects unauthenticated requests made agains
   it may signal attempts to access sensitive resources or execute unauthorized commands within the Kubernetes environment. If confirmed malicious, such access could lead to data compromise, unauthorized
   command execution, or lateral movement within the cluster.
 tags:
-- attack.T1526
+- attack.t1526
 date: '2020-04-29'
+original_spl: |-
+  `aws_cloudwatchlogs_eks` "user.username"="system:anonymous" verb=list objectRef.resource=pods requestURI="/api/v1/pods"
+    | rename source as cluster_name sourceIPs{} as src_ip
+    | stats count min(_time) as firstTime max(_time) as lastTime values(responseStatus.reason) values(responseStatus.code) values(userAgent) values(verb) values(requestURI)
+      BY src_ip cluster_name user.username
+         user.groups{}
+    | `security_content_ctime(lastTime)`
+    | `security_content_ctime(firstTime)`
+    | `amazon_eks_kubernetes_pod_scan_detection_filter`
+splunk_rule_id: dbfca1dd-b8e5-4ba4-be0e-e565e5d62002
+splunk_rule_type: Hunting
 logsource:
   product: aws
   service: eks
 detection:
   selection_0:
-    username": system:anonymous
+    '"user.username"': system:anonymous
   selection_1:
     verb: list
   selection_2:
-    resource: pods
+    objectRef.resource: pods
   selection_3:
     requestURI: /api/v1/pods
   condition: selection_0 and selection_1 and selection_2 and selection_3

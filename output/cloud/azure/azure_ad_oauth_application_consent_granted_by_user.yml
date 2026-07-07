@@ -14,8 +14,14 @@ references:
 - https://www.alteredsecurity.com/post/introduction-to-365-stealer
 - https://github.com/AlteredSecurity/365-Stealer
 tags:
-- attack.T1528
+- attack.t1528
 date: '2023-11-16'
+original_spl: '`azure_monitor_aad` operationName="Consent to application" properties.result=success | rename properties.* as * | eval permissions_index = if(mvfind(''targetResources{}.modifiedProperties{}.displayName'',
+  "ConsentAction.Permissions") >= 0, mvfind(''targetResources{}.modifiedProperties{}.displayName'', "ConsentAction.Permissions"), -1) | eval permissions = mvindex(''targetResources{}.modifiedProperties{}.newValue'',permissions_index)
+  | rex field=permissions "Scope: (?<Scope> [ ^,]+)" | fillnull | stats count min(_time) as firstTime max(_time) as lastTime by dest user src vendor_account vendor_product Scope signature | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `azure_ad_oauth_application_consent_granted_by_user_filter`'
+splunk_rule_id: 10ec9031-015b-4617-b453-c0c1ab729007
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -23,5 +29,5 @@ detection:
   selection_0:
     operationName: Consent to application
   selection_1:
-    result: success
+    properties.result: success
   condition: selection_0 and selection_1

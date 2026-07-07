@@ -11,22 +11,62 @@ description: |
 references:
 - https://www.cisco.com/c/en/us/td/docs/security/asa/asa-cli-reference/I-R/asa-command-ref-I-R/m_log-lz.html
 tags:
-- attack.T1685
+- attack.t1685
 date: '2025-11-21'
+original_spl: |-
+  `cisco_asa`
+  message_id IN (111008, 111010)
+  command = "logging *"
+  command IN (
+    "*asdm*",
+    "*console*",
+    "*history*",
+    "*mail*",
+    "*monitor*",
+    "*trap*"
+  )
+  NOT command IN (
+    "*notifications*",
+    "*informational*",
+    "*debugging*",
+    "* 5*",
+    "* 6*",
+    "* 7*"
+  )
+  | fillnull
+  | stats count
+          earliest(_time) as firstTime
+          latest(_time) as lastTime
+          values(user) as user
+          values(action) as action
+          values(message_id) as message_id
+          values(command) as command
+          values(src_ip) as src_ip
+          values(process_name) as process_name
+    by host
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_asa___logging_filters_configuration_tampering_filter`
+splunk_rule_id: b87b48a8-6d1a-4280-9cf1-16a950dbf901
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: asa
 detection:
+  selection_0:
+    message_id:
+    - 111008
+    - 111010
   selection_1:
-    command|contains: logging *
+    command|startswith: 'logging '
   selection_2:
     command|contains:
-    - '*asdm*'
-    - '*console*'
-    - '*history*'
-    - '*mail*'
-    - '*monitor*'
-    - '*trap*'
+    - asdm
+    - console
+    - history
+    - mail
+    - monitor
+    - trap
   filter_3:
     command:
     - '*notifications*'
@@ -35,4 +75,4 @@ detection:
     - '* 5*'
     - '* 6*'
     - '* 7*'
-  condition: (selection_1 and selection_2) and not (filter_3)
+  condition: (selection_0 and selection_1 and selection_2) and not (filter_3)

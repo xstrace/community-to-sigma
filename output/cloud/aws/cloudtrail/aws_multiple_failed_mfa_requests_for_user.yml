@@ -10,9 +10,23 @@ references:
 - https://attack.mitre.org/techniques/T1621/
 - https://aws.amazon.com/what-is/mfa/
 tags:
-- attack.T1586_003
-- attack.T1621
+- attack.t1586.003
+- attack.t1621
 date: '2022-10-03'
+original_spl: |-
+  `cloudtrail` eventName= ConsoleLogin "additionalEventData.MFAUsed"=Yes errorMessage="Failed authentication"
+    | bucket span=5m _time
+    | rename user_name as user
+    | stats dc(_raw) as mfa_prompts min(_time) as firstTime max(_time) as lastTime values(user_agent) as user_agent values(src) as src values(dest) as dest
+      BY _time user signature
+         vendor_account vendor_region vendor_product
+         errorMessage
+    | where mfa_prompts > 10
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_multiple_failed_mfa_requests_for_user_filter`
+splunk_rule_id: 1fece617-e614-4329-9e61-3ba228c0f353
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: cloudtrail
@@ -20,7 +34,7 @@ detection:
   selection_0:
     eventName: ConsoleLogin
   selection_1:
-    MFAUsed": 'Yes'
+    '"additionalEventData.MFAUsed"': 'Yes'
   selection_2:
     errorMessage: Failed authentication
   condition: selection_0 and selection_1 and selection_2

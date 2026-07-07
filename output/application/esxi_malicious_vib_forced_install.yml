@@ -9,15 +9,19 @@ description: Detects potentially malicious installation of VMware Installation B
 references:
 - https://detect.fyi/detecting-and-responding-to-esxi-compromise-with-splunk-f33998ce7823
 tags:
-- attack.T1505_006
+- attack.t1505.006
 date: '2025-07-11'
+original_spl: '`esxi_syslog` Message="* image profile with validation disabled. *" OR Message="* image profile bypassing signing and acceptance level verification. *" OR Message="* vib without valid signature,
+  *" | rex field=_raw "Z (?<dest>[\w\.]+)\s" | stats min(_time) as firstTime max(_time) as lastTime count by dest Message | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `esxi_malicious_vib_forced_install_filter`'
+splunk_rule_id: 5d4d2cd2-7b65-4474-97cf-e9b203bcd770
+splunk_rule_type: TTP
 logsource:
   category: application
 detection:
   selection_0:
     Message|contains: '* image profile with validation disabled. *'
   selection_1:
-    Message|contains: '* image profile bypassing signing and acceptance level verification. *'
+    Message|contains: ' image profile bypassing signing and acceptance level verification. '
   selection_2:
-    Message|contains: '* vib without valid signature, *'
+    Message|contains: ' vib without valid signature, '
   condition: selection_0 and selection_1 and selection_2

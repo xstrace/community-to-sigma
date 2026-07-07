@@ -12,14 +12,39 @@ references:
 - https://github.com/d1vious/git-wild-hunt
 - https://www.youtube.com/watch?v=PgzNib37g0M
 tags:
-- attack.T1486
+- attack.t1486
 date: '2020-10-27'
+original_spl: |-
+  `amazon_security_lake` api.operation=PutKeyPolicy OR api.operation=CreateKey
+    | spath input=api.request.data path=policy output=policy
+    | spath input=policy
+    | rename Statement{}.Action as Action, Statement{}.Principal as Principal
+    | eval Statement=mvzip(Action,Principal,"
+    | ")
+    | mvexpand Statement
+    | eval action=mvindex(split(Statement, "
+    | "), 0)
+    | eval principal=mvindex(split(Statement, "
+    | "), 1)
+    | search action=kms*
+    | regex principal="\*"
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region api.request.data
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_detect_users_creating_keys_with_encrypt_policy_without_mfa_filter`
+splunk_rule_id: 16ae9076-d1d5-411c-8fdd-457504b33dac
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: PutKeyPolicy
+    api.operation: PutKeyPolicy
   selection_1:
-    operation: CreateKey
+    api.operation: CreateKey
   condition: selection_0 and selection_1

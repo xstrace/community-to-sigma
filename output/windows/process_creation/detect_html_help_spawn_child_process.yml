@@ -13,8 +13,24 @@ references:
 - https://gist.github.com/mgeeky/cce31c8602a144d8f2172a73d510e0e7
 - https://web.archive.org/web/20220119133748/https://cyberforensicator.com/2019/01/20/silence-dissecting-malicious-chm-files-and-performing-forensic-analysis/
 tags:
-- attack.T1218_001
+- attack.t1218.001
 date: '2021-02-11'
+original_spl: |-
+  | tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes
+    WHERE Processes.parent_process_name=hh.exe
+    BY Processes.action Processes.dest Processes.original_file_name
+       Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+       Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+       Processes.process Processes.process_exec Processes.process_guid
+       Processes.process_hash Processes.process_id Processes.process_integrity_level
+       Processes.process_name Processes.process_path Processes.user
+       Processes.user_id Processes.vendor_product
+  | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `detect_html_help_spawn_child_process_filter`
+splunk_rule_id: 723716de-ee55-4cd4-9759-c44e7e55ba4b
+splunk_rule_type: TTP
 logsource:
   category: process_creation
   product: windows

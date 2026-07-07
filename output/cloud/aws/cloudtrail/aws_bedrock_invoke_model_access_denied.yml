@@ -12,9 +12,13 @@ references:
 - https://trustoncloud.com/blog/exposing-the-weakness-how-we-identified-a-flaw-in-bedrocks-foundation-model-access-control/
 - https://attack.mitre.org/techniques/T1595/
 tags:
-- attack.T1078
-- attack.T1550
+- attack.t1078
+- attack.t1550
 date: '2025-03-25'
+original_spl: '`cloudtrail` eventSource=bedrock.amazonaws.com eventName=InvokeModel errorCode=AccessDenied | rename user_name as user | stats count min(_time) as firstTime max(_time) as lastTime values(requestParameters.modelId)
+  as modelIds by src user user_agent vendor_account vendor_product dest signature vendor_region result result_id | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `aws_bedrock_invoke_model_access_denied_filter`'
+splunk_rule_id: c53a8e62-f741-11ee-9f6e-acde48001122
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail

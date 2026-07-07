@@ -9,25 +9,65 @@ references:
 - https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
 - https://blog.talosintelligence.com/salt-typhoon-analysis/
 tags:
-- attack.T1572
-- attack.T1090
+- attack.t1572
+- attack.t1090
 date: '2026-05-19'
+original_spl: |-
+  `cisco_ios`
+  facility IN ("HA_EM", "PARSER")
+  mnemonic IN ("LOG", "CFGLOG_LOGGEDCMD")
+  message_text IN ("*interface Tunnel*", "*tunnel source*", "*tunnel destination*", "*ip address 10.10.12.*")
+  | rex field=message_text "^(?:[^:]+:\s+)?(?:catchall:\s+)?(?<eem_command>.+?)\s*$"
+  | rex field=message_text "<enteredCommand><cli>(?<parser_command>.*?)</cli>"
+  | rex field=message_text "<user>(?<parser_user>[^<]+)</user>"
+  | rex field=message_text "<srcIP>(?<parser_src_ip>[^<]+)</srcIP>"
+  | eval command=lower(trim(coalesce(parser_command, eem_command, "")))
+  | eval event_type=case(
+      match(command, "^interface\s+tunnel"), "interface_tunnel",
+      match(command, "^tunnel\s+source"), "tunnel_source",
+      match(command, "^tunnel\s+destination"), "tunnel_destination",
+      match(command, "^ip\s+address\s+10\.10\.12\."), "tunnel_ip_address",
+      true(), null())
+  | where isnotnull(event_type)
+  | eval user=coalesce(parser_user, user, "unknown")
+  | eval src_ip=coalesce(parser_src_ip, src_ip, "unknown")
+  | eval dest=coalesce(host, dvc, dest, "unknown")
+  | bin _time span=15m
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+                values(event_type) as event_types
+                values(user) as user
+                values(src_ip) as src_ip
+                values(command) as commands
+    by _time dest
+  | where mvfind(event_types, "interface_tunnel") >= 0
+          AND
+          mvfind(event_types, "tunnel_source") >= 0
+          AND
+          mvfind(event_types, "tunnel_destination") >= 0
+          AND
+          mvfind(event_types, "tunnel_ip_address") >= 0
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_ios_xe_tunnel_interface_configuration_filter`
+splunk_rule_id: 8654314d-8e4d-4971-9f35-b9d477bf668e
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: ios
 detection:
   selection_0:
-    facility|contains:
+    facility:
     - HA_EM
     - PARSER
   selection_1:
-    mnemonic|contains:
+    mnemonic:
     - LOG
     - CFGLOG_LOGGEDCMD
   selection_2:
     message_text|contains:
-    - '*interface Tunnel*'
-    - '*tunnel source*'
-    - '*tunnel destination*'
-    - '*ip address 10.10.12.*'
+    - interface Tunnel
+    - tunnel source
+    - tunnel destination
+    - ip address 10.10.12.
   condition: selection_0 and selection_1 and selection_2

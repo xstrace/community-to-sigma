@@ -10,9 +10,30 @@ references:
 - https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
 - https://blog.talosintelligence.com/salt-typhoon-analysis/
 tags:
-- attack.T1190
-- attack.T1078
+- attack.t1190
+- attack.t1078
 date: '2026-05-19'
+original_spl: |-
+  `cisco_ios`
+  facility="SEC_LOGIN"
+  mnemonic IN ("QUIET_MODE_ON", "LOGIN_SUCCESS", "LOGIN_FAILED")
+  message_text="*[localport: 21111]*"
+  | rex field=_raw "\[user:\s*(?<user>[^\]]+)\]"
+  | rex field=_raw "\[Source:\s*(?<src_ip>[^\]]+)\]"
+  | rex field=_raw "\[localport:\s*(?<local_port>[^\]]+)\]"
+  | rex field=_raw "\[Reason:\s*(?<reason>[^\]]+)\]"
+  | rex field=_raw "\[ACL:\s*(?<acl>[^\]]+)\]"
+  | eval dest=coalesce(host, dvc, dest, "unknown")
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+                values(local_port) as local_port
+                values(acl) as acl
+    by dest user src_ip reason
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_ios_xe_webui_login_from_iosd_local_port_filter`
+splunk_rule_id: 77a1751f-552f-456c-b9ae-cdb66eec3e42
+splunk_rule_type: TTP
 logsource:
   product: cisco
   service: ios
@@ -20,10 +41,10 @@ detection:
   selection_0:
     facility: SEC_LOGIN
   selection_1:
-    mnemonic|contains:
+    mnemonic:
     - QUIET_MODE_ON
     - LOGIN_SUCCESS
     - LOGIN_FAILED
   selection_2:
-    message_text|contains: '*[localport: 21111]*'
+    message_text|contains: '[localport: 21111]'
   condition: selection_0 and selection_1 and selection_2

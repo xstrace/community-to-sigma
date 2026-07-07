@@ -14,10 +14,26 @@ references:
 - https://attack.mitre.org/techniques/T1078/004/
 - https://www.cisa.gov/sites/default/files/publications/fact-sheet-implement-number-matching-in-mfa-applications-508c.pdf
 tags:
-- attack.T1078_004
-- attack.T1586_003
-- attack.T1621
+- attack.t1078.004
+- attack.t1586.003
+- attack.t1621
 date: '2022-08-25'
+original_spl: |-
+  `azure_monitor_aad` category=SignInLogs operationName="Sign-in activity" properties.status.errorCode=500121 properties.status.additionalDetails!="MFA denied; user declined the authentication"
+    | rename properties.* as *
+    | bucket span=10m _time
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime values(dest) as dest values(src) as src
+      BY user, status.additionalDetails, appDisplayName,
+         user_agent, vendor_account, vendor_product,
+         signature
+    | where count > 10
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_multiple_failed_mfa_requests_for_user_filter`
+splunk_rule_id: 264ea131-ab1f-41b8-90e0-33ad1a1888ea
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -27,7 +43,7 @@ detection:
   selection_1:
     operationName: Sign-in activity
   selection_2:
-    status.errorCode: 500121
+    properties.status.errorCode: 500121
   selection_3:
-    status.additionalDetails!: MFA denied; user declined the authentication
+    properties.status.additionalDetails: MFA denied; user declined the authentication
   condition: selection_0 and selection_1 and selection_2 and selection_3

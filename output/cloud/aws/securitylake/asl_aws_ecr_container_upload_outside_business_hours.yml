@@ -10,12 +10,28 @@ description: The following analytic detects the upload of new containers to AWS 
 references:
 - https://attack.mitre.org/techniques/T1204/003/
 tags:
-- attack.T1204_003
+- attack.t1204.003
 date: '2024-05-22'
+original_spl: |-
+  `amazon_security_lake` api.operation=PutImage
+    | eval hour=strftime(time/pow(10,3), "%H"), weekday=strftime(time/pow(10,3), "%A")
+    | where hour >= 20 OR hour < 8 OR weekday=Saturday OR weekday=Sunday
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region api.request.data
+         bucketName
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_ecr_container_upload_outside_business_hours_filter`
+splunk_rule_id: 739ed682-27e9-4ba0-80e5-a91b97698213
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: PutImage
+    api.operation: PutImage
   condition: selection_0

@@ -6,21 +6,25 @@ author: Raven Tait, Splunk
 description: This detection identifies the use of ESXCLI system-level commands that retrieve configuration details. While used for legitimate administration, this behavior may also indicate adversary reconnaissance
   aimed at profiling the ESXi host's capabilities, build information, or system role in preparation for further compromise.
 tags:
-- attack.T1082
+- attack.t1082
 date: '2025-07-11'
+original_spl: '`esxi_syslog` Message="*system*" AND Message="*esxcli*" AND Message IN ("*get*","*list*") AND Message="*user=*" NOT Message="*filesystem*" | rex field=_raw "user=(?<user>\w+)\]\s+Dispatch\s+(?<command>[^\s]+)"
+  | rex field=_raw "Z (?<dest>[\w\.]+)\s" | stats min(_time) as firstTime max(_time) as lastTime count by dest user command | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `esxi_system_information_discovery_filter`'
+splunk_rule_id: b4d4217a-6673-4fb6-837d-07a522bdf9f7
+splunk_rule_type: TTP
 logsource:
   category: application
 detection:
   selection_0:
-    Message|contains: '*system*'
+    Message|contains: system
   selection_1:
-    Message|contains: '*esxcli*'
+    Message|contains: esxcli
   selection_2:
     Message|contains:
-    - '*get*'
-    - '*list*'
+    - get
+    - list
   selection_3:
-    Message|contains: '*user=*'
+    Message|contains: user=
   filter_4:
     Message|contains: '*filesystem*'
   condition: (selection_0 and selection_1 and selection_2 and selection_3) and not (filter_4)

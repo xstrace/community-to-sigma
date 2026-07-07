@@ -10,8 +10,22 @@ references:
 - https://attack.mitre.org/techniques/T1110/003/
 - https://splunkbase.splunk.com/app/6553
 tags:
-- attack.T1110_003
+- attack.t1110.003
 date: '2024-04-17'
+original_spl: |-
+  | tstats `security_content_summariesonly` count max(_time) as lastTime, min(_time) as firstTime dc(Authentication.user) as unique_accounts values(Authentication.signature) as signature values(Authentication.user) as user values(Authentication.app) as app values(Authentication.authentication_method) as authentication_method values(Authentication.dest) as dest FROM datamodel=Authentication
+    WHERE Authentication.action="failure"
+      AND
+      Authentication.signature=user.session.start
+    BY _time span=5m Authentication.src
+       sourcetype
+  | where unique_accounts > 9
+  | `drop_dm_object_name("Authentication")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `okta_multiple_users_failing_to_authenticate_from_ip_filter`
+splunk_rule_id: de365ffa-42f5-46b5-b43f-fa72290b8218
+splunk_rule_type: Anomaly
 logsource:
   category: authentication
   product: okta
@@ -19,5 +33,5 @@ detection:
   selection_0:
     EventType: failure
   selection_1:
-    Signature: user.session.start
+    Authentication.signature: user.session.start
   condition: selection_0 and selection_1

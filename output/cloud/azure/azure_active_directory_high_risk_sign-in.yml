@@ -12,9 +12,20 @@ references:
 - https://docs.microsoft.com/en-us/azure/active-directory/identity-protection/overview-identity-protection
 - https://docs.microsoft.com/en-us/azure/active-directory/identity-protection/concept-identity-protection-risks
 tags:
-- attack.T1110_003
-- attack.T1586_003
+- attack.t1110.003
+- attack.t1586.003
 date: '2022-07-11'
+original_spl: |-
+  `azure_monitor_aad` category=UserRiskEvents properties.riskLevel=high
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product category
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_active_directory_high_risk_sign_in_filter`
+splunk_rule_id: 1ecff169-26d7-4161-9a7b-2ac4c8e61bea
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -22,5 +33,5 @@ detection:
   selection_0:
     category: UserRiskEvents
   selection_1:
-    riskLevel: high
+    properties.riskLevel: high
   condition: selection_0 and selection_1

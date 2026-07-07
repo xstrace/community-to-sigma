@@ -12,8 +12,20 @@ references:
 - https://attack.mitre.org/techniques/T1556/006/
 - https://twitter.com/jhencinski/status/1618660062352007174
 tags:
-- attack.T1556_006
+- attack.t1556.006
 date: '2023-01-31'
+original_spl: |-
+  `cloudtrail` eventName=CreateVirtualMFADevice
+    | rename userName as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_new_mfa_method_registered_for_user_filter`
+splunk_rule_id: 4e3c26f2-4fb9-4bd7-ab46-1b76ffa2a23b
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail

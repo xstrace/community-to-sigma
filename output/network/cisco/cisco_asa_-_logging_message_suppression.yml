@@ -11,13 +11,37 @@ description: |
 references:
 - https://www.ncsc.gov.uk/static-assets/documents/malware-analysis-reports/RayInitiator-LINE-VIPER/ncsc-mar-rayinitiator-line-viper.pdf
 tags:
-- attack.T1685_001
-- attack.T1070
+- attack.t1685.001
+- attack.t1070
 date: '2025-11-21'
+original_spl: |-
+  `cisco_asa`
+  message_id IN (111008, 111010)
+  command = "no logging message *"
+  | fillnull
+  | stats count
+          earliest(_time) as firstTime
+          latest(_time) as lastTime
+          values(user) as user
+          values(action) as action
+          values(message_id) as message_id
+          values(command) as command
+          values(src_ip) as src_ip
+          values(process_name) as process_name
+    by host
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_asa___logging_message_suppression_filter`
+splunk_rule_id: 4e6c9d2a-8f3b-4c7e-9a5f-2d8b6e1c4a9f
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: asa
 detection:
+  selection_0:
+    message_id:
+    - 111008
+    - 111010
   selection_1:
-    command|contains: no logging message *
-  condition: selection_1
+    command|startswith: 'no logging message '
+  condition: selection_0 and selection_1

@@ -13,11 +13,16 @@ references:
 - https://github.com/airbus-cert/CVE-2024-4040
 - https://www.bleepingcomputer.com/news/security/crushftp-warns-users-to-patch-exploited-zero-day-immediately/
 tags:
-- attack.T1190
+- attack.t1190
 date: '2024-06-05'
+original_spl: '`crushftp` | rex field=_raw "\[(?<protocol>HTTPS|HTTP):(?<session_id>[^\:]+):(?<user>[^\:]+):(?<src_ip>\d+\.\d+\.\d+\.\d+)\] (?<action>READ|WROTE): \*(?<http_method>[A-Z]+) (?<uri_query>[^\s]+)
+  HTTP/[^\*]+\*" | eval message=if(match(_raw, "INCLUDE") and isnotnull(src_ip), "traces of exploitation by " . src_ip, "false") | search message!=false | rename host as dest | stats count by _time, dest,
+  source, message, src_ip, http_method, uri_query, user, action | sort -_time| `crushftp_server_side_template_injection_filter`'
+splunk_rule_id: ccf6b7a3-bd39-4bc9-a949-143a8d640dbc
+splunk_rule_type: TTP
 logsource:
   category: application
 detection:
   selection_0:
-    message!: 'false'
+    message: 'false'
   condition: selection_0

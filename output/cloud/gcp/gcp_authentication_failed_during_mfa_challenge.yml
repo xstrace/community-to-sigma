@@ -10,14 +10,21 @@ references:
 - https://attack.mitre.org/techniques/T1621/
 - https://attack.mitre.org/techniques/T1078/004/
 tags:
-- attack.T1078_004
-- attack.T1586_003
-- attack.T1621
+- attack.t1078.004
+- attack.t1586.003
+- attack.t1621
 date: '2022-10-14'
+original_spl: |-
+  `gws_reports_login` event.name=login_failure `gws_login_mfa_methods`
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY user, src_ip, login_challenge_method
+    | `gcp_authentication_failed_during_mfa_challenge_filter`
+splunk_rule_id: 345f7e1d-a3fe-4158-abd8-e630f9878323
+splunk_rule_type: TTP
 logsource:
   product: google_workspace
   service: login
 detection:
   selection_0:
-    name: login_failure
+    event.name: login_failure
   condition: selection_0

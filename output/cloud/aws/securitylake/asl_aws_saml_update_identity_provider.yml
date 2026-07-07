@@ -12,12 +12,25 @@ references:
 - https://www.fireeye.com/content/dam/fireeye-www/blog/pdfs/wp-m-unc2452-2021-000343-01.pdf
 - https://www.cyberark.com/resources/threat-research-blog/golden-saml-newly-discovered-attack-technique-forges-authentication-to-cloud-apps
 tags:
-- attack.T1078
+- attack.t1078
 date: '2022-10-04'
+original_spl: |-
+  `amazon_security_lake` api.operation=UpdateSAMLProvider
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_saml_update_identity_provider_filter`
+splunk_rule_id: 635c26cc-0fd1-4098-8ec9-824bf9544b11
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: UpdateSAMLProvider
+    api.operation: UpdateSAMLProvider
   condition: selection_0

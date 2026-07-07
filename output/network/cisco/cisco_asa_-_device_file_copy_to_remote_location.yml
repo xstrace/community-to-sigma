@@ -13,29 +13,78 @@ references:
 - https://community.cisco.com/t5/security-knowledge-base/asa-how-to-download-images-using-tftp-ftp-http-https-and-scp/ta-p/3109769
 - https://blog.talosintelligence.com/arcanedoor-new-espionage-focused-campaign-found-targeting-perimeter-network-devices/
 tags:
-- attack.T1005
-- attack.T1041
-- attack.T1048_003
+- attack.t1005
+- attack.t1041
+- attack.t1048.003
 date: '2025-11-21'
+original_spl: |-
+  `cisco_asa`
+  message_id IN (111008, 111010)
+  command = "copy *"
+  command IN (
+      "*running-config*",
+      "*startup-config*",
+      "*/pcap capture:*",
+      "* disk0:*",
+      "* flash:*",
+      "* system:*"
+  )
+  command IN (
+      "*ftp:*",
+      "*http:*",
+      "*https:*",
+      "*smb:*",
+      "*scp:*"
+  )
+
+  | eval remote_protocol = mvappend(
+    if(match(command, "tftp:"), "TFTP", null()),
+    if(match(command, "ftp:"), "FTP", null()),
+    if(match(command, "http:"), "HTTP", null()),
+    if(match(command, "https:"), "HTTPS", null()),
+    if(match(command, "smb:"), "SMB", null()),
+    if(match(command, "scp:"), "SCP", null())
+    )
+  | fillnull
+  | stats earliest(_time) as firstTime
+          latest(_time) as lastTime
+          values(user) as user
+          values(action) as action
+          values(message_id) as message_id
+          values(command) as command
+          values(remote_protocol) as remote_protocol
+          values(src_ip) as src_ip
+          values(dest) as dest
+          values(process_name) as process_name
+    by host
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_asa___device_file_copy_to_remote_location_filter`
+splunk_rule_id: 8a9e5f2b-6d4c-4e7f-9b3a-1c8d7f5e2a9b
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: asa
 detection:
+  selection_0:
+    message_id:
+    - 111008
+    - 111010
   selection_1:
-    command|contains: copy *
+    command|startswith: 'copy '
   selection_2:
     command|contains:
-    - '*running-config*'
-    - '*startup-config*'
-    - '*/pcap capture:*'
-    - '* disk0:*'
-    - '* flash:*'
-    - '* system:*'
+    - running-config
+    - startup-config
+    - '/pcap capture:'
+    - ' disk0:'
+    - ' flash:'
+    - ' system:'
   selection_3:
     command|contains:
-    - '*ftp:*'
-    - '*http:*'
-    - '*https:*'
-    - '*smb:*'
-    - '*scp:*'
-  condition: selection_1 and selection_2 and selection_3
+    - 'ftp:'
+    - 'http:'
+    - 'https:'
+    - 'smb:'
+    - 'scp:'
+  condition: selection_0 and selection_1 and selection_2 and selection_3

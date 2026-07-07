@@ -12,9 +12,20 @@ references:
 - https://attack.mitre.org/tactics/TA0005/
 - https://attack.mitre.org/techniques/T1556/
 tags:
-- attack.T1556_006
-- attack.T1586_003
+- attack.t1556.006
+- attack.t1586.003
 date: '2022-10-14'
+original_spl: |-
+  `gws_reports_admin` command=UNENROLL_USER_FROM_STRONG_AUTH
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY user, command, actor.email,
+         status, id.applicationName, event.name,
+         vendor_account, action
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `gcp_multi_factor_authentication_disabled_filter`
+splunk_rule_id: b9bc5513-6fc1-4821-85a3-e1d81e451c83
+splunk_rule_type: TTP
 logsource:
   product: google_workspace
   service: admin

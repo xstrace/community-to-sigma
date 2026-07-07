@@ -31,7 +31,7 @@ from sigma.types import SigmaString, SigmaNumber
 
 from mappings import (
     map_cim_field, map_datamodel_to_logsource, map_macro_to_logsource,
-    CIM_FIELD_MAP, COMMON_FIELD_ALIASES,
+    resolve_output_path,
 )
 from classifier import classify_detection
 from macro_resolver import MacroResolver
@@ -492,10 +492,29 @@ class SigmaGenerator:
         else:
             if isinstance(value_node, dict):
                 value = self._extract_raw_value(value_node)
-                if value and "*" in str(value):
-                    modifier = "contains"
+                if value and isinstance(value, str) and "*" in value:
+                    modifier = self._detect_wildcard_modifier(value)
 
         return field_name, value, modifier
+
+    def _detect_wildcard_modifier(self, value: str) -> str | None:
+        """Detect the correct Sigma modifier for wildcard patterns.
+        - *foo* → contains
+        - *foo  → endswith
+        - foo*  → startswith
+        - foo   → None (exact match)
+        """
+        if not isinstance(value, str):
+            return None
+        starts = value.startswith("*")
+        ends = value.endswith("*")
+        if starts and ends:
+            return "contains"
+        elif starts:
+            return "endswith"
+        elif ends:
+            return "startswith"
+        return None
 
     def _extract_raw_value(self, value_node: dict) -> str | int | float | None:
         """Extract raw value from a value AST node."""
@@ -544,11 +563,22 @@ class SigmaGenerator:
         # Build detection item
         try:
             if isinstance(value, list):
-                # Handle list as a modified contains|all
-                item = SigmaDetectionItem.from_mapping(
-                    f"{field_name}|contains", value
-                )
-            elif modifier == "contains":
+                # For IN lists, check if all values share a common modifier
+                list_mod = self._detect_list_modifier(value)
+                if list_mod:
+                    # Strip wildcards from values (modifier handles it)
+                    clean_values = [self._strip_wildcard(v) for v in value]
+                    item = SigmaDetectionItem.from_mapping(
+                        f"{field_name}|{list_mod}", clean_values
+                    )
+                else:
+                    item = SigmaDetectionItem.from_mapping(field_name, value)
+            elif modifier:
+                # Strip wildcards for endswith/startswith (they're implied by modifier)
+                if modifier in ("endswith", "startswith"):
+                    value = self._strip_wildcard(value)
+                elif modifier == "contains":
+                    value = self._strip_wildcard(value)
                 item = SigmaDetectionItem.from_mapping(
                     f"{field_name}|{modifier}", value
                 )
@@ -557,6 +587,33 @@ class SigmaGenerator:
             return [item]
         except Exception:
             return []
+
+    def _detect_list_modifier(self, values: list) -> str | None:
+        """Detect common wildcard modifier for a list of values."""
+        if not values:
+            return None
+        mods = set()
+        for v in values:
+            if isinstance(v, str):
+                m = self._detect_wildcard_modifier(v)
+                if m:
+                    mods.add(m)
+        # Only use modifier if all values share the same one
+        if len(mods) == 1:
+            return mods.pop()
+        return None
+
+    def _strip_wildcard(self, value: str) -> str:
+        """Strip leading/trailing * from a value (modifier handles it)."""
+        if not isinstance(value, str):
+            return value
+        if value.startswith("*") and value.endswith("*"):
+            return value[1:-1]
+        elif value.startswith("*"):
+            return value[1:]
+        elif value.endswith("*"):
+            return value[:-1]
+        return value
 
     def _make_detection(self, items_dict: dict) -> SigmaDetection:
         """Create a SigmaDetection from a dict of field→value mappings."""
@@ -655,7 +712,8 @@ class SigmaGenerator:
         if isinstance(mitre_ids, list):
             for tid in mitre_ids:
                 if tid and isinstance(tid, str):
-                    tags.append(SigmaRuleTag.from_str(f"attack.{tid.replace('.', '_')}"))
+                    # SigmaHQ format: attack.tXXXX or attack.tXXXX.YYY (lowercase, dots preserved)
+                    tags.append(SigmaRuleTag.from_str(f"attack.{tid.lower()}"))
 
         # Map finding score to level
         finding = detection_yaml.get("finding", {})
@@ -674,6 +732,18 @@ class SigmaGenerator:
         else:
             level = SigmaLevel.LOW
 
+        # Preserve original Splunk metadata
+        custom = {}
+        original_search = detection_yaml.get("search", "")
+        if original_search:
+            custom["original_spl"] = original_search.strip()
+        splunk_id = detection_yaml.get("id", "")
+        if splunk_id:
+            custom["splunk_rule_id"] = splunk_id
+        splunk_type = detection_yaml.get("type", "")
+        if splunk_type:
+            custom["splunk_rule_type"] = splunk_type
+
         # Build the rule
         rule = SigmaRule(
             title=str(detection_yaml.get("name", "Unknown Detection")),
@@ -690,162 +760,24 @@ class SigmaGenerator:
                 detections=selections,
                 condition=condition_expr,
             ),
+            custom_attributes=custom if custom else None,
         )
 
         return rule
 
-    # -----------------------------------------------------------------------
-    # SigmaHQ directory structure mapping
-    # -----------------------------------------------------------------------
-    # Top-level dirs: windows, linux, macos, cloud, network, web, identity, application
-
-    # Map (product, category, service) → SigmaHQ subdirectory path
-    _PATH_MAP: dict[tuple[str, str, str], str] = {
-        # === Windows ===
-        ("windows", "process_creation", ""): "windows/process_creation",
-        ("windows", "registry_event", ""): "windows/registry/registry_event",
-        ("windows", "registry", ""): "windows/registry/registry_event",
-        ("windows", "file_event", ""): "windows/file",
-        ("windows", "file", ""): "windows/file",
-        ("windows", "image_load", ""): "windows/image_load",
-        ("windows", "network_connection", ""): "windows/network_connection",
-        ("windows", "driver_load", ""): "windows/driver_load",
-        ("windows", "create_remote_thread", ""): "windows/create_remote_thread",
-        ("windows", "process_access", ""): "windows/process_access",
-        ("windows", "pipe_created", ""): "windows/pipe_created",
-        ("windows", "dns_query", ""): "windows/dns_query",
-        ("windows", "wmi", ""): "windows/wmi_event",
-        ("windows", "wmi_event", ""): "windows/wmi_event",
-        ("windows", "powershell", ""): "windows/powershell",
-        ("windows", "sysmon", ""): "windows/sysmon",
-        ("windows", "process_tampering", ""): "windows/process_tampering",
-        # Windows builtin event logs
-        ("windows", "", "security"): "windows/builtin/security",
-        ("windows", "", "system"): "windows/builtin/system",
-        ("windows", "", "application"): "windows/builtin/application",
-        ("windows", "", "taskscheduler"): "windows/builtin/taskscheduler",
-        ("windows", "", "applocker"): "windows/applocker",
-        ("windows", "", "ntlm"): "windows/builtin/ntlm",
-        ("windows", "", "defender"): "windows/builtin/defender",
-        ("windows", "", "appxdeployment"): "windows/builtin/appxdeployment_server",
-        ("windows", "", "capi2"): "windows/builtin/capi2",
-        ("windows", "", "certificateservices"): "windows/builtin/certificate_service_client",
-        ("windows", "", "terminalservices"): "windows/builtin/terminalservices",
-        ("windows", "", "printservice"): "windows/builtin/printservice",
-        ("windows", "", "active_directory"): "windows/builtin/active_directory",
-        # Default windows fallback
-        ("windows", "", ""): "windows/process_creation",
-
-        # === Linux ===
-        ("linux", "process_creation", ""): "linux/process_creation",
-        ("linux", "file_event", ""): "linux/file_event",
-        ("linux", "network_connection", ""): "linux/network_connection",
-        ("linux", "", "auditd"): "linux/auditd",
-        ("linux", "", ""): "linux/process_creation",
-
-        # === macOS ===
-        ("macos", "process_creation", ""): "macos/process_creation",
-        ("macos", "file_event", ""): "macos/file_event",
-        ("macos", "", ""): "macos/process_creation",
-
-        # === Cloud: AWS ===
-        ("aws", "", "cloudtrail"): "cloud/aws/cloudtrail",
-        ("aws", "", "securitylake"): "cloud/aws/securitylake",
-        ("aws", "", "securityhub"): "cloud/aws/securityhub",
-        ("aws", "", "vpcflow"): "cloud/aws/vpcflow",
-        ("aws", "", "s3access"): "cloud/aws/s3",
-        ("aws", "", "eks"): "cloud/aws/eks",
-        ("aws", "", ""): "cloud/aws",
-
-        # === Cloud: Azure ===
-        ("azure", "", "audit"): "cloud/azure",
-        ("azure", "", "aad"): "cloud/azure",
-        ("azure", "", "activity"): "cloud/azure",
-        ("azure", "", ""): "cloud/azure",
-
-        # === Cloud: GCP ===
-        ("gcp", "", "pubsub"): "cloud/gcp",
-        ("gcp", "", ""): "cloud/gcp",
-
-        # === Cloud: M365 ===
-        ("m365", "", "graph_api"): "cloud/m365",
-        ("m365", "", "management"): "cloud/m365",
-        ("m365", "", "defender"): "cloud/m365",
-        ("m365", "", "exchange"): "cloud/m365",
-        ("m365", "", ""): "cloud/m365",
-
-        # === Cloud: Google Workspace ===
-        ("google_workspace", "", ""): "cloud/gcp",
-
-        # === Identity ===
-        ("okta", "", "okta"): "identity/okta",
-        ("okta", "", ""): "identity/okta",
-        ("cisco", "", "duo"): "identity/cisco_duo",
-
-        # === Network ===
-        ("", "dns", ""): "network/dns",
-        ("", "network_connection", ""): "network",
-        ("", "firewall", ""): "network/firewall",
-        ("", "authentication", ""): "network",
-        ("cisco", "", "asa"): "network/cisco",
-        ("cisco", "", "ios"): "network/cisco",
-        ("cisco", "", "firewall"): "network/cisco",
-        ("zeek", "", ""): "network/zeek",
-        ("suricata", "", "ids"): "network/suricata",
-
-        # === Web ===
-        ("", "webserver", ""): "web/webserver_generic",
-        ("", "proxy", ""): "web/proxy_generic",
-        ("", "web", ""): "web/webserver_generic",
-
-        # === Application ===
-        ("github", "", ""): "application/github",
-        ("splunk", "", ""): "application/splunk",
-        ("kubernetes", "", ""): "application/kubernetes",
-        ("circleci", "", ""): "application/ci_cd",
-        ("", "application", ""): "application",
-
-        # === Others ===
-        ("", "", "crowdstrike"): "application/crowdstrike",
-        ("", "", "carbonblack"): "application/carbonblack",
-        ("", "", "osquery"): "application/osquery",
-        ("", "all_traffic", ""): "network",
-        ("", "network_traffic", ""): "network",
-        ("", "certificates", ""): "network",
-        ("", "all_certificates", ""): "network",
-        ("", "email", ""): "cloud/m365",
-        ("", "all_email", ""): "cloud/m365",
-        ("cisco", "", ""): "network/cisco",
-        ("", "process_creation", ""): "windows/process_creation",
-    }
-
     def _get_output_path(
         self, output_dir: str, rule: SigmaRule, detection_yaml: dict
     ) -> str:
-        """Determine the output file path matching SigmaHQ's conventions."""
+        """Determine the output file path matching SigmaHQ conventions.
+        Uses static mappings with dynamic fallback for unknown types."""
         ls = rule.logsource
         product = (ls.product or "").lower()
         category = (ls.category or "").lower()
         service = (ls.service or "").lower()
 
-        # Try exact match first, then progressively looser
-        path = None
-        for keys in [
-            (product, category, service),
-            (product, category, ""),
-            (product, "", service),
-            (product, "", ""),
-            ("", category, ""),
-            ("", "", service),
-        ]:
-            path = self._PATH_MAP.get(keys)
-            if path:
-                break
+        path = resolve_output_path(product, category, service)
 
-        if not path:
-            path = "other"
-
-        # Build clean slug from rule title (preserves original name, no prefix)
+        # Build clean slug from rule title
         title = rule.title or "unknown"
         slug = title.lower()
         slug = slug.replace(" ", "_").replace("/", "_").replace("\\", "_")

@@ -10,12 +10,25 @@ description: The following analytic detects unauthorized container uploads to AW
 references:
 - https://attack.mitre.org/techniques/T1204/003/
 tags:
-- attack.T1204_003
+- attack.t1204.003
 date: '2024-05-22'
+original_spl: |-
+  `amazon_security_lake` api.operation=PutImage NOT `aws_ecr_users_asl`
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_ecr_container_upload_unknown_user_filter`
+splunk_rule_id: 886a8f46-d7e2-4439-b9ba-aec238e31732
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: PutImage
+    api.operation: PutImage
   condition: selection_0

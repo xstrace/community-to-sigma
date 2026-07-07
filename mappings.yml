@@ -1,0 +1,312 @@
+# Static mappings for Splunk CIM → Sigma conversion.
+# Edit this file to update mappings without touching code.
+# Unknown entries fall back to {product}/{category|service}/ dynamically.
+
+# CIM field name → Sigma field name
+fields:
+  Processes.process: CommandLine
+  Processes.process_name: Image
+  Processes.process_path: Image
+  Processes.original_file_name: OriginalFileName
+  Processes.parent_process: ParentCommandLine
+  Processes.parent_process_name: ParentImage
+  Processes.parent_process_path: ParentImage
+  Processes.parent_process_exec: ParentImage
+  Processes.process_exec: Image
+  Processes.process_guid: ProcessGuid
+  Processes.parent_process_guid: ParentProcessGuid
+  Processes.process_id: ProcessId
+  Processes.parent_process_id: ParentProcessId
+  Processes.process_hash: Hashes
+  Processes.process_integrity_level: IntegrityLevel
+  Processes.user: User
+  Processes.user_id: User
+  Processes.dest: Computer
+  Processes.vendor_product: Product
+  Registry.registry_path: TargetObject
+  Registry.registry_key_name: TargetObject
+  Registry.registry_value_data: Details
+  Registry.registry_value_name: Details
+  Registry.registry_value_type: EventType
+  Registry.registry_hive: TargetObject
+  Registry.process_guid: ProcessGuid
+  Registry.process_id: ProcessId
+  Registry.status: EventType
+  Registry.user: User
+  Registry.dest: Computer
+  Registry.vendor_product: Product
+  Filesystem.file_path: TargetFilename
+  Filesystem.file_name: Image
+  Filesystem.file_hash: Hashes
+  Filesystem.dest: Computer
+  Filesystem.user: User
+  Web.url: cs-uri
+  Web.uri: cs-uri
+  Web.http_method: cs-method
+  Web.status: sc-status
+  Web.src: c-ip
+  Web.dest: s-ip
+  Web.http_user_agent: cs-user-agent
+  Web.http_referrer: cs-referrer
+  Web.vendor_product: Product
+  DNS.query: QueryName
+  DNS.answer: QueryResults
+  DNS.src: Computer
+  DNS.dest: Computer
+  Authentication.user: User
+  Authentication.src: SrcHost
+  Authentication.dest: TargetHost
+  Authentication.app: Application
+  Authentication.action: EventType
+  All_Changes.command: CommandLine
+  All_Changes.user: User
+  All_Changes.dest: Computer
+  All_Changes.result: Result
+  EventCode: EventID
+  EventID: EventID
+  ScriptBlockText: ScriptBlockText
+  ImageLoaded: ImageLoaded
+  TargetFilename: TargetFilename
+  TargetObject: TargetObject
+  Details: Details
+  Signed: Signed
+  Signature: Signature
+  ServiceName: ServiceName
+  ServiceFileName: ServiceFileName
+  user_name: User
+  src_user: SrcUser
+
+# Data model → Sigma logsource
+datamodel_logsource:
+  Endpoint.Processes:     { product: windows, category: process_creation }
+  Endpoint.Registry:      { product: windows, category: registry_event }
+  Endpoint.Filesystem:    { product: windows, category: file_event }
+  Endpoint.Ports:         { product: windows, category: network_connection }
+  Endpoint.Services:      { product: windows, category: process_creation }
+  Web:                    { category: webserver }
+  Network_Resolution:     { category: dns }
+  Network_Traffic:        { category: network_connection }
+  Network_Sessions:       { category: network_connection }
+  Authentication:         { category: authentication }
+  Change.All_Changes:     { category: process_creation }
+
+# Macro name → Sigma logsource
+macro_logsource:
+  sysmon:                       { product: windows, service: sysmon }
+  wineventlog_security:          { product: windows, service: security }
+  wineventlog_system:            { product: windows, service: system }
+  wineventlog_application:       { product: windows, service: application }
+  powershell:                    { product: windows, service: powershell }
+  ms_defender:                   { product: windows, service: defender }
+  applocker:                     { product: windows, service: applocker }
+  wineventlog_task_scheduler:    { product: windows, service: taskscheduler }
+  wineventlog_rdp:               { product: windows, service: terminalservices }
+  wmi:                           { product: windows, service: wmi }
+  ntlm_audit:                    { product: windows, service: ntlm }
+  printservice:                  { product: windows, service: printservice }
+  remoteconnectionmanager:       { product: windows, service: terminalservices }
+  capi2_operational:             { product: windows, service: capi2 }
+  certificateservices_lifecycle: { product: windows, service: certificateservices }
+  admon:                         { product: windows, service: active_directory }
+  cloudtrail:                    { product: aws, service: cloudtrail }
+  amazon_security_lake:          { product: aws, service: securitylake }
+  aws_cloudwatchlogs_eks:        { product: aws, service: eks }
+  aws_s3_accesslogs:             { product: aws, service: s3access }
+  aws_securityhub_finding:       { product: aws, service: securityhub }
+  cloudwatchlogs_vpcflow:        { product: aws, service: vpcflow }
+  azure_audit:                   { product: azure, service: audit }
+  azure_monitor_aad:             { product: azure, service: aad }
+  azure_monitor_activity:        { product: azure, service: activity }
+  google_gcp_pubsub_message:     { product: gcp, service: pubsub }
+  gsuite_calendar:               { product: google_workspace, service: calendar }
+  gsuite_drive:                  { product: google_workspace, service: drive }
+  gsuite_gmail:                  { product: google_workspace, service: gmail }
+  gws_reports_admin:             { product: google_workspace, service: admin }
+  gws_reports_login:             { product: google_workspace, service: login }
+  o365_graph:                    { product: m365, service: graph_api }
+  o365_management_activity:      { product: m365, service: management }
+  ms365_defender_incident_alerts: { product: m365, service: defender }
+  ms_defender_atp_alerts:        { product: m365, service: defender }
+  msexchange_management:         { product: m365, service: exchange }
+  github_organizations:          { product: github, service: audit }
+  okta:                          { product: okta, service: okta }
+  cisco_asa:                     { product: cisco, service: asa }
+  cisco_ios:                     { product: cisco, service: ios }
+  cisco_networks:                { product: cisco, service: ios }
+  cisco_secure_firewall:         { product: cisco, service: firewall }
+  cisco_duo_activity:            { product: cisco, service: duo }
+  cisco_duo_administrator:       { product: cisco, service: duo }
+  zeek_ssl:                      { product: zeek, service: ssl }
+  zeek_rpc:                      { product: zeek, service: rpc }
+  zeek_x509:                     { product: zeek, service: x509 }
+  stream_http:                   { product: zeek, service: http }
+  stream_dns:                    { product: zeek, service: dns }
+  stream_tcp:                    { product: zeek, service: tcp }
+  suricata:                      { product: suricata, service: ids }
+  linux_auditd:                  { product: linux, service: auditd }
+  linux_hosts:                   { product: linux }
+  splunkd:                       { product: splunk, service: splunkd }
+  kube_audit:                    { product: kubernetes }
+  github_enterprise:             { product: github, service: enterprise }
+  crowdstrike_stream:            { service: crowdstrike }
+  crowdstrike_identities:        { service: crowdstrike }
+  nginx_access_logs:             { service: nginx, category: webserver }
+  zscaler_proxy:                 { service: zscaler, category: proxy }
+
+# (product, category, service) → SigmaHQ directory path
+# Keys with empty string match any value. Order: most specific first.
+# Unknown combinations auto-generate: {product}/{category_or_service}/
+paths:
+  - keys: [windows, process_creation, ""]
+    path: windows/process_creation
+  - keys: [windows, registry_event, ""]
+    path: windows/registry/registry_event
+  - keys: [windows, registry, ""]
+    path: windows/registry/registry_event
+  - keys: [windows, file_event, ""]
+    path: windows/file
+  - keys: [windows, file, ""]
+    path: windows/file
+  - keys: [windows, image_load, ""]
+    path: windows/image_load
+  - keys: [windows, network_connection, ""]
+    path: windows/network_connection
+  - keys: [windows, driver_load, ""]
+    path: windows/driver_load
+  - keys: [windows, create_remote_thread, ""]
+    path: windows/create_remote_thread
+  - keys: [windows, process_access, ""]
+    path: windows/process_access
+  - keys: [windows, pipe_created, ""]
+    path: windows/pipe_created
+  - keys: [windows, dns_query, ""]
+    path: windows/dns_query
+  - keys: [windows, wmi, ""]
+    path: windows/wmi_event
+  - keys: [windows, wmi_event, ""]
+    path: windows/wmi_event
+  - keys: [windows, powershell, ""]
+    path: windows/powershell
+  - keys: [windows, sysmon, ""]
+    path: windows/sysmon
+  - keys: [windows, process_tampering, ""]
+    path: windows/process_tampering
+  - keys: [windows, "", security]
+    path: windows/builtin/security
+  - keys: [windows, "", system]
+    path: windows/builtin/system
+  - keys: [windows, "", application]
+    path: windows/builtin/application
+  - keys: [windows, "", taskscheduler]
+    path: windows/builtin/taskscheduler
+  - keys: [windows, "", applocker]
+    path: windows/applocker
+  - keys: [windows, "", ntlm]
+    path: windows/builtin/ntlm
+  - keys: [windows, "", defender]
+    path: windows/builtin/defender
+  - keys: [windows, "", appxdeployment]
+    path: windows/builtin/appxdeployment_server
+  - keys: [windows, "", capi2]
+    path: windows/builtin/capi2
+  - keys: [windows, "", certificateservices]
+    path: windows/builtin/certificate_service_client
+  - keys: [windows, "", terminalservices]
+    path: windows/builtin/terminalservices
+  - keys: [windows, "", printservice]
+    path: windows/builtin/printservice
+  - keys: [windows, "", active_directory]
+    path: windows/builtin/active_directory
+  # Linux
+  - keys: [linux, process_creation, ""]
+    path: linux/process_creation
+  - keys: [linux, file_event, ""]
+    path: linux/file_event
+  - keys: [linux, network_connection, ""]
+    path: linux/network_connection
+  - keys: [linux, "", auditd]
+    path: linux/auditd
+  # macOS
+  - keys: [macos, process_creation, ""]
+    path: macos/process_creation
+  - keys: [macos, file_event, ""]
+    path: macos/file_event
+  # Cloud
+  - keys: [aws, "", cloudtrail]
+    path: cloud/aws/cloudtrail
+  - keys: [aws, "", securitylake]
+    path: cloud/aws/securitylake
+  - keys: [aws, "", securityhub]
+    path: cloud/aws/securityhub
+  - keys: [aws, "", vpcflow]
+    path: cloud/aws/vpcflow
+  - keys: [aws, "", s3access]
+    path: cloud/aws/s3
+  - keys: [aws, "", eks]
+    path: cloud/aws/eks
+  - keys: [azure, "", ""]
+    path: cloud/azure
+  - keys: [gcp, "", ""]
+    path: cloud/gcp
+  - keys: [m365, "", ""]
+    path: cloud/m365
+  - keys: [google_workspace, "", ""]
+    path: cloud/gcp
+  # Identity
+  - keys: [okta, "", ""]
+    path: identity/okta
+  - keys: [cisco, "", duo]
+    path: identity/cisco_duo
+  # Network
+  - keys: ["", dns, ""]
+    path: network/dns
+  - keys: ["", firewall, ""]
+    path: network/firewall
+  - keys: [cisco, "", ""]
+    path: network/cisco
+  - keys: [zeek, "", ""]
+    path: network/zeek
+  - keys: [suricata, "", ""]
+    path: network/suricata
+  - keys: ["", network_connection, ""]
+    path: network
+  - keys: ["", network_traffic, ""]
+    path: network
+  - keys: ["", authentication, ""]
+    path: network
+  # Web
+  - keys: ["", webserver, ""]
+    path: web/webserver_generic
+  - keys: ["", proxy, ""]
+    path: web/proxy_generic
+  - keys: ["", web, ""]
+    path: web/webserver_generic
+  # Application
+  - keys: [github, "", ""]
+    path: application/github
+  - keys: [splunk, "", ""]
+    path: application/splunk
+  - keys: [kubernetes, "", ""]
+    path: application/kubernetes
+  - keys: [circleci, "", ""]
+    path: application/ci_cd
+  - keys: ["", application, ""]
+    path: application
+  # Misc
+  - keys: ["", certificates, ""]
+    path: network
+  - keys: ["", all_certificates, ""]
+    path: network
+  - keys: ["", email, ""]
+    path: cloud/m365
+  - keys: ["", all_email, ""]
+    path: cloud/m365
+  - keys: ["", all_traffic, ""]
+    path: network
+  # Fallback entries for services that map to application
+  - keys: ["", "", crowdstrike]
+    path: application/crowdstrike
+  - keys: ["", "", carbonblack]
+    path: application/carbonblack
+  - keys: ["", "", osquery]
+    path: application/osquery

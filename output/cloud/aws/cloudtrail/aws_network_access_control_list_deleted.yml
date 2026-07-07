@@ -7,8 +7,21 @@ description: The following analytic detects the deletion of AWS Network Access C
   is significant because deleting a network ACL can remove critical access restrictions, potentially allowing unauthorized access to cloud instances. If confirmed malicious, this action could enable attackers
   to bypass network security controls, leading to unauthorized access, data exfiltration, or further compromise of the cloud environment.
 tags:
-- attack.T1686_001
+- attack.t1686.001
 date: '2020-04-29'
+original_spl: |-
+  `cloudtrail` eventName=DeleteNetworkAclEntry requestParameters.egress=false
+    | fillnull
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_network_access_control_list_deleted_filter`
+splunk_rule_id: ada0f478-84a8-4641-a3f1-d82362d6fd75
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: cloudtrail
@@ -16,5 +29,5 @@ detection:
   selection_0:
     eventName: DeleteNetworkAclEntry
   selection_1:
-    egress: 'false'
+    requestParameters.egress: 'false'
   condition: selection_0 and selection_1

@@ -15,8 +15,24 @@ references:
 - https://attack.mitre.org/techniques/T1078/004/
 - https://www.cisa.gov/sites/default/files/publications/fact-sheet-implement-number-matching-in-mfa-applications-508c.pdf
 tags:
-- attack.T1621
+- attack.t1621
 date: '2023-11-16'
+original_spl: |-
+  `azure_monitor_aad` category=SignInLogs operationName="Sign-in activity"
+    | rename properties.* as *
+    | search status.errorCode=500121 status.additionalDetails="MFA denied; user declined the authentication"
+    | bucket span=10m _time
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime values(dest) as dest values(user_agent) as user_agent values(src) as src
+      BY user status.additionalDetails vendor_account
+         vendor_product signature _time
+    | where count > 9
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_multiple_denied_mfa_requests_for_user_filter`
+splunk_rule_id: d0895c20-de71-4fd2-b56c-3fcdb888eba1
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

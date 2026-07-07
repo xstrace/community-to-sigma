@@ -9,8 +9,21 @@ description: The following analytic identifies excessive AccessDenied events wit
 references:
 - https://aws.amazon.com/premiumsupport/knowledge-center/troubleshoot-iam-permission-errors/
 tags:
-- attack.T1580
+- attack.t1580
 date: '2021-04-06'
+original_spl: |-
+  `cloudtrail` (errorCode = "AccessDenied") user_type=IAMUser (userAgent!=*.amazonaws.com)
+    | bucket _time span=1h
+    | rename user_name as user
+    | stats count as failures min(_time) as firstTime max(_time) as lastTime, dc(signature) as methods, dc(dest) as sources values(signature) as signature values(dest) as dest
+      BY src, user, vendor_account
+         vendor_region, vendor_product
+    | where failures >= 5 and methods >= 1 and sources >= 1
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_iam_accessdenied_discovery_events_filter`
+splunk_rule_id: 3e1f1568-9633-11eb-a69c-acde48001122
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: cloudtrail
@@ -20,5 +33,5 @@ detection:
   selection_1:
     user_type: IAMUser
   selection_2:
-    userAgent!|contains: '*.amazonaws.com'
+    userAgent|endswith: .amazonaws.com
   condition: selection_0 and selection_1 and selection_2

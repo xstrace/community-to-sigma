@@ -11,15 +11,29 @@ references:
 - https://attack.mitre.org/techniques/T1110.001
 - https://attack.mitre.org/techniques/T1110.003
 tags:
-- attack.T1110_001
-- attack.T1110_003
+- attack.t1110.001
+- attack.t1110.003
 date: '2023-01-24'
+original_spl: |-
+  `azure_monitor_aad` properties.authenticationDetails{}.succeeded=true category=SignInLogs
+    | rename properties.* as *
+    | bucket span=30m _time
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime dc(src) AS unique_ips values(dest) as dest values(src) as src
+      BY user vendor_account vendor_product
+         signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | where unique_ips > 1
+    | `azure_ad_successful_authentication_from_different_ips_filter`
+splunk_rule_id: be6d868d-33b6-4aaa-912e-724fb555b11a
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
 detection:
   selection_0:
-    authenticationDetails{}.succeeded: 'true'
+    properties.authenticationDetails{}.succeeded: 'true'
   selection_1:
     category: SignInLogs
   condition: selection_0 and selection_1

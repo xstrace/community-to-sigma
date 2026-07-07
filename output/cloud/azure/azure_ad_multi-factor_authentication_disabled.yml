@@ -12,9 +12,25 @@ references:
 - https://attack.mitre.org/tactics/TA0005/
 - https://attack.mitre.org/techniques/T1556/
 tags:
-- attack.T1556_006
-- attack.T1586_003
+- attack.t1556.006
+- attack.t1586.003
 date: '2022-08-10'
+original_spl: |-
+  `azure_monitor_aad` category=AuditLogs operationName="Disable Strong Authentication"
+    | rename properties.* as *
+    | rename targetResources{}.type as type
+    | rename initiatedBy.user.userPrincipalName as initiatedBy
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product user_agent
+         initiatedBy signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_multi_factor_authentication_disabled_filter`
+splunk_rule_id: 482dd42a-acfa-486b-a0bb-d6fcda27318e
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

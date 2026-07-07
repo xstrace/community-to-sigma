@@ -14,8 +14,14 @@ references:
 - https://www.microsoft.com/en-us/security/blog/2024/01/25/midnight-blizzard-guidance-for-responders-on-nation-state-attack/
 - https://posts.specterops.io/azure-privilege-escalation-via-azure-api-permissions-abuse-74aee1006f48
 tags:
-- attack.T1003_002
+- attack.t1003.002
 date: '2024-02-14'
+original_spl: '`azure_monitor_aad` category=AuditLogs operationName="Update application" | eval newvalue = mvindex(''properties.targetResources{}.modifiedProperties{}.newValue'',0) | spath input=newvalue
+  | search "{}.RequiredAppPermissions{}.EntitlementId"=" 1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9" OR "{}.RequiredAppPermissions{}.EntitlementId" ="06b708a9-e830-4db3-a914-8e69da51d44f" OR "{}.RequiredAppPermissions{}.EntitlementId"
+  ="9e3f62cf-ca93-4989-b6ce-bf83c28f9fe8" | eval Permissions = ''{}.RequiredAppPermissions{}.EntitlementId'' | fillnull | stats count min(_time) as firstTime max(_time) as lastTime by dest user src vendor_account
+  vendor_product Permissions signature | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `azure_ad_privileged_graph_api_permission_assigned_filter`'
+splunk_rule_id: 5521f8c5-1aa3-473c-9eb7-853701924a06
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

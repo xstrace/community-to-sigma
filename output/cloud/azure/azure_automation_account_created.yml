@@ -16,14 +16,27 @@ references:
 - https://microsoft.github.io/Azure-Threat-Research-Matrix/Persistence/AZT503/AZT503-3/
 - https://attack.mitre.org/techniques/T1136/003/
 tags:
-- attack.T1136_003
+- attack.t1136.003
 date: '2022-08-22'
+original_spl: |-
+  `azure_audit` operationName.value="Microsoft.Automation/automationAccounts/write" status.value=Succeeded
+    | dedup object
+    | rename claims.ipaddr as src, subscriptionId as vendor_account, operationName.value as signature
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product object
+         object_path signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_automation_account_created_filter`
+splunk_rule_id: 860902fd-2e76-46b3-b050-ba548dab576c
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: audit
 detection:
   selection_0:
-    value: Microsoft.Automation/automationAccounts/write
+    operationName.value: Microsoft.Automation/automationAccounts/write
   selection_1:
-    value: Succeeded
+    status.value: Succeeded
   condition: selection_0 and selection_1

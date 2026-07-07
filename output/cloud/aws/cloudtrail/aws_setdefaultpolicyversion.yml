@@ -10,8 +10,20 @@ references:
 - https://bishopfox.com/blog/privilege-escalation-in-aws
 - https://rhinosecuritylabs.com/aws/aws-privilege-escalation-methods-mitigation-part-2/
 tags:
-- attack.T1078_004
+- attack.t1078.004
 date: '2021-03-02'
+original_spl: |-
+  `cloudtrail` eventName=SetDefaultPolicyVersion eventSource = iam.amazonaws.com
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_setdefaultpolicyversion_filter`
+splunk_rule_id: 2a9b80d3-6340-4345-11ad-212bf3d0dac4
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail

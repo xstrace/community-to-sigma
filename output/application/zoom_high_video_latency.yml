@@ -5,11 +5,16 @@ level: medium
 author: Marissa Bower, Raven Tait
 description: Detects particularly high latency from Zoom logs. Latency observed from threat actors performing Remote Employment Fraud (REF) is typically well above what’s normal for the majority of employees.
 tags:
-- attack.T1078
+- attack.t1078
 date: '2025-06-12'
+original_spl: '`zoom_index` | spath "payload.object.participant.qos{}.type" | search "payload.object.participant.qos{}.type"=video_input | rename payload.object.participant.qos{}.details.avg_latency as
+  avg_latency "payload.object.participant.qos{}.details.latency" as latency payload.object.participant.email as email | rex field=avg_latency "(?<average_latency>\d+) ms" | rex field=latency "(?<overall_latency>\d+)
+  ms" | search email="*" | table email overall_latency latency avg_latency average_latency _raw | stats latest(overall_latency) as overall_latency by email _raw | where overall_latency>300 | `zoom_high_video_latency_filter`'
+splunk_rule_id: 6ad6b548-adfa-452c-aa77-9ff94877e832
+splunk_rule_type: Anomaly
 logsource:
   category: application
 detection:
   selection_0:
-    object.participant.qos{}.type": video_input
+    '"payload.object.participant.qos{}.type"': video_input
   condition: selection_0

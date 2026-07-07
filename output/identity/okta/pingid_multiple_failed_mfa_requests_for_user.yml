@@ -13,16 +13,21 @@ references:
 - https://attack.mitre.org/techniques/T1078/004/
 - https://docs.pingidentity.com/r/en-us/pingoneforenterprise/p14e_subscriptions?tocId=3xhnxjX3VzKNs3SXigWnQA
 tags:
-- attack.T1621
-- attack.T1078
-- attack.T1110
+- attack.t1621
+- attack.t1078
+- attack.t1110
 date: '2023-12-20'
+original_spl: '`pingid` "result.status" IN ("FAILURE,authFail","UNSUCCESSFUL_ATTEMPT") | eval time = _time, src = coalesce(''resources{}.ipaddress'',''resources{}.devicemodel''), user = upper(''actors{}.name''),
+  object = ''resources{}.devicemodel'', reason = ''result.message''| bucket span=10m _time | stats dc(_raw) AS mfa_prompts min(time) as firstTime, max(time) as lastTime values(src) as src by user, reason,
+  _time | `security_content_ctime(firstTime)`| `security_content_ctime(lastTime)` | where mfa_prompts >= 10 | `pingid_multiple_failed_mfa_requests_for_user_filter`'
+splunk_rule_id: c1bc706a-0025-4814-ad30-288f38865036
+splunk_rule_type: TTP
 logsource:
   category: application
   product: okta
 detection:
   selection_0:
-    status"|contains:
+    '"result.status"':
     - FAILURE,authFail
     - UNSUCCESSFUL_ATTEMPT
   condition: selection_0

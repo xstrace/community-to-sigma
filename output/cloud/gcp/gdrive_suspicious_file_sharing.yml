@@ -9,8 +9,18 @@ description: The following analytic identifies suspicious file-sharing activity 
 references:
 - https://www.splunk.com/en_us/blog/security/investigating-gsuite-phishing-attacks-with-splunk.html
 tags:
-- attack.T1566
+- attack.t1566
 date: '2021-10-24'
+original_spl: |-
+  `gsuite_drive` name=change_user_access
+    | rename parameters.* as *
+    | search email = "*@yourdomain.com" target_user != "*@yourdomain.com"
+    | stats count values(owner) as owner values(target_user) as target values(doc_type) as doc_type values(doc_title) as doc_title dc(target_user) as distinct_target
+      BY src_ip email
+    | where distinct_target > 50
+    | `gdrive_suspicious_file_sharing_filter`
+splunk_rule_id: a7131dae-34e3-11ec-a2de-acde48001122
+splunk_rule_type: Hunting
 logsource:
   product: google_workspace
   service: drive

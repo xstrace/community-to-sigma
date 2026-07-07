@@ -9,8 +9,13 @@ description: Detects potential Distributed Denial of Service (DDoS) attacks or r
 references:
 - https://github.com/rosplk/ta-ollama
 tags:
-- attack.T1498
+- attack.t1498
 date: '2025-10-13'
+original_spl: '`ollama_server` | rex field=_raw "\|\s+(?<client_ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+\|" | eval src=coalesce(src, client_ip) | eval dest=coalesce(dest, url, uripath, endpoint) | bin
+  _time span=5m | stats count as request_count by _time, src, dest, host | where request_count > 120 | eval severity="high" | eval attack_type="Rate Limit Abuse / DDoS" | stats count by _time, host, src,
+  dest, request_count, severity, attack_type | `ollama_excessive_api_requests_filter`'
+splunk_rule_id: 1cfab663-9adc-4169-a88c-6bae29ba3c70
+splunk_rule_type: Anomaly
 logsource:
   category: application
 detection:

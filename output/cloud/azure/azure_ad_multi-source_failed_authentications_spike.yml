@@ -13,18 +13,32 @@ references:
 - https://www.cisa.gov/uscert/ncas/alerts/aa21-008a
 - https://docs.microsoft.com/azure/active-directory/reports-monitoring/reference-sign-ins-error-codes
 tags:
-- attack.T1110_003
-- attack.T1110_004
-- attack.T1586_003
+- attack.t1110.003
+- attack.t1110.004
+- attack.t1586.003
 date: '2023-11-16'
+original_spl: |-
+  `azure_monitor_aad` category=*SignInLogs properties.status.errorCode=50126 properties.authenticationDetails{}.succeeded=false
+    | rename properties.* as *
+    | bucket span=5m _time
+    | eval uniqueIPUserCombo = src_ip . "-" . user
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime dc(uniqueIPUserCombo) as uniqueIpUserCombinations, dc(user) as uniqueUsers, dc(src_ip) as uniqueIPs, dc(user_agent) as uniqueUserAgents, dc(location.countryOrRegion) as uniqueCountries values(location.countryOrRegion) as countries  values(action) as action values(dest) as dest values(user) as user values(src) as src values(vendor_account) as vendor_account values(vendor_product) as vendor_product values(user_agent) as user_agent
+    | where uniqueIpUserCombinations > 20 AND uniqueUsers > 20 AND uniqueIPs > 20 AND uniqueUserAgents >= 1
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_multi_source_failed_authentications_spike_filter`
+splunk_rule_id: 116e11a9-63ea-41eb-a66a-6a13bdc7d2c7
+splunk_rule_type: Hunting
 logsource:
   product: azure
   service: aad
 detection:
   selection_0:
-    category|contains: '*SignInLogs'
+    category|endswith: SignInLogs
   selection_1:
-    status.errorCode: 50126
+    properties.status.errorCode: 50126
   selection_2:
-    authenticationDetails{}.succeeded: 'false'
+    properties.authenticationDetails{}.succeeded: 'false'
   condition: selection_0 and selection_1 and selection_2

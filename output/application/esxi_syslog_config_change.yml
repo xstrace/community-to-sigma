@@ -5,13 +5,17 @@ level: medium
 author: Raven Tait, Splunk
 description: This detection identifies changes to the syslog configuration on an ESXi host using esxcli, which may indicate an attempt to disrupt log collection and evade detection.
 tags:
-- attack.T1690
+- attack.t1690
 date: '2025-07-11'
+original_spl: '`esxi_syslog` Message="*syslog config set*" AND Message="*esxcli*" | rex field=_raw "\].*\[\s*(?P<user>[^\]]+)\]:\s(?P<command>.+)" | rex field=_raw "Z (?<dest>[\w\.]+)\s" | stats min(_time)
+  as firstTime max(_time) as lastTime count by dest user command | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `esxi_syslog_config_change_filter`'
+splunk_rule_id: e530beb9-9b8c-4c9b-9776-0a05521ff32d
+splunk_rule_type: TTP
 logsource:
   category: application
 detection:
   selection_0:
-    Message|contains: '*syslog config set*'
+    Message|contains: syslog config set
   selection_1:
-    Message|contains: '*esxcli*'
+    Message|contains: esxcli
   condition: selection_0 and selection_1

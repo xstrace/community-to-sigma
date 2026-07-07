@@ -9,8 +9,19 @@ description: The following analytic identifies when an associate reports a login
 references:
 - https://help.okta.com/en-us/Content/Topics/Security/suspicious-activity-reporting.htm
 tags:
-- attack.T1078_001
+- attack.t1078.001
 date: '2022-12-19'
+original_spl: |-
+  `okta` eventType=user.account.report_suspicious_activity_by_enduser
+    | stats count min(_time) as firstTime max(_time) as lastTime values(displayMessage)
+      BY user dest src
+         eventType client.userAgent.rawUserAgent client.userAgent.browser
+         client.geographicalContext.city client.geographicalContext.country
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `okta_suspicious_activity_reported_filter`
+splunk_rule_id: bfc840f5-c9c6-454c-aa13-b46fd0bf1e79
+splunk_rule_type: TTP
 logsource:
   product: okta
   service: okta

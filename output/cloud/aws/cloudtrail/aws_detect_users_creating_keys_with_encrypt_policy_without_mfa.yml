@@ -11,8 +11,28 @@ references:
 - https://github.com/d1vious/git-wild-hunt
 - https://www.youtube.com/watch?v=PgzNib37g0M
 tags:
-- attack.T1486
+- attack.t1486
 date: '2020-10-27'
+original_spl: |-
+  `cloudtrail` eventName=CreateKey OR eventName=PutKeyPolicy
+    | spath input=requestParameters.policy output=key_policy_statements path=Statement{}
+    | mvexpand key_policy_statements
+    | spath input=key_policy_statements output=key_policy_action_1 path=Action
+    | spath input=key_policy_statements output=key_policy_action_2 path=Action{}
+    | eval key_policy_action=mvappend(key_policy_action_1,key_policy_action_2)
+    | spath input=key_policy_statements output=key_policy_principal path=Principal.AWS
+    | search key_policy_action="kms:Encrypt" AND key_policy_principal="*"
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product key_policy_action
+         key_policy_principal
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_detect_users_creating_keys_with_encrypt_policy_without_mfa_filter`
+splunk_rule_id: c79c164f-4b21-4847-98f9-cf6a9f49179e
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail

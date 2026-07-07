@@ -12,12 +12,25 @@ references:
 - https://attack.mitre.org/techniques/T1556/006/
 - https://twitter.com/jhencinski/status/1618660062352007174
 tags:
-- attack.T1556_006
+- attack.t1556.006
 date: '2023-01-31'
+original_spl: |-
+  `amazon_security_lake` api.operation=CreateVirtualMFADevice
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_new_mfa_method_registered_for_user_filter`
+splunk_rule_id: 33ae0931-2a03-456b-b1d7-b016c5557fbd
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: CreateVirtualMFADevice
+    api.operation: CreateVirtualMFADevice
   condition: selection_0

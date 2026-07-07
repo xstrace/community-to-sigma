@@ -12,8 +12,21 @@ references:
 - https://www.tenable.com/blog/mcp-prompt-injection-not-just-for-evil
 - https://www.splunk.com/en_us/blog/security/securing-ai-agents-model-context-protocol.html
 tags:
-- attack.T1059
+- attack.t1059
 date: '2026-02-17'
+original_spl: |-
+  `mcp_server` direction=inbound ( "IGNORE PREVIOUS INSTRUCTIONS" OR "AI_INSTRUCTION" OR "SYSTEM PROMPT OVERRIDE" OR "[SYSTEM]:" OR "ignore all security" OR "New directive" OR "ignore security policies" )
+  | eval dest=host
+  | eval injection_payload=coalesce('params.content_preview', 'params.result_preview')
+  | eval target_path='params.path'
+  | eval sql_query='params.query'
+  | stats count min(_time) as firstTime max(_time) as lastTime values(method) as method values(target_path) as target_path values(sql_query) as sql_query values(injection_payload) as injection_payload by dest, source
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | table dest firstTime lastTime count source method target_path sql_query injection_payload
+  | `mcp_prompt_injection_filter`
+splunk_rule_id: 49779398-b738-4d64-bb3f-ead6eb97fe53
+splunk_rule_type: TTP
 logsource:
   category: application
 detection:

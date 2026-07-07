@@ -14,8 +14,13 @@ references:
 - https://learn.microsoft.com/en-us/azure/active-directory/manage-apps/grant-admin-consent?pivots=portal
 - https://microsoft.github.io/Azure-Threat-Research-Matrix/Persistence/AZT501/AZT501-2/
 tags:
-- attack.T1098_003
+- attack.t1098.003
 date: '2023-11-16'
+original_spl: '`azure_monitor_aad` operationName="Consent to application" | eval new_field=mvindex(''properties.targetResources{}.modifiedProperties{}.newValue'',4) | rename properties.* as * | rex field=new_field
+  "ConsentType:(?<ConsentType> [^\,]+)" | rex field=new_field "Scope:(?<Scope> [^\,]+)" | search ConsentType = "*AllPrincipals*" | rename userAgent as user_agent | fillnull | stats count min(_time) as firstTime
+  max(_time) as lastTime by dest user src vendor_account vendor_product ConsentType Scope signature | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `azure_ad_tenant_wide_admin_consent_granted_filter`'
+splunk_rule_id: dc02c0ee-6ac0-4c7f-87ba-8ce43a4e4418
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

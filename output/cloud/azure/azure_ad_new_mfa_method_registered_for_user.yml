@@ -12,8 +12,24 @@ references:
 - https://attack.mitre.org/techniques/T1556/006/
 - https://twitter.com/jhencinski/status/1618660062352007174
 tags:
-- attack.T1556_006
+- attack.t1556.006
 date: '2023-01-30'
+original_spl: |-
+  `azure_monitor_aad` category=AuditLogs operationName="User registered security info" properties.operationType=Add
+    | rename properties.* as *
+    | rename targetResources{}.* as *
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY action dest user
+         src vendor_account vendor_product
+         user_agent result resultDescription
+         signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_new_mfa_method_registered_for_user_filter`
+splunk_rule_id: 2628b087-4189-403f-9044-87403f777a1b
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -23,5 +39,5 @@ detection:
   selection_1:
     operationName: User registered security info
   selection_2:
-    operationType: Add
+    properties.operationType: Add
   condition: selection_0 and selection_1 and selection_2

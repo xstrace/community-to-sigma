@@ -10,8 +10,26 @@ description: The following analytic identifies high-severity findings from AWS E
 references:
 - https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html
 tags:
-- attack.T1204_003
+- attack.t1204.003
 date: '2021-08-18'
+original_spl: |-
+  `cloudtrail` eventSource=ecr.amazonaws.com eventName=DescribeImageScanFindings
+    | spath path=responseElements.imageScanFindings.findings{} output=findings
+    | mvexpand findings
+    | spath input=findings
+    | search severity=HIGH
+    | rename name as finding_name, description as finding_description, requestParameters.imageId.imageDigest as imageDigest, requestParameters.repositoryName as repository
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product finding_name
+         finding_description imageDigest repository
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_ecr_container_scanning_findings_high_filter`
+splunk_rule_id: 30a0e9f8-f1dd-4f9d-8fc2-c622461d781c
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail

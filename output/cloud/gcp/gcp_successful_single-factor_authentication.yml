@@ -11,13 +11,24 @@ references:
 - https://support.google.com/a/answer/175197?hl=en
 - https://www.forbes.com/sites/daveywinder/2020/07/08/new-dark-web-audit-reveals-15-billion-stolen-logins-from-100000-breaches-passwords-hackers-cybercrime/?sh=69927b2a180f
 tags:
-- attack.T1078_004
-- attack.T1586_003
+- attack.t1078.004
+- attack.t1586.003
 date: '2022-10-14'
+original_spl: |-
+  `gws_reports_login` event.name=login_success NOT `gws_login_mfa_methods`
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY user, src_ip, login_challenge_method,
+         app, event.name, vendor_account,
+         action
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `gcp_successful_single_factor_authentication_filter`
+splunk_rule_id: 40e17d88-87da-414e-b253-8dc1e4f9555b
+splunk_rule_type: TTP
 logsource:
   product: google_workspace
   service: login
 detection:
   selection_0:
-    name: login_success
+    event.name: login_success
   condition: selection_0

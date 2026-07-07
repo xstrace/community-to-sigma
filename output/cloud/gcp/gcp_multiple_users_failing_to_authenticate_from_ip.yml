@@ -12,16 +12,28 @@ references:
 - https://attack.mitre.org/techniques/T1110/003/
 - https://www.blackhillsinfosec.com/wp-content/uploads/2020/05/Breaching-the-Cloud-Perimeter-Slides.pdf
 tags:
-- attack.T1110_003
-- attack.T1110_004
-- attack.T1586_003
+- attack.t1110.003
+- attack.t1110.004
+- attack.t1586.003
 date: '2022-10-12'
+original_spl: |-
+  `gws_reports_login` event.type = login event.name = login_failure
+    | bucket span=5m _time
+    | stats count dc(user) AS unique_accounts values(user) as tried_accounts values(authentication_method) AS authentication_method earliest(_time) as firstTime latest(_time) as lastTime
+      BY _time event.name src
+         app id.applicationName
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | where unique_accounts > 20
+    | `gcp_multiple_users_failing_to_authenticate_from_ip_filter`
+splunk_rule_id: da20828e-d6fb-4ee5-afb7-d0ac200923d5
+splunk_rule_type: Anomaly
 logsource:
   product: google_workspace
   service: login
 detection:
   selection_0:
-    type: login
+    event.type: login
   selection_1:
-    name: login_failure
+    event.name: login_failure
   condition: selection_0 and selection_1

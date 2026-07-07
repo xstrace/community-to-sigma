@@ -11,9 +11,23 @@ references:
 - https://www.whiteoaksecurity.com/blog/goawsconsolespray-password-spraying-tool/
 - https://softwaresecuritydotblog.wordpress.com/2019/09/28/how-to-protect-against-credential-stuffing-on-aws/
 tags:
-- attack.T1110_003
-- attack.T1110_004
+- attack.t1110.003
+- attack.t1110.004
 date: '2023-01-30'
+original_spl: |-
+  `cloudtrail` eventName=ConsoleLogin action=failure
+    | bucket span=10m _time
+    | rename user_name as user
+    | stats dc(_raw) AS failed_attempts values(user) as user values(user_agent) as user_agent
+      BY _time, src, signature,
+         dest, vendor_account vendor_region,
+         vendor_product
+    | where failed_attempts > 20
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_high_number_of_failed_authentications_from_ip_filter`
+splunk_rule_id: f75b7f1a-b8eb-4975-a214-ff3e0a944757
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: cloudtrail

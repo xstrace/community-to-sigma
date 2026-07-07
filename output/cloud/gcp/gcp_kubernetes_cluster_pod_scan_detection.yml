@@ -8,8 +8,16 @@ description: The following analytic identifies unauthenticated requests to Kuber
   confirmed malicious, this activity could lead to unauthorized access, allowing the attacker to exploit vulnerabilities within the cluster, potentially compromising sensitive data or gaining control over
   the Kubernetes environment.
 tags:
-- attack.T1526
+- attack.t1526
 date: '2020-07-17'
+original_spl: |-
+  `google_gcp_pubsub_message` category=kube-audit
+    | spath input=properties.log
+    | search responseStatus.code=401
+    | table sourceIPs{} userAgent verb requestURI responseStatus.reason properties.pod
+    | `gcp_kubernetes_cluster_pod_scan_detection_filter`
+splunk_rule_id: 19b53215-4a16-405b-8087-9e6acf619842
+splunk_rule_type: Hunting
 logsource:
   product: gcp
   service: pubsub

@@ -13,13 +13,37 @@ references:
 - https://www.cisco.com/c/en/us/support/docs/security/asa-5500-x-series-next-generation-firewalls/118097-configure-asa-00.html
 - https://www.ncsc.gov.uk/static-assets/documents/malware-analysis-reports/RayInitiator-LINE-VIPER/ncsc-mar-rayinitiator-line-viper.pdf
 tags:
-- attack.T1040
-- attack.T1557
+- attack.t1040
+- attack.t1557
 date: '2025-11-21'
+original_spl: |-
+  `cisco_asa`
+  message_id IN (111008, 111010)
+  command IN ("capture *")
+  | fillnull
+  | stats count
+          earliest(_time) as firstTime
+          latest(_time) as lastTime
+          values(user) as user
+          values(action) as action
+          values(message_id) as message_id
+          values(command) as command
+          values(src_ip) as src_ip
+          values(process_name) as process_name
+    by host
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_asa___packet_capture_activity_filter`
+splunk_rule_id: 7e9c3f8a-4b2d-4c5e-9a1f-6d8e5b3c2a9f
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: asa
 detection:
+  selection_0:
+    message_id:
+    - 111008
+    - 111010
   selection_1:
-    command|contains: capture *
-  condition: selection_1
+    command|startswith: 'capture '
+  condition: selection_0 and selection_1

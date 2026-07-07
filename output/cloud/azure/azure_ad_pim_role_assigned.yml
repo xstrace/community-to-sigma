@@ -11,12 +11,24 @@ references:
 - https://learn.microsoft.com/en-us/azure/active-directory/privileged-identity-management/pim-how-to-activate-role
 - https://microsoft.github.io/Azure-Threat-Research-Matrix/PrivilegeEscalation/AZT401/AZT401/
 tags:
-- attack.T1098_003
+- attack.t1098.003
 date: '2023-04-26'
+original_spl: |-
+  `azure_monitor_aad` operationName="Add eligible member to role in PIM completed*"
+    | rename properties.* as *
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src_user
+         vendor_account vendor_product signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_pim_role_assigned_filter`
+splunk_rule_id: fcd6dfeb-191c-46a0-a29c-c306382145ab
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
 detection:
   selection_0:
-    operationName|contains: Add eligible member to role in PIM completed*
+    operationName|startswith: Add eligible member to role in PIM completed
   condition: selection_0

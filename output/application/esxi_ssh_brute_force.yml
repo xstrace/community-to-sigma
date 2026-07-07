@@ -6,11 +6,15 @@ author: Raven Tait, Splunk
 description: This detection identifies signs of SSH brute-force attacks by monitoring for a high number of failed login attempts within a short time frame. Such activity may indicate an attacker attempting
   to gain unauthorized access through password guessing.
 tags:
-- attack.T1110
+- attack.t1110
 date: '2025-07-11'
+original_spl: '`esxi_syslog` Message="*Authentication failure for*" | rex "for (?<user>[\w]+) from (?<src_ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" | rex field=_raw "Z (?<dest>[\w\.]+)\s" | bin _time span=5m
+  | stats min(_time) as firstTime max(_time) as lastTime count by user, src_ip, dest | where count > 10 | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `esxi_ssh_brute_force_filter`'
+splunk_rule_id: 68fe4efa-bbbb-44ee-9f09-d07d2f0f346b
+splunk_rule_type: Anomaly
 logsource:
   category: application
 detection:
   selection_0:
-    Message|contains: '*Authentication failure for*'
+    Message|contains: Authentication failure for
   condition: selection_0

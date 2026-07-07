@@ -9,25 +9,54 @@ references:
 - https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
 - https://blog.talosintelligence.com/salt-typhoon-analysis/
 tags:
-- attack.T1018
-- attack.T1021_004
-- attack.T1046
+- attack.t1018
+- attack.t1021.004
+- attack.t1046
 date: '2026-05-19'
+original_spl: |-
+  `cisco_ios`
+  facility IN ("AAA", "HA_EM")
+  mnemonic IN ("AAA_ACCOUNTING_MESSAGE", "LOG")
+  message_text IN ("*ssh *", "*telnet *", "*ping *")
+  | rex field=message_text "^\w+:(?<aaa_src>[^:@]+)(?:@[^:]*)?:(?<aaa_user>[^:]*):(?<aaa_command>.*?)(?:\s+\((?<aaa_result>SUCCESS|FAILURE)\))?$"
+  | rex field=message_text "^(?:[^:]+:\s+)?(?:catchall:\s+)?(?<eem_command>.+?)\s*$"
+  | eval command=lower(trim(coalesce(aaa_command, eem_command, "")))
+  | where match(command, "^(ssh|telnet|ping)\s+")
+  | rex field=command "(?i)^(?:ssh(?:\s+-l\s+\S+)?|telnet|ping)\s+(?<target_ip>\d{1,3}(?:\.\d{1,3}){3})"
+  | eval command_type=case(match(command, "^ssh\s+"), "ssh", match(command, "^telnet\s+"), "telnet", match(command, "^ping\s+"), "ping")
+  | eval user=coalesce(aaa_user, user, "unknown")
+  | eval src_ip=coalesce(aaa_src, src_ip, "unknown")
+  | eval dest=coalesce(host, dvc, dest, "unknown")
+  | bin _time span=10m
+  | stats count as command_count
+          min(_time) as firstTime
+          max(_time) as lastTime
+          dc(target_ip) as distinct_targets
+          values(target_ip) as target_ips
+          values(command_type) as command_types
+          values(command) as commands
+    by _time dest user src_ip
+  | where command_count >= 8 OR distinct_targets >= 5
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_ios_xe_remote_access_probe_burst_filter`
+splunk_rule_id: efb20922-17bc-4fb0-880c-be50cfc100dd
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: ios
 detection:
   selection_0:
-    facility|contains:
+    facility:
     - AAA
     - HA_EM
   selection_1:
-    mnemonic|contains:
+    mnemonic:
     - AAA_ACCOUNTING_MESSAGE
     - LOG
   selection_2:
     message_text|contains:
-    - '*ssh *'
-    - '*telnet *'
-    - '*ping *'
+    - 'ssh '
+    - 'telnet '
+    - 'ping '
   condition: selection_0 and selection_1 and selection_2

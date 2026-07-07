@@ -12,8 +12,24 @@ references:
 - https://attack.mitre.org/techniques/T1136/003/
 - https://docs.microsoft.com/en-us/azure/active-directory/external-identities/b2b-quickstart-add-guest-users-portal
 tags:
-- attack.T1136_003
+- attack.t1136.003
 date: '2022-08-19'
+original_spl: |-
+  `azure_monitor_aad` operationName="Invite external user"
+    | rename properties.* as *
+    | rename initiatedBy.user.userPrincipalName as initiatedBy
+    | rename targetResources{}.type as type
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product user_agent
+         initiatedBy type signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_external_guest_user_invited_filter`
+splunk_rule_id: c1fb4edb-cab1-4359-9b40-925ffd797fb5
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

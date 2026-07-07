@@ -10,14 +10,29 @@ references:
 - https://developer.okta.com/docs/reference/api/event-types/?q=security.threat.detected
 - https://splunkbase.splunk.com/app/6553
 tags:
-- attack.T1078_001
+- attack.t1078.001
 date: '2022-12-19'
+original_spl: |-
+  | tstats `security_content_summariesonly` count max(_time) as lastTime, min(_time) as firstTime FROM datamodel=Change
+    WHERE All_Changes.action=created
+      AND
+      All_Changes.command=system.api_token.create
+    BY _time span=5m All_Changes.user
+       All_Changes.result All_Changes.command sourcetype
+       All_Changes.src All_Changes.action All_Changes.object_category
+       All_Changes.dest
+  | `drop_dm_object_name("All_Changes")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `okta_new_api_token_created_filter`
+splunk_rule_id: c3d22720-35d3-4da4-bd0a-740d37192bd4
+splunk_rule_type: TTP
 logsource:
-  category: process_creation
+  category: change
   product: okta
 detection:
   selection_0:
-    action: created
+    All_Changes.action: created
   selection_1:
     CommandLine: system.api_token.create
   condition: selection_0 and selection_1

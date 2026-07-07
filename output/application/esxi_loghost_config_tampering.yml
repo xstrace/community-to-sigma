@@ -5,15 +5,19 @@ level: medium
 author: Raven Tait, Splunk
 description: This detection identifies changes to the syslog loghost configuration on an ESXi host, which may indicate an attempt to disrupt log forwarding and evade detection.
 tags:
-- attack.T1685
+- attack.t1685
 date: '2025-07-11'
+original_spl: '`esxi_syslog` Message="*Set called with key*" AND Message IN ("*Syslog.global.logHost*","*Syslog.global.logdir*") | rex field=_raw "key ''(?<key>[^'']+)'', value ''\"(?<value>[^\"]+)\"''"
+  | rex field=_raw "Z (?<dest>[\w\.]+)\s" | stats min(_time) as firstTime max(_time) as lastTime count by dest key value | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `esxi_loghost_config_tampering_filter`'
+splunk_rule_id: 64bc2fa3-c493-44b4-8e94-3e5dbf71377e
+splunk_rule_type: TTP
 logsource:
   category: application
 detection:
   selection_0:
-    Message|contains: '*Set called with key*'
+    Message|contains: Set called with key
   selection_1:
     Message|contains:
-    - '*Syslog.global.logHost*'
-    - '*Syslog.global.logdir*'
+    - Syslog.global.logHost
+    - Syslog.global.logdir
   condition: selection_0 and selection_1

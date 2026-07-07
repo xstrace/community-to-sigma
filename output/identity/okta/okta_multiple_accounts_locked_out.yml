@@ -10,18 +10,35 @@ references:
 - https://attack.mitre.org/techniques/T1110/
 - https://splunkbase.splunk.com/app/6553
 tags:
-- attack.T1110
+- attack.t1110
 date: '2024-04-17'
+original_spl: |-
+  | tstats `security_content_summariesonly` count max(_time) as lastTime, min(_time) as firstTime values(All_Changes.user) as user FROM datamodel=Change
+    WHERE All_Changes.change_type=AAA All_Changes.object_category=User
+      AND
+      All_Changes.action=lockout
+      AND
+      All_Changes.command=user.account.lock
+    BY _time span=5m All_Changes.result
+       All_Changes.command sourcetype All_Changes.src
+       All_Changes.dest
+  | where count > 5
+  | `drop_dm_object_name("All_Changes")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `okta_multiple_accounts_locked_out_filter`
+splunk_rule_id: a511426e-184f-4de6-8711-cfd2af29d1e1
+splunk_rule_type: Anomaly
 logsource:
-  category: process_creation
+  category: change
   product: okta
 detection:
   selection_0:
-    change_type: AAA
+    All_Changes.change_type: AAA
   selection_1:
-    object_category: User
+    All_Changes.object_category: User
   selection_2:
-    action: lockout
+    All_Changes.action: lockout
   selection_3:
     CommandLine: user.account.lock
   condition: selection_0 and selection_1 and selection_2 and selection_3

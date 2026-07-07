@@ -12,8 +12,13 @@ description: The following analytic detects instances where a Duo administrator 
 references:
 - https://splunkbase.splunk.com/app/7404
 tags:
-- attack.T1556
+- attack.t1556
 date: '2025-07-10'
+original_spl: '`cisco_duo_administrator` action=policy_bulk_delete | rename username as user | spath input=description | rex field=policies max_match=0 "(?<policy_name>[^:,]+):\s+" | eval policy_count=mvcount(policy_name)
+  | where policy_count > 3 | stats count min(_time) as firstTime max(_time) as lastTime by action actionlabel description user admin_email policy_count | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `cisco_duo_bulk_policy_deletion_filter`'
+splunk_rule_id: 983be012-e408-4cb0-b87f-6756bb5f7047
+splunk_rule_type: TTP
 logsource:
   product: cisco
   service: duo

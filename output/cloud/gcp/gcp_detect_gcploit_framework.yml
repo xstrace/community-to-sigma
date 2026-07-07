@@ -11,12 +11,18 @@ references:
 - https://github.com/dxa4481/gcploit
 - https://www.youtube.com/watch?v=Ml09R38jpok
 tags:
-- attack.T1078
+- attack.t1078
 date: '2020-10-08'
+original_spl: |-
+  `google_gcp_pubsub_message` data.protoPayload.request.function.timeout=539s
+    | table src src_user data.resource.labels.project_id data.protoPayload.request.function.serviceAccountEmail data.protoPayload.authorizationInfo{}.permission data.protoPayload.request.location http_user_agent
+    | `gcp_detect_gcploit_framework_filter`
+splunk_rule_id: a1c5a85e-a162-410c-a5d9-99ff639e5a52
+splunk_rule_type: TTP
 logsource:
   product: gcp
   service: pubsub
 detection:
   selection_0:
-    protoPayload.request.function.timeout: 539
+    data.protoPayload.request.function.timeout: 539
   condition: selection_0

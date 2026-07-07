@@ -11,9 +11,24 @@ references:
 - https://attack.mitre.org/techniques/T1110/001/
 - https://attack.mitre.org/techniques/T1110/003/
 tags:
-- attack.T1110_001
-- attack.T1110_003
+- attack.t1110.001
+- attack.t1110.003
 date: '2023-01-23'
+original_spl: |-
+  `azure_monitor_aad`
+  category=SignInLogs
+  properties.status.errorCode=50126
+  properties.authenticationDetails{}.succeeded=false
+  | rename properties.* as *
+  | bin span=10m _time
+  | fillnull value=null
+  | stats count min(_time) as firstTime max(_time) as lastTime values(dest) as dest values(user) as user values(user_agent) as user_agent by src _time vendor_account vendor_product
+  | where count > 20
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `azure_ad_high_number_of_failed_authentications_from_ip_filter`
+splunk_rule_id: e5ab41bf-745d-4f72-a393-2611151afd8e
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -21,7 +36,7 @@ detection:
   selection_0:
     category: SignInLogs
   selection_1:
-    status.errorCode: 50126
+    properties.status.errorCode: 50126
   selection_2:
-    authenticationDetails{}.succeeded: 'false'
+    properties.authenticationDetails{}.succeeded: 'false'
   condition: selection_0 and selection_1 and selection_2

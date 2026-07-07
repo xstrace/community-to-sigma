@@ -10,8 +10,30 @@ description: The following analytic detects the assignment of privileged roles t
 references:
 - https://posts.specterops.io/azure-privilege-escalation-via-service-principal-abuse-210ae2be2a5
 tags:
-- attack.T1098_003
+- attack.t1098.003
 date: '2023-04-28'
+original_spl: |-
+  `azure_monitor_aad` operationName="Add member to role"
+    | rename properties.* as *
+    | search "targetResources{}.type"=ServicePrincipal
+    | rename initiatedBy.user.userPrincipalName as initiatedBy
+    | rename targetResources{}.modifiedProperties{}.newValue as roles
+    | eval role=mvindex(roles,1)
+    | rename targetResources{}.displayName as apps
+    | eval displayName=mvindex(apps,0)
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product displayName
+         initiatedBy result role
+         signature
+    | lookup privileged_azure_ad_roles azureadrole AS role OUTPUT isprvilegedadrole description
+    | search isprvilegedadrole = True
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_privileged_role_assigned_to_service_principal_filter`
+splunk_rule_id: 5dfaa3d3-e2e4-4053-8252-16d9ee528c41
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

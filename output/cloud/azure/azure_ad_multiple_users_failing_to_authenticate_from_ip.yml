@@ -12,10 +12,24 @@ references:
 - https://www.cisa.gov/uscert/ncas/alerts/aa21-008a
 - https://docs.microsoft.com/azure/active-directory/reports-monitoring/reference-sign-ins-error-codes
 tags:
-- attack.T1110_003
-- attack.T1110_004
-- attack.T1586_003
+- attack.t1110.003
+- attack.t1110.004
+- attack.t1586.003
 date: '2022-07-11'
+original_spl: |-
+  `azure_monitor_aad` category=SignInLogs properties.status.errorCode=50126 properties.authenticationDetails{}.succeeded=false
+    | rename properties.* as *
+    | bucket span=5m _time
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime dc(user) as unique_user values(dest) as dest values(user) as user values(user_agent) as user_agent values(vendor_account) as vendor_account values(vendor_product) as vendor_product
+      BY src signature
+    | where unique_user > 30
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_multiple_users_failing_to_authenticate_from_ip_filter`
+splunk_rule_id: 94481a6a-8f59-4c86-957f-55a71e3612a6
+splunk_rule_type: Anomaly
 logsource:
   product: azure
   service: aad
@@ -23,7 +37,7 @@ detection:
   selection_0:
     category: SignInLogs
   selection_1:
-    status.errorCode: 50126
+    properties.status.errorCode: 50126
   selection_2:
-    authenticationDetails{}.succeeded: 'false'
+    properties.authenticationDetails{}.succeeded: 'false'
   condition: selection_0 and selection_1 and selection_2

@@ -8,29 +8,44 @@ description: Detects abnormal network activity and connectivity issues in Ollama
 references:
 - https://github.com/rosplk/ta-ollama
 tags:
-- attack.T1571
+- attack.t1571
 date: '2025-10-13'
+original_spl: |-
+  `ollama_server` level=WARN (msg="*failed*" OR msg="*dial tcp*" OR msg="*lookup*" OR msg="*no such host*" OR msg="*connection*" OR msg="*network*" OR msg="*timeout*" OR msg="*unreachable*" OR msg="*refused*")
+    | eval src=coalesce(src, src_ip, "N/A")
+    | stats count as incidents, values(src) as src, values(msg) as warning_messages, latest(_time) as last_incident
+      BY host
+    | eval last_incident=strftime(last_incident, "%Y-%m-%d %H:%M:%S")
+    | eval severity="medium"
+    | eval attack_type="Abnormal Network Connectivity"
+    | stats count
+      BY last_incident, host, incidents,
+         src, warning_messages, severity,
+         attack_type
+    | `ollama_abnormal_network_connectivity_filter`
+splunk_rule_id: 19ec30ad-faa2-496a-a6a9-f2e5f778fbdb
+splunk_rule_type: Anomaly
 logsource:
   category: application
 detection:
   selection_0:
     level: WARN
   selection_1:
-    msg|contains: '*failed*'
+    msg|contains: failed
   selection_2:
-    msg|contains: '*dial tcp*'
+    msg|contains: dial tcp
   selection_3:
-    msg|contains: '*lookup*'
+    msg|contains: lookup
   selection_4:
-    msg|contains: '*no such host*'
+    msg|contains: no such host
   selection_5:
-    msg|contains: '*connection*'
+    msg|contains: connection
   selection_6:
-    msg|contains: '*network*'
+    msg|contains: network
   selection_7:
-    msg|contains: '*timeout*'
+    msg|contains: timeout
   selection_8:
-    msg|contains: '*unreachable*'
+    msg|contains: unreachable
   selection_9:
-    msg|contains: '*refused*'
+    msg|contains: refused
   condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4 and selection_5 and selection_6 and selection_7 and selection_8 and selection_9

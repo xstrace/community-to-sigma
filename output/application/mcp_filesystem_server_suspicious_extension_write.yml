@@ -10,13 +10,45 @@ references:
 - https://cymulate.com/blog/cve-2025-53109-53110-escaperoute-anthropic/
 - https://www.splunk.com/en_us/blog/security/securing-ai-agents-model-context-protocol.html
 tags:
-- attack.T1059
+- attack.t1059
 date: '2026-02-17'
+original_spl: |-
+  `mcp_server` method IN ("write_file", "create_file") direction=inbound
+  | spath output=file_path path=params.path
+  | spath output=file_content path=params.content
+  | eval dest=host
+  | eval file_extension=lower(mvindex(split(file_path, "."), -1))
+  | where file_extension IN (
+      "exe", "dll", "ps1", "bat", "cmd", "vbs", "js", "scr", "msi", "hta", "wsf", "wsh", "pif", "com", "cpl",
+      "sh", "bash", "zsh", "ksh", "csh", "tcsh", "fish",
+      "py", "pl", "rb", "php", "lua", "awk",
+      "so", "dylib", "bin", "elf", "run", "AppImage",
+      "deb", "rpm", "pkg", "dmg",
+      "plist", "service", "timer", "socket", "conf"
+      )
+  | eval
+      file_path_lower=lower(file_path),
+      is_system_path = if(match(file_path_lower, "(windows|system32|syswow64|program files|/usr|/bin|/sbin|/lib|/lib64|/etc|/opt)"), 1, 0),
+      is_startup_path = if(match(file_path_lower, "(startup|autorun|cron\.d|crontab|launchd|launchagents|launchdaemons|systemd|init\.d|rc\.d|rc\.local|profile\.d|bashrc|zshrc|bash_profile)"), 1, 0),
+      is_hidden_unix = if(match(file_path, "/\.[^/]+$"), 1, 0),
+      content_length=len(file_content)
+  | stats count min(_time) as firstTime max(_time) as lastTime values(file_path) as file_paths values(file_extension) as extensions max(is_system_path) as targets_system_path max(is_startup_path) as targets_startup_path max(is_hidden_unix) as targets_hidden_file avg(content_length) as avg_content_size by dest, method
+  | eval
+      targets_system_path=if(isnull(targets_system_path), 0, targets_system_path),
+      targets_startup_path=if(isnull(targets_startup_path), 0, targets_startup_path),
+      targets_hidden_file=if(isnull(targets_hidden_file), 0, targets_hidden_file)
+  | sort - targets_startup_path, - targets_system_path, - targets_hidden_file, - count
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | table dest firstTime lastTime count method extensions file_paths targets_system_path targets_startup_path targets_hidden_file avg_content_size
+  | `mcp_filesystem_server_suspicious_extension_write_filter`
+splunk_rule_id: fc2a024a-18c1-4d31-9480-7f04cf3ff293
+splunk_rule_type: Hunting
 logsource:
   category: application
 detection:
   selection_0:
-    method|contains:
+    method:
     - write_file
     - create_file
   selection_1:

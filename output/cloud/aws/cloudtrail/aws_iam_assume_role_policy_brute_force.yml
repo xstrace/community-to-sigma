@@ -11,9 +11,22 @@ references:
 - https://rhinosecuritylabs.com/aws/assume-worst-aws-assume-role-enumeration/
 - https://www.elastic.co/guide/en/security/current/aws-iam-brute-force-of-assume-role-policy.html
 tags:
-- attack.T1580
-- attack.T1110
+- attack.t1580
+- attack.t1110
 date: '2021-04-06'
+original_spl: |-
+  `cloudtrail` (errorCode=MalformedPolicyDocumentException) status=failure (userAgent!=*.amazonaws.com)
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime values(requestParameters.policyName) as policy_name
+      BY src, user, vendor_account
+         vendor_region, vendor_product, signature,
+         dest, errorCode
+    | where count >= 2
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_iam_assume_role_policy_brute_force_filter`
+splunk_rule_id: f19e09b0-9308-11eb-b7ec-acde48001122
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail
@@ -21,7 +34,7 @@ detection:
   selection_0:
     errorCode: MalformedPolicyDocumentException
   selection_1:
-    sc-status: failure
+    status: failure
   selection_2:
-    userAgent!|contains: '*.amazonaws.com'
+    userAgent|endswith: .amazonaws.com
   condition: selection_0 and selection_1 and selection_2

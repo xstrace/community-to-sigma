@@ -1,0 +1,47 @@
+title: Cisco ASA - Core Syslog Message Volume Drop
+id: 4b4f8fdd-1f9e-45d8-9b0f-1f64c0b297a4
+status: stable
+level: medium
+author: Bhavin Patel, Micheal Haag, Splunk
+description: |
+  Adversaries may intentionally suppress or reduce the volume of core Cisco ASA syslog messages to evade detection or cover their tracks. This hunting search is recommended to proactively identify suspicious downward shifts or absences in key syslog message IDs, which may indicate tampering or malicious activity. Visualizing this data in Splunk dashboards enables security teams to quickly spot anomalies and investigate potential compromise.
+references:
+- https://blog.talosintelligence.com/arcanedoor-new-espionage-focused-campaign-found-targeting-perimeter-network-devices/
+- https://sec.cloudapps.cisco.com/security/center/resources/asa_ftd_continued_attacks
+- https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-asaftd-webvpn-z5xP8EUB
+- https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-http-code-exec-WmfP3h3O
+- https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-asaftd-webvpn-YROOTUW
+- https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-http-code-exec-WmfP3h3O
+- https://www.cisa.gov/news-events/directives/ed-25-03-identify-and-mitigate-potential-compromise-cisco-devices
+- https://www.ncsc.gov.uk/news/persistent-malicious-targeting-cisco-devices
+tags:
+- attack.t1685
+date: '2025-09-25'
+original_spl: |-
+  `cisco_asa`
+  message_id IN (302013, 302014, 609002, 710005)
+  | eval msg_desc=case(
+    message_id="302013","Built inbound TCP connection",
+    message_id="302014","Teardown TCP connection",
+    message_id="609002","Teardown local-host management",
+    message_id="710005","TCP request discarded"
+  )
+  | bin _time span=15m
+  | stats count values(msg_desc) as message_description
+                values(dest) as dest
+    by _time message_id
+  | xyseries _time message_id count
+  | `cisco_asa___core_syslog_message_volume_drop_filter`
+splunk_rule_id: 4b4f8fdd-1f9e-45d8-9b0f-1f64c0b297a4
+splunk_rule_type: Hunting
+logsource:
+  product: cisco
+  service: asa
+detection:
+  selection_0:
+    message_id:
+    - 302013
+    - 302014
+    - 609002
+    - 710005
+  condition: selection_0

@@ -9,16 +9,28 @@ description: The following analytic identifies excessive security scanning activ
 references:
 - https://github.com/aquasecurity/cloudsploit
 tags:
-- attack.T1526
+- attack.t1526
 date: '2021-04-13'
+original_spl: |-
+  `cloudtrail` eventName=Describe* OR eventName=List* OR eventName=Get*
+    | fillnull
+    | rename user_name as user
+    | stats dc(signature) as dc_events min(_time) as firstTime max(_time) as lastTime values(signature) as signature values(dest) as dest values(user_agent) as user_agent values(src) as src values(vendor_account) as vendor_account values(vendor_region) as vendor_region
+      BY user
+    | where dc_events > 50
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_excessive_security_scanning_filter`
+splunk_rule_id: 1fdd164a-def8-4762-83a9-9ffe24e74d5a
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail
 detection:
   selection_0:
-    eventName|contains: Describe*
+    eventName|startswith: Describe*
   selection_1:
-    eventName|contains: List*
+    eventName|startswith: List
   selection_2:
-    eventName|contains: Get*
+    eventName|startswith: Get
   condition: selection_0 and selection_1 and selection_2

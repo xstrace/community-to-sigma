@@ -11,8 +11,25 @@ references:
 - https://sec.okta.com/everythingisyes
 - https://splunkbase.splunk.com/app/6553
 tags:
-- attack.T1110
+- attack.t1110
 date: '2022-12-19'
+original_spl: |-
+  `okta` eventType=system.push.send_factor_verify_push OR ((legacyEventType=core.user.factor.attempt_success) AND (debugContext.debugData.factor=OKTA_VERIFY_PUSH)) OR ((legacyEventType=core.user.factor.attempt_fail) AND (debugContext.debugData.factor=OKTA_VERIFY_PUSH))
+    | stats count(eval(legacyEventType="core.user.factor.attempt_success"))  as successes count(eval(legacyEventType="core.user.factor.attempt_fail")) as failures count(eval(eventType="system.push.send_factor_verify_push")) as pushes
+      BY user,_time
+    | stats latest(_time) as lasttime earliest(_time) as firsttime sum(successes) as successes sum(failures) as failures sum(pushes) as pushes
+      BY user
+    | eval seconds=lasttime-firsttime
+    | eval lasttime=strftime(lasttime, "%c")
+    | search (pushes>1)
+    | eval totalattempts=successes+failures
+    | eval finding="Normal authentication pattern"
+    | eval finding=if(failures==pushes AND pushes>1,"Authentication attempts not successful because multiple pushes denied",finding)
+    | eval finding=if(totalattempts==0,"Multiple pushes sent and ignored",finding)
+    | eval finding=if(successes>0 AND pushes>3,"Probably should investigate. Multiple pushes sent, eventual successful authentication!",finding)
+    | `okta_mfa_exhaustion_hunt_filter`
+splunk_rule_id: 97e2fe57-3740-402c-988a-76b64ce04b8d
+splunk_rule_type: Hunting
 logsource:
   product: okta
   service: okta

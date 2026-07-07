@@ -10,18 +10,31 @@ references:
 - https://attack.mitre.org/techniques/T1556/
 - https://splunkbase.splunk.com/app/6553
 tags:
-- attack.T1556_006
+- attack.t1556.006
 date: '2024-04-17'
+original_spl: |-
+  | tstats `security_content_summariesonly` count max(_time) as lastTime, min(_time) as firstTime FROM datamodel=Change
+    WHERE sourcetype="OktaIM2:log" All_Changes.object_category=User
+      AND
+      All_Changes.action=modified All_Changes.command=user.mfa.factor.deactivate
+    BY All_Changes.user All_Changes.result All_Changes.command
+       sourcetype All_Changes.src All_Changes.dest
+  | `drop_dm_object_name("All_Changes")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `okta_multi_factor_authentication_disabled_filter`
+splunk_rule_id: 7c0348ce-bdf9-45f6-8a57-c18b5976f00a
+splunk_rule_type: TTP
 logsource:
-  category: process_creation
+  category: change
   product: okta
 detection:
   selection_0:
     sourcetype: OktaIM2:log
   selection_1:
-    object_category: User
+    All_Changes.object_category: User
   selection_2:
-    action: modified
+    All_Changes.action: modified
   selection_3:
     CommandLine: user.mfa.factor.deactivate
   condition: selection_0 and selection_1 and selection_2 and selection_3

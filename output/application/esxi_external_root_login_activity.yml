@@ -6,13 +6,18 @@ author: Raven Tait, Splunk
 description: This detection identifies instances where the ESXi UI is accessed using the root account instead of a delegated administrative user. Direct root access to the UI bypasses role-based access
   controls and auditing practices, and may indicate risky behavior, misconfiguration, or unauthorized activity by a malicious actor using compromised credentials.
 tags:
-- attack.T1078
+- attack.t1078
 date: '2025-07-11'
+original_spl: '`esxi_syslog` Message="*root*" AND Message="*logged in*" | rex field=_raw "root@(?<SrcIpAddr>\d{1,3}(?:\.\d{1,3}){3})" | rex field=_raw "Z (?<dest>[\w\.]+)\s" | search SrcIpAddr != "127.0.0.1"
+  AND SrcIpAddr != 192.168.0.0/16 AND SrcIpAddr != 172.16.0.0/12 AND SrcIpAddr != 10.0.0.0/8 | stats min(_time) as firstTime max(_time) as lastTime count by dest SrcIpAddr | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `esxi_external_root_login_activity_filter`'
+splunk_rule_id: 218bf991-6c63-4c26-a682-6ac1a53ad8f8
+splunk_rule_type: Anomaly
 logsource:
   category: application
 detection:
   selection_0:
-    Message|contains: '*root*'
+    Message|contains: root
   selection_1:
-    Message|contains: '*logged in*'
+    Message|contains: logged in
   condition: selection_0 and selection_1

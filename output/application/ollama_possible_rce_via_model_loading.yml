@@ -9,8 +9,16 @@ description: Detects Ollama server errors and failures during model loading oper
 references:
 - https://github.com/rosplk/ta-ollama
 tags:
-- attack.T1190
+- attack.t1190
 date: '2025-10-13'
+original_spl: '`ollama_server` level=ERROR ("*llama runner*" OR "*model*" OR "*server.go*" OR "*exited*") | rex field=_raw "source=(?<code_source>[^\s]+)" | rex field=_raw "msg=\"(?<msg>[^\"]+)\"" | rex
+  field=_raw "err=\"(?<err>[^\"]+)\"" | rex field=_raw "level=(?<log_level>\w+)" | eval error_type=case( match(_raw, "exited"), "service_crash", match(_raw, "model"), "model_error", match(_raw, "llama runner"),
+  "runner_error", 1=1, "unknown_error" ) | bin _time span=1h | stats count as error_count, earliest(_time) as first_error, latest(_time) as last_error, values(msg) as error_messages, values(err) as error_details,
+  values(code_source) as code_sources, values(error_type) as error_types, dc(error_type) as unique_error_types by host | where error_count > 0 | eval first_error=strftime(first_error, "%Y-%m-%d %H:%M:%S")
+  | eval last_error=strftime(last_error, "%Y-%m-%d %H:%M:%S") | eval severity=case( match(error_details, "exit status") OR error_count > 5, "critical", error_count > 2, "high", 1=1, "medium" ) | eval attack_type="Suspicious
+  Model Loading / Potential RCE" | stats count by first_error, last_error, host, code_sources, error_count, unique_error_types, error_types, error_messages, error_details, severity, attack_type | `ollama_possible_rce_via_model_loading_filter`'
+splunk_rule_id: 3f28c930-5208-425d-a7b9-53d349756d91
+splunk_rule_type: Anomaly
 logsource:
   category: application
 detection:

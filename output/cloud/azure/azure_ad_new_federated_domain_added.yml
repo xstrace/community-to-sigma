@@ -13,8 +13,23 @@ references:
 - https://www.mandiant.com/resources/blog/detecting-microsoft-365-azure-active-directory-backdoors
 - https://attack.mitre.org/techniques/T1484/002/
 tags:
-- attack.T1484_002
+- attack.t1484.002
 date: '2022-09-02'
+original_spl: |-
+  `azure_monitor_aad` operationName="Set domain authentication" "properties.result"=success
+    | rename properties.* as *
+    | rename targetResources{}.displayName as domain
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product user_agent
+         domain signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_new_federated_domain_added_filter`
+splunk_rule_id: a87cd633-076d-4ab2-9047-977751a3c1a0
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -22,5 +37,5 @@ detection:
   selection_0:
     operationName: Set domain authentication
   selection_1:
-    result": success
+    '"properties.result"': success
   condition: selection_0 and selection_1

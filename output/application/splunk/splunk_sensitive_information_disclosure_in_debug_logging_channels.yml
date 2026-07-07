@@ -10,8 +10,16 @@ references:
 - https://advisory.splunk.com/advisories/SVD-2024-1008
 - https://advisory.splunk.com/advisories/SVD-2024-1009
 tags:
-- attack.T1552
+- attack.t1552
 date: '2024-10-14'
+original_spl: |-
+  `splunkd` log_level="DEBUG" AND component IN ("REST_Calls", "AdminManager", "JSONWebToken")
+  | stats count min(_time) as firstTime max(_time) as lastTime by host splunk_server log_level component event_message
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `splunk_sensitive_information_disclosure_in_debug_logging_channels_filter`
+splunk_rule_id: 93dc7182-c5da-4085-82ec-401abf33d623
+splunk_rule_type: Hunting
 logsource:
   product: splunk
   service: splunkd
@@ -19,7 +27,7 @@ detection:
   selection_0:
     log_level: DEBUG
   selection_1:
-    component|contains:
+    component:
     - REST_Calls
     - AdminManager
     - JSONWebToken

@@ -9,17 +9,29 @@ description: The following analytic identifies excessive AccessDenied events wit
 references:
 - https://aws.amazon.com/premiumsupport/knowledge-center/troubleshoot-iam-permission-errors/
 tags:
-- attack.T1580
+- attack.t1580
 date: '2022-10-04'
+original_spl: |-
+  `amazon_security_lake` api.response.error=AccessDenied OR api.response.error=OperationNotPermittedException OR api.response.error=*Unauthorized* actor.user.type=IAMUser
+    | bucket _time span=1h
+    | stats count as failures min(_time) as firstTime max(_time) as lastTime dc(api.operation) as dc_operation, dc(api.service.name) as dc_service values(api.operation) as api.operation values(api.service.name) as api.service.name values(http_request.user_agent) as http_request.user_agent values(src_endpoint.ip) as src_ip values(actor.user.account.uid) as actor.user.account.uid values(cloud.provider) as cloud.provider values(cloud.region) as cloud.region
+      BY _time actor.user.uid
+    | where failures >= 5 AND dc_operation >= 1 AND dc_service >= 1
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_iam_accessdenied_discovery_events_filter`
+splunk_rule_id: a4f39755-b1e2-40bb-b2dc-4449c45b0bf2
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    response.error: AccessDenied
+    api.response.error: AccessDenied
   selection_1:
-    response.error: OperationNotPermittedException
+    api.response.error: OperationNotPermittedException
   selection_2:
-    response.error|contains: '*Unauthorized*'
-    user.type: IAMUser
+    api.response.error|contains: '*Unauthorized*'
+    actor.user.type: IAMUser
   condition: selection_0 and selection_1 and selection_2

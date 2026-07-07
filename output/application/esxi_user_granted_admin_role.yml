@@ -6,14 +6,19 @@ author: Raven Tait, Splunk
 description: This detection identifies when a user is granted the Administrator role on an ESXi host. Assigning elevated privileges is a critical action that can indicate potential malicious behavior if
   performed unexpectedly. Adversaries who gain access may use this to escalate privileges, maintain persistence, or disable security controls.
 tags:
-- attack.T1098
-- attack.T1078
+- attack.t1098
+- attack.t1078
 date: '2025-07-11'
+original_spl: '`esxi_syslog` Message="*esxcli system permission set*" AND Message="*role Admin*" | rex field=_raw "\]: \[(?<user>\w+)\]:(?<command>.+)" | rex field=_raw "--id (?<target_user>\w+)" | rex
+  field=_raw "Z (?<dest>[\w\.]+)\s" | stats min(_time) as firstTime max(_time) as lastTime count by dest user command target_user | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `esxi_user_granted_admin_role_filter`'
+splunk_rule_id: b0c64d6e-cfdf-441a-b6ce-d956e202563e
+splunk_rule_type: TTP
 logsource:
   category: application
 detection:
   selection_0:
-    Message|contains: '*esxcli system permission set*'
+    Message|contains: esxcli system permission set
   selection_1:
-    Message|contains: '*role Admin*'
+    Message|contains: role Admin
   condition: selection_0 and selection_1

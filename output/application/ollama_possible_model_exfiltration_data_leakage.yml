@@ -10,8 +10,14 @@ description: Detects data leakage and exfiltration attempts targeting Ollama mod
 references:
 - https://github.com/rosplk/ta-ollama
 tags:
-- attack.T1048
+- attack.t1048
 date: '2025-10-13'
+original_spl: '`ollama_server` | rex field=_raw "\|\s+(?<status_code>\d+)\s+\|\s+(?<response_time>[\d\.]+)s\s+\|\s+(?<src_ip>[\:\da-f\.]+)\s+\|\s+(?<http_method>\w+)\s+\"(?<uri_path>[^\"]+)\"" | eval src=src_ip
+  | eval dest=uri_path | where response_time > 55 | bin _time span=15m | stats count, avg(response_time) as avg_response_time, max(response_time) as max_response_time by _time, src, dest, uri_path | eval
+  avg_response_time=round(avg_response_time, 2) | eval max_response_time=round(max_response_time, 2) | eval severity=case( avg_response_time > 50, "high", avg_response_time > 40, "medium", 1=1, "low" )
+  | eval attack_type="Potential Data Exfiltration" | sort -_time | stats count by _time, src, uri_path, avg_response_time, max_response_time, severity, attack_type | `ollama_possible_model_exfiltration_data_leakage_filter`'
+splunk_rule_id: c9fd1a54-0eab-4470-8970-d5fcc3c740fb
+splunk_rule_type: Anomaly
 logsource:
   category: application
 detection:

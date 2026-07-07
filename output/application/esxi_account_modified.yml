@@ -8,19 +8,23 @@ description: This detection identifies the creation, deletion, or modification o
 references:
 - https://detect.fyi/detecting-and-responding-to-esxi-compromise-with-splunk-f33998ce7823
 tags:
-- attack.T1136_001
-- attack.T1078
-- attack.T1098
+- attack.t1136.001
+- attack.t1078
+- attack.t1098
 date: '2025-07-11'
+original_spl: '`esxi_syslog` Message="*esxcli system account*" Message IN ("*-i *","*--id*") NOT Message="*[shell*" | rex field=_raw "Z (?<dest>[\w\.]+)\s.*: \[(?<initial_user>\w+)]:\s.+-i[d]*\s(?<modified_user>[\w_\-0-9]+)"
+  | stats min(_time) as firstTime max(_time) as lastTime count by dest initial_user modified_user | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `esxi_account_modified_filter`'
+splunk_rule_id: b5e3b024-a7bb-4019-8975-46cf54485e78
+splunk_rule_type: Anomaly
 logsource:
   category: application
 detection:
   selection_0:
-    Message|contains: '*esxcli system account*'
+    Message|contains: esxcli system account
   selection_1:
     Message|contains:
-    - '*-i *'
-    - '*--id*'
+    - '-i '
+    - --id
   filter_2:
     Message|contains: '*[shell*'
   condition: (selection_0 and selection_1) and not (filter_2)

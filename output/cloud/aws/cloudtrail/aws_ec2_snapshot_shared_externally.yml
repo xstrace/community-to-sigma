@@ -11,8 +11,24 @@ references:
 - https://stratus-red-team.cloud/attack-techniques/AWS/aws.exfiltration.ec2-share-ebs-snapshot/
 - https://hackingthe.cloud/aws/enumeration/loot_public_ebs_snapshots/
 tags:
-- attack.T1537
+- attack.t1537
 date: '2021-07-20'
+original_spl: |-
+  `cloudtrail` eventName=ModifySnapshotAttribute
+    | rename requestParameters.createVolumePermission.add.items{}.userId as requested_account_id
+    | search requested_account_id != NULL
+    | eval match=if(requested_account_id==aws_account_id,"Match","No Match")
+    | where match = "No Match"
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product requested_account_id
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_ec2_snapshot_shared_externally_filter`
+splunk_rule_id: 2a9b80d3-6340-4345-b5ad-290bf3d222c4
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail

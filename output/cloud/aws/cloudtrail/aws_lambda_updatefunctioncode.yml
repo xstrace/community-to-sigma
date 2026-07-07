@@ -10,8 +10,20 @@ references:
 - http://detectioninthe.cloud/execution/modify_lambda_function_code/
 - https://sysdig.com/blog/exploit-mitigate-aws-lambdas-mitre/
 tags:
-- attack.T1204
+- attack.t1204
 date: '2022-02-28'
+original_spl: |-
+  `cloudtrail` eventSource=lambda.amazonaws.com eventName=UpdateFunctionCode*  errorCode = success  user_type=IAMUser
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_lambda_updatefunctioncode_filter`
+splunk_rule_id: 211b80d3-6340-4345-11ad-212bf3d0d111
+splunk_rule_type: Hunting
 logsource:
   product: aws
   service: cloudtrail
@@ -19,7 +31,7 @@ detection:
   selection_0:
     eventSource: lambda.amazonaws.com
   selection_1:
-    eventName|contains: UpdateFunctionCode*
+    eventName|startswith: UpdateFunctionCode
   selection_2:
     errorCode: success
   selection_3:

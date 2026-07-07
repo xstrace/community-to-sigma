@@ -7,14 +7,30 @@ description: The following analytic detects the deletion of AWS Network Access C
   is significant because deleting a network ACL can remove critical access restrictions, potentially allowing unauthorized access to cloud instances. If confirmed malicious, this action could enable attackers
   to bypass network security controls, leading to unauthorized access, data exfiltration, or further compromise of the cloud environment.
 tags:
-- attack.T1686_001
+- attack.t1686.001
 date: '2022-10-04'
+original_spl: |-
+  `amazon_security_lake` api.operation=DeleteNetworkAclEntry status=Success
+    | spath input=api.request.data path=egress output=egress
+    | spath input=api.request.data path=networkAclId output=networkAclId
+    | search egress=false
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region networkAclId
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_network_access_control_list_deleted_filter`
+splunk_rule_id: e010ddf5-e9a5-44e5-bdd6-0c919ba8fc8b
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: DeleteNetworkAclEntry
+    api.operation: DeleteNetworkAclEntry
   selection_1:
-    sc-status: Success
+    status: Success
   condition: selection_0 and selection_1

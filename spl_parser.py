@@ -167,14 +167,10 @@ def tokenize(text: str) -> list[Token]:
             i += len(num_match.group())
             continue
 
-        # Wildcard patterns
+        # Wildcard patterns: starts with *, consumes greedily until a delimiter
         if ch == "*":
             j = i + 1
-            # Consume until whitespace, pipe, paren, comma, operator, or another *
             while j < n and text[j] not in " \t\n|)(,=><`'\"":
-                if text[j] == "*":
-                    j += 1
-                    break
                 j += 1
             tokens.append(Token(TokenType.WILDCARD, text[i:j], i))
             i = j
@@ -182,19 +178,14 @@ def tokenize(text: str) -> list[Token]:
 
         # Words (identifiers, keywords, field names)
         j = i
-        while j < n and text[j] not in " \t\n|)(,=><`'\"":
-            # Check for operators
-            if j > i and text[j] in "=><":
+        while j < n and text[j] not in " \t\n|)(,=><!`'\"":
+            if j > i and text[j] in "=><!":  # stop before operators
                 break
             j += 1
         word = text[i:j]
-        # Check for trailing * (wildcard suffix like "foo*")
-        if j < n and text[j] == "*":
-            # This word ends at j, then * follows — make it a wildcard
-            # Actually, let me handle this differently:
-            # Words with internal * are WILDCARD tokens
-            pass
-        tokens.append(Token(TokenType.WORD, word, i))
+        # Words containing * anywhere are actually wildcard patterns
+        tok_type = TokenType.WILDCARD if "*" in word else TokenType.WORD
+        tokens.append(Token(tok_type, word, i))
         i = j
 
     return tokens

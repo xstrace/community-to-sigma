@@ -13,8 +13,14 @@ references:
 - https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-risk-based-step-up-consent
 - https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
 tags:
-- attack.T1685
+- attack.t1685
 date: '2023-11-16'
+original_spl: '`azure_monitor_aad` operationName="Update authorization policy" | rename properties.* as * | eval index_number = if(mvfind(''targetResources{}.modifiedProperties{}.displayName'',"AllowUserConsentForRiskyApps")
+  >= 0, mvfind(''targetResources{}.modifiedProperties{}.displayName'',"AllowUserConsentForRiskyApps"), -1) | search index_number >= 0 | eval AllowUserConsentForRiskyApps = mvindex(''targetResources{}.modifiedProperties{}.newValue'',index_number)
+  | search AllowUserConsentForRiskyApps = "[true]" | rename userAgent as user_agent | fillnull | stats count min(_time) as firstTime max(_time) as lastTime by dest user src vendor_account vendor_product
+  user_agent signature | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `azure_ad_block_user_consent_for_risky_apps_disabled_filter`'
+splunk_rule_id: 875de3d7-09bc-4916-8c0a-0929f4ced3d8
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

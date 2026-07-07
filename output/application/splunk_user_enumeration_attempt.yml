@@ -10,8 +10,11 @@ description: The following analytic identifies attempts to enumerate usernames i
 references:
 - https://www.splunk.com/en_us/product-security/announcements/svd-2022-0502.html
 tags:
-- attack.T1078
+- attack.t1078
 date: '2022-04-29'
+original_spl: '`splunkd_failed_auths` | stats count(user) as auths by user, src | where auths>5 | stats values(user) as user, sum(auths) as TotalFailedAuths by src | `splunk_user_enumeration_attempt_filter`'
+splunk_rule_id: 25625cb4-1c4d-4463-b0f9-7cb462699cde
+splunk_rule_type: TTP
 logsource:
   category: application
 detection:

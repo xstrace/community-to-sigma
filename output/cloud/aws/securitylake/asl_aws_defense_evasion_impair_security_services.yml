@@ -11,14 +11,27 @@ references:
 - https://docs.aws.amazon.com/cli/latest/reference/waf/index.html
 - https://www.elastic.co/guide/en/security/current/prebuilt-rules.html
 tags:
-- attack.T1685_002
+- attack.t1685.002
 date: '2022-07-26'
+original_spl: |-
+  `amazon_security_lake` api.operation IN ("DeleteLogStream","DeleteDetector","DeleteIPSet","DeleteWebACL","DeleteRule","DeleteRuleGroup","DeleteLoggingConfiguration","DeleteAlarms")
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_defense_evasion_impair_security_services_filter`
+splunk_rule_id: 5029b681-0462-47b7-82e7-f7e3d37f5a2d
+splunk_rule_type: Hunting
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation|contains:
+    api.operation:
     - DeleteLogStream
     - DeleteDetector
     - DeleteIPSet

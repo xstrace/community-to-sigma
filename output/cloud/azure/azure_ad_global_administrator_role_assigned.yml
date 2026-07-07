@@ -15,8 +15,23 @@ references:
 - https://docs.microsoft.com/en-us/azure/role-based-access-control/elevate-access-global-admin
 - https://attack.mitre.org/techniques/T1098/003/
 tags:
-- attack.T1098_003
+- attack.t1098.003
 date: '2022-08-17'
+original_spl: |-
+  `azure_monitor_aad` operationName="Add member to role" properties.targetResources{}.modifiedProperties{}.newValue="*Global Administrator*"
+    | rename properties.* as *
+    | rename initiatedBy.user.userPrincipalName as initiatedBy
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product user_agent
+         initiatedBy signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_global_administrator_role_assigned_filter`
+splunk_rule_id: 825fed20-309d-4fd1-8aaf-cd49c1bb093c
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -24,5 +39,5 @@ detection:
   selection_0:
     operationName: Add member to role
   selection_1:
-    targetResources{}.modifiedProperties{}.newValue|contains: '*Global Administrator*'
+    properties.targetResources{}.modifiedProperties{}.newValue|contains: Global Administrator
   condition: selection_0 and selection_1

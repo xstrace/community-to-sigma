@@ -11,31 +11,80 @@ references:
 - https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
 - https://blog.talosintelligence.com/salt-typhoon-analysis/
 tags:
-- attack.T1082
-- attack.T1016
-- attack.T1590
+- attack.t1082
+- attack.t1016
+- attack.t1590
 date: '2026-05-19'
+original_spl: |-
+  `cisco_ios`
+  facility IN ("AAA", "HA_EM")
+  mnemonic IN ("AAA_ACCOUNTING_MESSAGE", "LOG")
+  message_text IN (
+      "*show running-config*",
+      "*show tacacs*",
+      "*show cdp neighbors*",
+      "*show file systems*",
+      "*dir bootflash:*",
+      "*show clock*",
+      "*show platform software status control-processor brief*",
+      "*terminal length 0*",
+      "*terminal width 0*"
+  )
+
+  | rex field=message_text "^\w+:(?<aaa_src>[^:@]+)(?:@[^:]*)?:(?<aaa_user>[^:]*):(?<aaa_command>.*?)(?:\s+\((?<aaa_result>SUCCESS|FAILURE)\))?$"
+  | rex field=message_text "^(?:[^:]+:\s+)?(?:catchall:\s+)?(?<eem_command>.+?)\s*$"
+  | eval command=lower(trim(coalesce(aaa_command, eem_command, "")))
+
+  | eval command_type=case(
+      like(command, "show running-config%"), "show_conf",
+      like(command, "show tacacs%"), "show_tacacs",
+      like(command, "show cdp neighbors detail%"), "show_cdp",
+      like(command, "show cdp neighbors%"), "show_cdp",
+      like(command, "show file systems%"), "show_file",
+      like(command, "dir bootflash:%"), "dir_bootflash",
+      like(command, "show clock%"), "show_clock",
+      like(command, "show platform software status control-processor brief%"), "show_platform",
+      like(command, "terminal length 0%"), "terminal",
+      like(command, "terminal width 0%"), "terminal",
+      true(), null())
+  | where isnotnull(command_type)
+  | eval user=coalesce(aaa_user, user, "unknown")
+  | eval src_ip=coalesce(aaa_src, src_ip, "unknown")
+  | eval dest=coalesce(host, dvc, dest, "unknown")
+  | bin _time span=5m
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+                dc(command_type) as unique_recon_commands
+                values(command_type) as command_types
+                values(command) as commands
+    by _time dest user src_ip
+  | where unique_recon_commands >= 4
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_ios_xe_reconnaissance_command_activity_filter`
+splunk_rule_id: 71ac5328-2364-40cf-8381-92b8dc531399
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: ios
 detection:
   selection_0:
-    facility|contains:
+    facility:
     - AAA
     - HA_EM
   selection_1:
-    mnemonic|contains:
+    mnemonic:
     - AAA_ACCOUNTING_MESSAGE
     - LOG
   selection_2:
     message_text|contains:
-    - '*show running-config*'
-    - '*show tacacs*'
-    - '*show cdp neighbors*'
-    - '*show file systems*'
-    - '*dir bootflash:*'
-    - '*show clock*'
-    - '*show platform software status control-processor brief*'
-    - '*terminal length 0*'
-    - '*terminal width 0*'
+    - show running-config
+    - show tacacs
+    - show cdp neighbors
+    - show file systems
+    - 'dir bootflash:'
+    - show clock
+    - show platform software status control-processor brief
+    - terminal length 0
+    - terminal width 0
   condition: selection_0 and selection_1 and selection_2

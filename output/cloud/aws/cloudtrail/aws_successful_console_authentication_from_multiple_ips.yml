@@ -9,9 +9,22 @@ description: The following analytic detects an AWS account successfully authenti
 references:
 - https://rhinosecuritylabs.com/aws/mfa-phishing-on-aws/
 tags:
-- attack.T1586
-- attack.T1535
+- attack.t1586
+- attack.t1535
 date: '2023-01-19'
+original_spl: |-
+  `cloudtrail` eventName = ConsoleLogin
+    | bin span=5m _time
+    | rename user_name as user
+    | stats  dc(src) as distinct_ip_count values(src) as src values(user_agent) as user_agent values(dest) as dest
+      BY _time, user, signature,
+         vendor_account, vendor_region, vendor_product
+    | where distinct_ip_count>1
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_successful_console_authentication_from_multiple_ips_filter`
+splunk_rule_id: 395e50e1-2b87-4fa3-8632-0dfbdcbcd2cb
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: cloudtrail

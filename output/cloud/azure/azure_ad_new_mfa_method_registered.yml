@@ -12,8 +12,15 @@ references:
 - https://www.microsoft.com/en-us/security/blog/2023/06/08/detecting-and-mitigating-a-multi-stage-aitm-phishing-and-bec-campaign/
 - https://www.csoonline.com/article/573451/sophisticated-bec-scammers-bypass-microsoft-365-multi-factor-authentication.html
 tags:
-- attack.T1098_005
+- attack.t1098.005
 date: '2023-11-16'
+original_spl: '`azure_monitor_aad` operationName="Update user" | rename properties.* as * | eval propertyName = mvindex(''targetResources{}.modifiedProperties{}.displayName'',0) | search propertyName =
+  StrongAuthenticationMethod | eval oldvalue = mvindex(''targetResources{}.modifiedProperties{}.oldValue'',0) | eval newvalue = mvindex(''targetResources{}.modifiedProperties{}.newValue'',0) | rex field=newvalue
+  max_match=0 "(?i)(?<new_method_type>\"MethodType\")" | rex field=oldvalue max_match=0 "(?i)(?<old_method_type>\"MethodType\")" | eval count_new_method_type = coalesce(mvcount(new_method_type), 0) | eval
+  count_old_method_type = coalesce(mvcount(old_method_type), 0) | fillnull | stats count min(_time) as firstTime max(_time) as lastTime by dest user src vendor_account vendor_product newvalue oldvalue signature
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `azure_ad_new_mfa_method_registered_filter`'
+splunk_rule_id: 0488e814-eb81-42c3-9f1f-b2244973e3a3
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

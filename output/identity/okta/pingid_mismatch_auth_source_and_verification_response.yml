@@ -12,21 +12,31 @@ references:
 - https://attack.mitre.org/techniques/T1556/006/
 - https://docs.pingidentity.com/r/en-us/pingoneforenterprise/p14e_subscriptions?tocId=3xhnxjX3VzKNs3SXigWnQA
 tags:
-- attack.T1621
-- attack.T1556_006
-- attack.T1098_005
+- attack.t1621
+- attack.t1556.006
+- attack.t1098.005
 date: '2023-12-20'
+original_spl: '`pingid` ("result.status" IN ("SUCCESS*","FAIL*","UNSUCCESSFUL*" ) NOT "result.message" IN ("*pair*","*create*","*delete*")) | eval user = upper(''actors{}.name''), session_id = ''resources{}.websession'',
+  dest = ''resources{}.ipaddress'', reason = ''result.message'', object = ''resources{}.devicemodel'', status = ''result.status'' | join user session_id [ search `pingid` ("result.status" IN ("POLICY")
+  AND "resources{}.ipaddress"=*) AND "result.message" IN("*Action: Authenticate*","*Action: Approve*","*Action: Allowed*") | rex field=result.message "IP Address: (?:N\/A)?(?<policy_ipaddress>.+)?\n" |
+  rex field=result.message "Action: (?:N\/A)?(?<signature>.+)?\n" | rex field=result.message "Requested Application Name: (?:N\/A)?(?<Requested_Application_Name>.+)?\n" | rex field=result.message " Requested
+  Application ID: (?:N\/A)?(?<Requested_Application_ID>.+)?\n" | eval user = upper(''actors{}.name''), session_id = ''resources{}.websession'', src = coalesce(''resources{}.ipaddress'',policy_ipaddress),
+  app = coalesce(Requested_Application_ID,Requested_Application_Name) | fields app, user, session_id, src, signature ] | iplocation prefix=auth_ dest | iplocation prefix=verify_ src | stats count min(_time)
+  as firstTime max(_time) as lastTime values(app) as app values(session_id) as session_id by user, dest, auth_Country, src, verify_Country, object, signature, status, reason | where auth_Country != verify_Country
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `pingid_mismatch_auth_source_and_verification_response_filter`'
+splunk_rule_id: 15b0694e-caa2-4009-8d83-a1f98b86d086
+splunk_rule_type: TTP
 logsource:
   category: application
   product: okta
 detection:
   selection_0:
-    status"|contains:
-    - SUCCESS*
-    - FAIL*
-    - UNSUCCESSFUL*
+    '"result.status"|startswith':
+    - SUCCESS
+    - FAIL
+    - UNSUCCESSFUL
   filter_1:
-    message":
+    '"result.message"':
     - '*pair*'
     - '*create*'
     - '*delete*'

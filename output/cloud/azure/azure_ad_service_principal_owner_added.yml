@@ -10,8 +10,27 @@ description: The following analytic detects the addition of a new owner to a Ser
 references:
 - https://attack.mitre.org/techniques/T1098/
 tags:
-- attack.T1098
+- attack.t1098
 date: '2022-08-30'
+original_spl: |-
+  `azure_monitor_aad` operationName="Add owner to application"
+    | rename properties.* as *
+    | rename initiatedBy.user.userPrincipalName as initiatedBy
+    | rename targetResources{}.userPrincipalName as newOwner
+    | rename targetResources{}.modifiedProperties{}.newValue as displayName
+    | eval displayName = mvindex(displayName,1)
+    | where initiatedBy!=newOwner
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product initiatedBy
+         result newOwner displayName
+         signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_service_principal_owner_added_filter`
+splunk_rule_id: 7ddf2084-6cf3-4a44-be83-474f7b73c701
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

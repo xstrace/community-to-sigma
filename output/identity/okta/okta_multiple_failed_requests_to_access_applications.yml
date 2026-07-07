@@ -10,18 +10,27 @@ references:
 - https://attack.mitre.org/techniques/T1538
 - https://attack.mitre.org/techniques/T1550/004
 tags:
-- attack.T1550_004
-- attack.T1538
+- attack.t1550.004
+- attack.t1538
 date: '2023-04-11'
+original_spl: '`okta` target{}.type=AppInstance (eventType=policy.evaluate_sign_on outcome.result=CHALLENGE) OR (eventType=user.authentication.sso outcome.result=SUCCESS) | eval targets=mvzip(''target{}.type'',
+  ''target{}.displayName'', ": ") | eval targets=mvfilter(targets LIKE "AppInstance%") | stats count min(_time) as _time values(outcome.result) as outcome.result dc(eval(if(eventType="policy.evaluate_sign_on",targets,NULL)))
+  as total_challenges sum(eval(if(eventType="user.authentication.sso",1,0))) as total_successes by authenticationContext.externalSessionId targets actor.alternateId client.ipAddress | search total_challenges
+  > 0 | stats min(_time) as _time values(*) as * sum(total_challenges) as total_challenges sum(total_successes) as total_successes values(eval(if("outcome.result"="SUCCESS",targets,NULL))) as success_apps
+  values(eval(if(":outcome.result"!="SUCCESS",targets,NULL))) as no_success_apps by authenticationContext.externalSessionId actor.alternateId client.ipAddress | fillnull | eval ratio=round(total_successes/total_challenges,2),
+  severity="HIGH", mitre_technique_id="T1538", description="actor.alternateId". " from " . "client.ipAddress" . " seen opening " . total_challenges . " chiclets/apps with " . total_successes . " challenges
+  successfully passed" | fields - count, targets | search ratio < 0.5 total_challenges > 2 | `okta_multiple_failed_requests_to_access_applications_filter`'
+splunk_rule_id: 1c21fed1-7000-4a2e-9105-5aaafa437247
+splunk_rule_type: Hunting
 logsource:
   product: okta
   service: okta
 detection:
   selection_0:
-    type: AppInstance
+    target{}.type: AppInstance
     eventType: policy.evaluate_sign_on
-    result: CHALLENGE
+    outcome.result: CHALLENGE
   selection_1:
     eventType: user.authentication.sso
-    result: SUCCESS
+    outcome.result: SUCCESS
   condition: selection_0 and selection_1

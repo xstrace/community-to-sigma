@@ -11,8 +11,24 @@ references:
 - https://attack.mitre.org/techniques/T1136/003/
 - https://www.microsoft.com/en-us/security/blog/2024/01/25/midnight-blizzard-guidance-for-responders-on-nation-state-attack/
 tags:
-- attack.T1136_003
+- attack.t1136.003
 date: '2024-02-14'
+original_spl: |-
+  `azure_monitor_aad` operationName="Add service principal" properties.initiatedBy.user.id=*
+    | rename properties.* as *
+    | bucket span=10m _time
+    | rename targetResources{}.displayName as displayName
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime dc(displayName) as unique_apps values(displayName) as displayName values(dest) as dest values(src) as src values(user) as user values(user_agent) as user_agent
+      BY src_user vendor_account vendor_product
+         signature
+    | where unique_apps > 3
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_multiple_service_principals_created_by_user_filter`
+splunk_rule_id: 32880707-f512-414e-bd7f-204c0c85b758
+splunk_rule_type: Anomaly
 logsource:
   product: azure
   service: aad
@@ -20,5 +36,5 @@ detection:
   selection_0:
     operationName: Add service principal
   selection_1:
-    initiatedBy.user.id|contains: '*'
+    properties.initiatedBy.user.id|contains: ''
   condition: selection_0 and selection_1

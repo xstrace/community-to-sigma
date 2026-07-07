@@ -16,8 +16,21 @@ description: |
 references:
 - https://splunkbase.splunk.com/app/7404
 tags:
-- attack.T1556
+- attack.t1556
 date: '2025-07-10'
+original_spl: |-
+  `cisco_duo_administrator` action=policy_update OR action=policy_create
+    | spath input=description
+    | search user_locations_default_action="Allow access without 2FA"
+    | rename object as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY action actionlabel description
+         user admin_email
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `cisco_duo_policy_skip_2fa_for_other_countries_filter`
+splunk_rule_id: ab59d5ee-8694-4832-a332-cefcf66a9057
+splunk_rule_type: TTP
 logsource:
   product: cisco
   service: duo

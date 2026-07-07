@@ -1,0 +1,40 @@
+title: Cisco ASA - User Account Lockout Threshold Exceeded
+id: 3e8f9c2a-6d4b-4a7e-9c5f-1b8d7e3a9f2c
+status: stable
+level: medium
+author: Nasreddine Bencherchali, Splunk
+description: |
+  This analytic detects user account lockouts on Cisco ASA devices resulting from excessive failed authentication attempts.
+  Account lockouts may indicate brute force attacks, password spraying campaigns, credential stuffing attempts using compromised credentials from external breaches, or misconfigured automation attempting authentication with incorrect credentials. These activities represent attempts to gain unauthorized access to network infrastructure.
+  The detection monitors for ASA message ID 113006, which is generated when a user account is locked out after exceeding the configured maximum number of failed authentication attempts, capturing the locked account name and the failure threshold that was exceeded.
+  Investigate account lockouts for privileged or administrative accounts, multiple simultaneous lockouts affecting different accounts (suggesting password spraying), lockouts originating from unusual source IP addresses, lockouts during off-hours, or patterns suggesting automated attack tools.
+references:
+- https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html#con_4769446
+tags:
+- attack.t1110.001
+- attack.t1110.003
+date: '2025-11-21'
+original_spl: |-
+  `cisco_asa`
+  message_id IN (113006)
+  | rex "locked out on exceeding '(?<attempts_count>\d+)' successive failed authentication attempts"
+  | rex "User '(?<user>[^']+)' locked out"
+  | eval failure_description="locked out on exceeding " . attempts_count . " successive failed authentication attempts"
+  | fillnull
+  | stats earliest(_time) as firstTime
+          latest(_time) as lastTime
+          values(message_id) as message_id
+          values(failure_description) as failure_description
+    by host user
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_asa___user_account_lockout_threshold_exceeded_filter`
+splunk_rule_id: 3e8f9c2a-6d4b-4a7e-9c5f-1b8d7e3a9f2c
+splunk_rule_type: Anomaly
+logsource:
+  product: cisco
+  service: asa
+detection:
+  selection_0:
+    message_id: 113006
+  condition: selection_0

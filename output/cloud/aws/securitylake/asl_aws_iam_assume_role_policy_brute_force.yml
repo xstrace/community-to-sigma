@@ -11,15 +11,27 @@ references:
 - https://rhinosecuritylabs.com/aws/assume-worst-aws-assume-role-enumeration/
 - https://www.elastic.co/guide/en/security/current/aws-iam-brute-force-of-assume-role-policy.html
 tags:
-- attack.T1580
-- attack.T1110
+- attack.t1580
+- attack.t1110
 date: '2022-10-04'
+original_spl: |-
+  `amazon_security_lake` api.operation="AssumeRole" "api.response.error"=AccessDenied
+    | bucket _time span=1h
+    | stats count as failures min(_time) as firstTime max(_time) as lastTime values(api.operation) as api.operation values(api.service.name) as api.service.name values(http_request.user_agent) as http_request.user_agent values(src_endpoint.ip) as src_ip values(actor.user.account.uid) as actor.user.account.uid values(cloud.provider) as cloud.provider values(cloud.region) as cloud.region
+      BY _time actor.user.uid
+    | where failures >= 3
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_iam_assume_role_policy_brute_force_filter`
+splunk_rule_id: 726959fe-316d-445c-a584-fa187d64e295
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: AssumeRole
+    api.operation: AssumeRole
   selection_1:
-    response.error": AccessDenied
+    '"api.response.error"': AccessDenied
   condition: selection_0 and selection_1

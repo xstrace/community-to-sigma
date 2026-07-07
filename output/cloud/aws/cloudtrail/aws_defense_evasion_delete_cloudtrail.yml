@@ -10,8 +10,20 @@ description: The following analytic detects the deletion of AWS CloudTrail logs 
 references:
 - https://attack.mitre.org/techniques/T1562/008/
 tags:
-- attack.T1685_002
+- attack.t1685.002
 date: '2022-07-12'
+original_spl: |-
+  `cloudtrail` eventName = DeleteTrail eventSource = cloudtrail.amazonaws.com userAgent !=console.amazonaws.com errorCode = success
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_defense_evasion_delete_cloudtrail_filter`
+splunk_rule_id: 82092925-9ca1-4e06-98b8-85a2d3889552
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail

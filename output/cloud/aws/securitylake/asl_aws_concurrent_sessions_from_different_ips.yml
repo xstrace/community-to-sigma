@@ -12,14 +12,26 @@ references:
 - https://breakdev.org/evilginx-2-next-generation-of-phishing-2fa-tokens/
 - https://github.com/kgretzky/evilginx2
 tags:
-- attack.T1185
+- attack.t1185
 date: '2023-02-01'
+original_spl: |-
+  `amazon_security_lake` api.operation=DescribeEventAggregates src_endpoint.domain!="AWS Internal"
+    | bin span=5m _time
+    | stats min(_time) as firstTime max(_time) as lastTime values(api.operation) as api.operation values(api.service.name) as api.service.name values(http_request.user_agent) as http_request.user_agent values(src_endpoint.ip) as src_ip values(actor.user.account.uid) as actor.user.account.uid values(cloud.provider) as cloud.provider values(cloud.region) as cloud.region dc(src_endpoint.ip) as distinct_ip_count
+      BY _time actor.user.uid
+    | where distinct_ip_count > 1
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_concurrent_sessions_from_different_ips_filter`
+splunk_rule_id: b3424bbe-3204-4469-887b-ec144483a336
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: DescribeEventAggregates
+    api.operation: DescribeEventAggregates
   selection_1:
-    domain!: AWS Internal
+    src_endpoint.domain: AWS Internal
   condition: selection_0 and selection_1

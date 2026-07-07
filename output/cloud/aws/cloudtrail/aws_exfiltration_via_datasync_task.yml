@@ -10,8 +10,22 @@ references:
 - https://labs.nettitude.com/blog/how-to-exfiltrate-aws-ec2-data/
 - https://www.shehackske.com/how-to/data-exfiltration-on-cloud-1606/
 tags:
-- attack.T1119
+- attack.t1119
 date: '2023-04-10'
+original_spl: |-
+  `cloudtrail` eventName = CreateTask eventSource="datasync.amazonaws.com"
+    | rename  requestParameters.*  as *
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product destinationLocationArn
+         sourceLocationArn
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_exfiltration_via_datasync_task_filter`
+splunk_rule_id: 05c4b09f-ea28-4c7c-a7aa-a246f665c8a2
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail

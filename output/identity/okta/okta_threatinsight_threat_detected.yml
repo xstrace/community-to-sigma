@@ -9,8 +9,22 @@ description: The following analytic identifies threats detected by Okta ThreatIn
 references:
 - https://developer.okta.com/docs/reference/api/event-types/?q=security.threat.detected
 tags:
-- attack.T1078_004
+- attack.t1078.004
 date: '2022-12-19'
+original_spl: |-
+  `okta` eventType = security.threat.detected
+    | rename client.geographicalContext.country as country, client.geographicalContext.state as state, client.geographicalContext.city as city
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY app src_ip dest
+         signature eventType displayMessage
+         client.device city state
+         country user_agent outcome.reason
+         outcome.result severity
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `okta_threatinsight_threat_detected_filter`
+splunk_rule_id: 140504ae-5fe2-4d65-b2bc-a211813fbca6
+splunk_rule_type: Anomaly
 logsource:
   product: okta
   service: okta

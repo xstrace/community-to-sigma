@@ -10,8 +10,20 @@ references:
 - https://invictus-ir.medium.com/ransomware-in-the-cloud-7f14805bbe82
 - https://bleemb.medium.com/data-exfiltration-with-native-aws-s3-features-c94ae4d13436
 tags:
-- attack.T1490
+- attack.t1490
 date: '2023-05-01'
+original_spl: |-
+  `cloudtrail` eventName= PutBucketVersioning "requestParameters.VersioningConfiguration.Status"=Suspended
+    | rename user_name as user, requestParameters.bucketName as bucket_name
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product bucket_name
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_disable_bucket_versioning_filter`
+splunk_rule_id: 657902a9-987d-4879-a1b2-e7a65512824b
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: cloudtrail
@@ -19,5 +31,5 @@ detection:
   selection_0:
     eventName: PutBucketVersioning
   selection_1:
-    VersioningConfiguration.Status": Suspended
+    '"requestParameters.VersioningConfiguration.Status"': Suspended
   condition: selection_0 and selection_1

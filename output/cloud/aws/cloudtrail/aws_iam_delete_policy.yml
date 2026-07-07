@@ -11,8 +11,20 @@ references:
 - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeletePolicy.html
 - https://docs.aws.amazon.com/cli/latest/reference/iam/delete-policy.html
 tags:
-- attack.T1098
+- attack.t1098
 date: '2021-04-06'
+original_spl: |-
+  `cloudtrail` eventName=DeletePolicy (userAgent!=*.amazonaws.com)
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_iam_delete_policy_filter`
+splunk_rule_id: ec3a9362-92fe-11eb-99d0-acde48001122
+splunk_rule_type: Hunting
 logsource:
   product: aws
   service: cloudtrail
@@ -20,5 +32,5 @@ detection:
   selection_0:
     eventName: DeletePolicy
   selection_1:
-    userAgent!|contains: '*.amazonaws.com'
+    userAgent|endswith: .amazonaws.com
   condition: selection_0 and selection_1

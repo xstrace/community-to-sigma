@@ -11,8 +11,12 @@ references:
 - https://www.sumologic.com/blog/defenders-guide-to-aws-bedrock/
 - https://attack.mitre.org/techniques/T1562/
 tags:
-- attack.T1485
+- attack.t1485
 date: '2025-03-25'
+original_spl: '`cloudtrail` eventSource=bedrock.amazonaws.com eventName=DeleteKnowledgeBase | rename user_name as user | stats count min(_time) as firstTime max(_time) as lastTime values(requestParameters.knowledgeBaseId)
+  as knowledgeBaseIds by src user user_agent vendor_account vendor_product dest signature vendor_region | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `aws_bedrock_delete_knowledge_base_filter`'
+splunk_rule_id: 8b4e3d62-f743-11ee-9f6e-acde48001123
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail

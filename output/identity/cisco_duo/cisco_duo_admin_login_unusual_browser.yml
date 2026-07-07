@@ -12,14 +12,27 @@ description: The following analytic identifies instances where a Duo admin logs 
 references:
 - https://splunkbase.splunk.com/app/7404
 tags:
-- attack.T1556
+- attack.t1556
 date: '2025-07-10'
+original_spl: |-
+  `cisco_duo_activity` "action.name"=admin_login NOT access_device.browser IN (Chrome)
+    | rename actor.name as user access_device.ip.address as src_ip
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY access_device.browser access_device.browser_version src_ip
+         access_device.location.city access_device.location.country access_device.location.state
+         access_device.os access_device.os_version actor.details
+         actor.type outcome.result user
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `cisco_duo_admin_login_unusual_browser_filter`
+splunk_rule_id: b38932ad-e663-4e90-bfdf-8446ee5b3f34
+splunk_rule_type: TTP
 logsource:
   product: cisco
   service: duo
 detection:
   selection_0:
-    name": admin_login
+    '"action.name"': admin_login
   filter_1:
-    browser: Chrome
+    access_device.browser: Chrome
   condition: (selection_0) and not (filter_1)

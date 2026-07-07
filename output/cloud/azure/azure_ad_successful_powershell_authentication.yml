@@ -13,9 +13,23 @@ references:
 - https://securitycafe.ro/2022/04/29/pentesting-azure-recon-techniques/
 - https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Cloud%20-%20Azure%20Pentest.md
 tags:
-- attack.T1078_004
-- attack.T1586_003
+- attack.t1078.004
+- attack.t1586.003
 date: '2022-07-12'
+original_spl: |-
+  `azure_monitor_aad` category=SignInLogs properties.authenticationDetails{}.succeeded=true properties.appDisplayName="Microsoft Azure PowerShell"
+    | rename properties.* as *
+    | rename userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product user_agent
+         signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_successful_powershell_authentication_filter`
+splunk_rule_id: 62f10052-d7b3-4e48-b57b-56f8e3ac7ceb
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -23,7 +37,7 @@ detection:
   selection_0:
     category: SignInLogs
   selection_1:
-    authenticationDetails{}.succeeded: 'true'
+    properties.authenticationDetails{}.succeeded: 'true'
   selection_2:
-    appDisplayName: Microsoft Azure PowerShell
+    properties.appDisplayName: Microsoft Azure PowerShell
   condition: selection_0 and selection_1 and selection_2

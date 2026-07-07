@@ -11,12 +11,25 @@ references:
 - https://bishopfox.com/blog/privilege-escalation-in-aws
 - https://rhinosecuritylabs.com/aws/aws-privilege-escalation-methods-mitigation-part-2/
 tags:
-- attack.T1136_003
+- attack.t1136.003
 date: '2022-10-04'
+original_spl: |-
+  `amazon_security_lake` api.operation=UpdateLoginProfile
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_updateloginprofile_filter`
+splunk_rule_id: 5b3f63a3-865b-4637-9941-f98bd1a50c0d
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: UpdateLoginProfile
+    api.operation: UpdateLoginProfile
   condition: selection_0

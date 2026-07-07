@@ -13,8 +13,21 @@ description: |
 references:
 - https://splunkbase.splunk.com/app/7404
 tags:
-- attack.T1556
+- attack.t1556
 date: '2025-07-10'
+original_spl: |-
+  `cisco_duo_administrator` action=policy_update OR action=policy_create
+    | spath input=description
+    | search require_lock=false
+    | rename object as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY action actionlabel description
+         user admin_email
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `cisco_duo_policy_allow_devices_without_screen_lock_filter`
+splunk_rule_id: 114c616b-c793-465d-a80d-758c9fe8a704
+splunk_rule_type: TTP
 logsource:
   product: cisco
   service: duo

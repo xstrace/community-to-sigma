@@ -9,13 +9,34 @@ references:
 - https://splunkbase.splunk.com/app/8377
 - https://www.splunk.com/en_us/blog/security/securing-ai-agents-model-context-protocol.html
 tags:
-- attack.T1552_001
+- attack.t1552.001
 date: '2026-02-17'
+original_spl: |-
+  `mcp_server`
+  (method IN ("read_file", "get_file_contents", "read", "search_files", "find_files", "grep", "search", "list_directory", "read_directory"))
+  (params.path="*.ssh*" OR params.path="*Administrator*" OR params.path="*credentials*" OR params.path="*password*" OR params.path="*.env*" OR params.path="*id_rsa*" OR params.path="*.pem*" OR params.path="*.ppk*" OR params.path="*.key*" OR params.path="*secrets*" OR params.path="*.aws*" OR params.path="*.config*"
+  OR params.pattern="*password*" OR params.pattern="*key*" OR params.pattern="*secret*" OR params.pattern="*credential*" OR params.pattern="*token*" OR params.pattern="*auth*" OR params.pattern="*api_key*" OR params.pattern="*private_key*")
+  | eval dest=host
+  | eval detection_type=case(
+      method IN ("read_file", "get_file_contents", "read"), "PATH_ACCESS",
+      method IN ("search_files", "find_files", "grep", "search"), "PATTERN_SEARCH",
+      method IN ("list_directory", "read_directory"), "DIRECTORY_ENUM",
+      1=1, "UNKNOWN")
+  | eval target_path=coalesce('params.path', 'params.directory', 'params.file')
+  | eval search_pattern=coalesce('params.pattern', 'params.query', 'params.search')
+  | stats count min(_time) as firstTime max(_time) as lastTime values(detection_type) as detection_types values(target_path) as targeted_paths values(search_pattern) as search_patterns values(method) as methods_used by dest, source
+  | eval time_span_seconds=lastTime-firstTime
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | table dest firstTime lastTime count source detection_types methods_used targeted_paths search_patterns time_span_seconds
+  | `mcp_sensitive_system_file_search_filter`
+splunk_rule_id: 4a57877d-9c56-4a50-9ad2-620e2f0ad821
+splunk_rule_type: Hunting
 logsource:
   category: application
 detection:
   selection_0:
-    method|contains:
+    method:
     - read_file
     - get_file_contents
     - read
@@ -26,44 +47,44 @@ detection:
     - list_directory
     - read_directory
   selection_1:
-    path|contains: '*.ssh*'
+    params.path|contains: .ssh
   selection_2:
-    path|contains: '*Administrator*'
+    params.path|contains: Administrator
   selection_3:
-    path|contains: '*credentials*'
+    params.path|contains: credentials
   selection_4:
-    path|contains: '*password*'
+    params.path|contains: password
   selection_5:
-    path|contains: '*.env*'
+    params.path|contains: .env
   selection_6:
-    path|contains: '*id_rsa*'
+    params.path|contains: id_rsa
   selection_7:
-    path|contains: '*.pem*'
+    params.path|contains: .pem
   selection_8:
-    path|contains: '*.ppk*'
+    params.path|contains: .ppk
   selection_9:
-    path|contains: '*.key*'
+    params.path|contains: .key
   selection_10:
-    path|contains: '*secrets*'
+    params.path|contains: secrets
   selection_11:
-    path|contains: '*.aws*'
+    params.path|contains: .aws
   selection_12:
-    path|contains: '*.config*'
+    params.path|contains: .config
   selection_13:
-    pattern|contains: '*password*'
+    params.pattern|contains: password
   selection_14:
-    pattern|contains: '*key*'
+    params.pattern|contains: key
   selection_15:
-    pattern|contains: '*secret*'
+    params.pattern|contains: secret
   selection_16:
-    pattern|contains: '*credential*'
+    params.pattern|contains: credential
   selection_17:
-    pattern|contains: '*token*'
+    params.pattern|contains: token
   selection_18:
-    pattern|contains: '*auth*'
+    params.pattern|contains: auth
   selection_19:
-    pattern|contains: '*api_key*'
+    params.pattern|contains: api_key
   selection_20:
-    pattern|contains: '*private_key*'
+    params.pattern|contains: private_key
   condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4 and selection_5 and selection_6 and selection_7 and selection_8 and selection_9 and selection_10 and selection_11
     and selection_12 and selection_13 and selection_14 and selection_15 and selection_16 and selection_17 and selection_18 and selection_19 and selection_20

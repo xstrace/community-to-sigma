@@ -14,8 +14,22 @@ references:
 - https://attack.mitre.org/techniques/T1098/003/
 - https://learn.microsoft.com/en-us/azure/active-directory/roles/permissions-reference#application-administrator
 tags:
-- attack.T1098_003
+- attack.t1098.003
 date: '2023-04-25'
+original_spl: |-
+  `azure_monitor_aad`  operationName="Add member to role"  "properties.targetResources{}.modifiedProperties{}.newValue"="*Application Administrator*"
+    | rename properties.* as *
+    | rename initiatedBy.user.userPrincipalName as initiatedBy, userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product initiatedBy
+         user_agent signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_application_administrator_role_assigned_filter`
+splunk_rule_id: eac4de87-7a56-4538-a21b-277897af6d8d
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -23,5 +37,5 @@ detection:
   selection_0:
     operationName: Add member to role
   selection_1:
-    targetResources{}.modifiedProperties{}.newValue"|contains: '*Application Administrator*'
+    '"properties.targetResources{}.modifiedProperties{}.newValue"|contains': Application Administrator
   condition: selection_0 and selection_1

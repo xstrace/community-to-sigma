@@ -8,18 +8,23 @@ description: This detection identifies the use of the esxcli system auditrecords
 references:
 - https://detect.fyi/detecting-and-responding-to-esxi-compromise-with-splunk-f33998ce7823
 tags:
-- attack.T1690
-- attack.T1070
+- attack.t1690
+- attack.t1070
 date: '2025-07-11'
+original_spl: '`esxi_syslog` Message="*esxcli system auditrecords*" Message IN ("*remote*","*local*") NOT Message = "*[shell*" | rex field=_raw "Z (?<dest>[\w\.]+)\s" | rex field=_raw "[\w+]\]: (?<full_command>.*)"
+  | rex field=full_command "\[(?<user>.*)]:\s(?<command>.*)" | stats min(_time) as firstTime max(_time) as lastTime count by dest user command | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `esxi_audit_tampering_filter`'
+splunk_rule_id: c48a155b-2861-417a-813c-220f5272cf01
+splunk_rule_type: TTP
 logsource:
   category: application
 detection:
   selection_0:
-    Message|contains: '*esxcli system auditrecords*'
+    Message|contains: esxcli system auditrecords
   selection_1:
     Message|contains:
-    - '*remote*'
-    - '*local*'
+    - remote
+    - local
   filter_2:
     Message|contains: '*[shell*'
   condition: (selection_0 and selection_1) and not (filter_2)

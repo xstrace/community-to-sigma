@@ -8,15 +8,35 @@ description: The following analytic detects the creation of AWS Network Access C
   of data breaches and other malicious activities. If confirmed malicious, an attacker could exploit this misconfiguration to gain unrestricted access to the network, potentially leading to data exfiltration,
   service disruption, or further compromise of the AWS environment.
 tags:
-- attack.T1686_001
+- attack.t1686.001
 date: '2020-10-27'
+original_spl: |-
+  `amazon_security_lake` api.operation=CreateNetworkAclEntry OR api.operation=ReplaceNetworkAclEntry status=Success
+    | spath input=api.request.data path=ruleAction output=ruleAction
+    | spath input=api.request.data path=egress output=egress
+    | spath input=api.request.data path=aclProtocol output=aclProtocol
+    | spath input=api.request.data path=cidrBlock output=cidrBlock
+    | spath input=api.request.data path=networkAclId output=networkAclId
+    | search ruleAction=allow AND egress=false AND aclProtocol=-1 AND cidrBlock=0.0.0.0/0
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region networkAclId
+         cidrBlock
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_network_access_control_list_created_with_all_open_ports_filter`
+splunk_rule_id: a2625034-c2de-44fc-b45c-7bac9c4a7974
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: CreateNetworkAclEntry
+    api.operation: CreateNetworkAclEntry
   selection_1:
-    operation: ReplaceNetworkAclEntry
-    sc-status: Success
+    api.operation: ReplaceNetworkAclEntry
+    status: Success
   condition: selection_0 and selection_1

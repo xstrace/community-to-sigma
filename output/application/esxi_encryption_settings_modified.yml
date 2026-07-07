@@ -6,20 +6,25 @@ author: Raven Tait, Splunk
 description: Detects the disabling of critical encryption enforcement settings on an ESXi host, such as secure boot or executable verification requirements, which may indicate an attempt to weaken hypervisor
   integrity or allow unauthorized code execution.
 tags:
-- attack.T1685
+- attack.t1685
 date: '2025-07-11'
+original_spl: '`esxi_syslog` Message="*system settings encryption set*" NOT Message="*shell.*" Message IN ("* -s *", "* -e *","*--require-secure-boot*", "*require-exec-installed-only*", "execInstalledOnly")
+  | rex field=_raw "Z (?<dest>[\w\.]*)\s.*\]: \[(?<user>\w+)\]:(?<command>.+)" | stats min(_time) as firstTime max(_time) as lastTime count by dest user command | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`
+  | `esxi_encryption_settings_modified_filter`'
+splunk_rule_id: dbbbe26f-83fe-4ee3-8b77-ccf7fbd416c8
+splunk_rule_type: TTP
 logsource:
   category: application
 detection:
   selection_0:
-    Message|contains: '*system settings encryption set*'
+    Message|contains: system settings encryption set
   filter_1:
     Message|contains: '*shell.*'
   selection_2:
     Message|contains:
-    - '* -s *'
-    - '* -e *'
-    - '*--require-secure-boot*'
-    - '*require-exec-installed-only*'
+    - ' -s '
+    - ' -e '
+    - --require-secure-boot
+    - require-exec-installed-only
     - execInstalledOnly
   condition: (selection_0 and selection_2) and not (filter_1)

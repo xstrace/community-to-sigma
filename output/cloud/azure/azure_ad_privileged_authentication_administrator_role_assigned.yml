@@ -11,8 +11,22 @@ references:
 - https://posts.specterops.io/azure-privilege-escalation-via-azure-api-permissions-abuse-74aee1006f48
 - https://learn.microsoft.com/en-us/azure/active-directory/roles/permissions-reference
 tags:
-- attack.T1003_002
+- attack.t1003.002
 date: '2023-04-25'
+original_spl: |-
+  `azure_monitor_aad` "operationName"="Add member to role" "properties.targetResources{}.modifiedProperties{}.newValue"="\"Privileged Authentication Administrator\""
+    | rename properties.* as *
+    | rename initiatedBy.user.userPrincipalName as initiatedBy
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product initiatedBy
+         signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_privileged_authentication_administrator_role_assigned_filter`
+splunk_rule_id: a7da845d-6fae-41cf-b823-6c0b8c55814a
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -20,5 +34,5 @@ detection:
   selection_0:
     '"operationName"': Add member to role
   selection_1:
-    targetResources{}.modifiedProperties{}.newValue": \"Privileged Authentication Administrator\"
+    '"properties.targetResources{}.modifiedProperties{}.newValue"': \"Privileged Authentication Administrator\"
   condition: selection_0 and selection_1

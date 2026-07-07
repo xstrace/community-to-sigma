@@ -9,9 +9,19 @@ description: The following analytic identifies failed user authentication attemp
 references:
 - https://sec.okta.com/fastpassphishingdetection
 tags:
-- attack.T1078_001
-- attack.T1556
+- attack.t1078.001
+- attack.t1556
 date: '2024-04-17'
+original_spl: |-
+  `okta` eventType="user.authentication.auth_via_mfa" AND result="FAILURE" AND outcome.reason="FastPass declined phishing attempt"
+    | stats count min(_time) as firstTime max(_time) as lastTime values(displayMessage)
+      BY user eventType client.userAgent.rawUserAgent
+         client.userAgent.browser outcome.reason
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `okta_phishing_detection_with_fastpass_origin_check_filter`
+splunk_rule_id: f4ca0057-cbf3-44f8-82ea-4e330ee901d3
+splunk_rule_type: TTP
 logsource:
   product: okta
   service: okta
@@ -21,5 +31,5 @@ detection:
   selection_1:
     result: FAILURE
   selection_2:
-    reason: FastPass declined phishing attempt
+    outcome.reason: FastPass declined phishing attempt
   condition: selection_0 and selection_1 and selection_2

@@ -15,14 +15,27 @@ references:
 - https://microsoft.github.io/Azure-Threat-Research-Matrix/Persistence/AZT503/AZT503-3/
 - https://attack.mitre.org/techniques/T1078/004/
 tags:
-- attack.T1078_004
+- attack.t1078.004
 date: '2022-08-23'
+original_spl: |-
+  `azure_audit` operationName.value="Microsoft.Automation/automationAccounts/webhooks/write" status.value=Succeeded
+    | dedup object
+    | rename claims.ipaddr as src_ip
+    | rename caller as user
+    | stats count min(_time) as firstTime max(_time) as lastTime values(dest) as dest
+      BY object user, src_ip,
+         resourceGroupName, object_path
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_runbook_webhook_created_filter`
+splunk_rule_id: e98944a9-92e4-443c-81b8-a322e33ce75a
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: audit
 detection:
   selection_0:
-    value: Microsoft.Automation/automationAccounts/webhooks/write
+    operationName.value: Microsoft.Automation/automationAccounts/webhooks/write
   selection_1:
-    value: Succeeded
+    status.value: Succeeded
   condition: selection_0 and selection_1

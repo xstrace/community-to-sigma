@@ -12,9 +12,15 @@ references:
 - https://www.microsoft.com/en-us/security/blog/2024/01/25/midnight-blizzard-guidance-for-responders-on-nation-state-attack/
 - https://attack.mitre.org/techniques/T1098/002/
 tags:
-- attack.T1098_002
-- attack.T1098_003
+- attack.t1098.002
+- attack.t1098.003
 date: '2024-02-14'
+original_spl: '`azure_monitor_aad` category=AuditLogs operationName="Update application" | eval newvalue = mvindex(''properties.targetResources{}.modifiedProperties{}.newValue'',0) | spath input=newvalue
+  | search "{}.ResourceAppId"="00000002-0000-0ff1-ce00-000000000000" "{}.RequiredAppPermissions{}.EntitlementId"="dc890d15-9560-4a4c-9b7f-a736ec74ec40" | eval Permissions = ''{}.RequiredAppPermissions{}.EntitlementId''
+  | rename properties.userAgent as user_agent | fillnull | stats count min(_time) as firstTime max(_time) as lastTime by dest user src vendor_account vendor_product user_agent Permissions object signature
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `azure_ad_fullaccessasapp_permission_assigned_filter`'
+splunk_rule_id: ae286126-f2ad-421c-b240-4ea83bd1c43a
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

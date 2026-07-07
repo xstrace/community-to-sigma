@@ -10,26 +10,36 @@ description: Detects M365 Copilot impersonation and roleplay jailbreak attempts 
 references:
 - https://www.splunk.com/en_us/blog/artificial-intelligence/m365-copilot-log-analysis-splunk.html
 tags:
-- attack.T1685
+- attack.t1685
 date: '2025-10-13'
+original_spl: |-
+  `m365_exported_ediscovery_prompt_logs`
+    | search Subject_Title="*Pretend you are*" OR Subject_Title="*act as*" OR Subject_Title="*you are now*" OR Subject_Title="*amoral*" OR Subject_Title="*being*" OR Subject_Title="*roleplay as*" OR Subject_Title="*imagine you are*" OR Subject_Title="*behave like*"
+    | eval user = Sender
+    | eval impersonation_type=case(match(Subject_Title, "(?i)pretend you are.*AI"), "AI_Impersonation", match(Subject_Title, "(?i)(act as|roleplay as).*AI"), "AI_Roleplay", match(Subject_Title, "(?i)amoral.*AI"), "Amoral_AI", match(Subject_Title, "(?i)transcendent being"), "Fictional_Entity", match(Subject_Title, "(?i)(act as|pretend you are).*(entities|multiple)"), "Multi_Entity", match(Subject_Title, "(?i)(imagine you are|behave like).*AI"), "AI_Behavioral_Change", match(Subject_Title, "(?i)you are now.*AI"), "AI_Identity_Override", match(Subject_Title, "(?i)(evil|malicious|harmful).*AI"), "Malicious_AI_Persona", match(Subject_Title, "(?i)(unrestricted|unlimited|uncensored).*AI"), "Unrestricted_AI_Persona", 1=1, "Generic_Roleplay")
+    | table _time, user, Subject_Title, impersonation_type, Workload
+    | sort -_time
+    | `m365_copilot_impersonation_jailbreak_attack_filter`
+splunk_rule_id: cc26aba8-7f4a-4078-b91a-052d6a53cb13
+splunk_rule_type: TTP
 logsource:
   category: application
   product: m365
 detection:
   selection_0:
-    Subject_Title|contains: '*Pretend you are*'
+    Subject_Title|contains: Pretend you are
   selection_1:
-    Subject_Title|contains: '*act as*'
+    Subject_Title|contains: act as
   selection_2:
-    Subject_Title|contains: '*you are now*'
+    Subject_Title|contains: you are now
   selection_3:
-    Subject_Title|contains: '*amoral*'
+    Subject_Title|contains: amoral
   selection_4:
-    Subject_Title|contains: '*being*'
+    Subject_Title|contains: being
   selection_5:
-    Subject_Title|contains: '*roleplay as*'
+    Subject_Title|contains: roleplay as
   selection_6:
-    Subject_Title|contains: '*imagine you are*'
+    Subject_Title|contains: imagine you are
   selection_7:
-    Subject_Title|contains: '*behave like*'
+    Subject_Title|contains: behave like
   condition: selection_0 and selection_1 and selection_2 and selection_3 and selection_4 and selection_5 and selection_6 and selection_7

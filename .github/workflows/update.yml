@@ -2,9 +2,8 @@ name: Update Sigma Rules
 
 on:
   schedule:
-    # Run daily at 6:00 UTC
     - cron: '0 6 * * *'
-  workflow_dispatch:   # allow manual trigger
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -15,33 +14,43 @@ on:
       - 'update.sh'
 
 jobs:
-  convert:
+  test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout converter
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Run tests
+        run: python -m pytest test_parser.py -v
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+  convert:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
 
       - name: Clone security_content
         run: |
           git clone --depth 1 https://github.com/splunk/security_content.git /tmp/security_content
-          echo "security_content commit: $(git -C /tmp/security_content rev-parse --short HEAD)"
           echo "SC_COMMIT=$(git -C /tmp/security_content rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Run conversion
-        run: |
-          python main.py --input-dir /tmp/security_content/detections --macro-dir /tmp/security_content/macros --output-dir ./output
+        run: python main.py --input-dir /tmp/security_content/detections --macro-dir /tmp/security_content/macros --output-dir ./output
+
+      - name: Validate Sigma rules
+        run: python validate.py --output-dir ./output
 
       - name: Check for changes
         id: diff
@@ -59,7 +68,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add output/ conversion_report.json
+          git add output/ conversion_report.json validation_report.json
           git commit -m "auto: update sigma rules (security_content@${{ env.SC_COMMIT }})
 
           ${{ steps.diff.outputs.delta }}"

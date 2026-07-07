@@ -9,24 +9,66 @@ references:
 - https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
 - https://blog.talosintelligence.com/salt-typhoon-analysis/
 tags:
-- attack.T1562
-- attack.T1021
+- attack.t1562
+- attack.t1021
 date: '2026-05-19'
+original_spl: |-
+  `cisco_ios`
+  facility IN ("HA_EM", "PARSER")
+  mnemonic IN ("LOG", "CFGLOG_LOGGEDCMD")
+  message_text IN (
+      "*access-class*",
+      "*configure http*",
+      "*line vty*"
+  )
+  | rex field=message_text "^(?:[^:]+:\s+)?(?:catchall:\s+)?(?<eem_command>.+?)\s*$"
+  | rex field=message_text "<enteredCommand><cli>(?<parser_command>.*?)</cli>"
+  | rex field=message_text "<user>(?<parser_user>[^<]+)</user>"
+  | rex field=message_text "<srcIP>(?<parser_src_ip>[^<]+)</srcIP>"
+  | eval command=lower(trim(coalesce(parser_command, eem_command, "")))
+  | eval event_type=case(
+      like(command, "configure http%") OR like(command, "ip http secure-server%"), "http_config",
+      like(command, "line vty%"), "line_vty",
+      like(command, "no access-class%"), "remove_access_class",
+      like(command, "access-class%"), "add_access_class",
+      true(), null())
+  | where isnotnull(event_type)
+  | eval user=coalesce(parser_user, user, "unknown")
+  | eval src_ip=coalesce(parser_src_ip, src_ip, "unknown")
+  | eval dest=coalesce(host, dvc, dest, "unknown")
+  | bin _time span=1m
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+                values(event_type) as event_types
+                values(user) as user
+                values(src_ip) as src_ip
+                values(command) as commands
+    by _time dest
+  | where mvfind(event_types, "line_vty") >= 0
+          AND
+          mvfind(event_types, "remove_access_class") >= 0
+          AND
+          mvfind(event_types, "add_access_class") >= 0
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_ios_xe_vty_access_class_tampering_filter`
+splunk_rule_id: a01ca274-16cb-476d-a814-d2ffe29d8905
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: ios
 detection:
   selection_0:
-    facility|contains:
+    facility:
     - HA_EM
     - PARSER
   selection_1:
-    mnemonic|contains:
+    mnemonic:
     - LOG
     - CFGLOG_LOGGEDCMD
   selection_2:
     message_text|contains:
-    - '*access-class*'
-    - '*configure http*'
-    - '*line vty*'
+    - access-class
+    - configure http
+    - line vty
   condition: selection_0 and selection_1 and selection_2

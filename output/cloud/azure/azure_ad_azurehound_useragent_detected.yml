@@ -12,17 +12,31 @@ references:
 - https://splunkbase.splunk.com/app/3110
 - https://splunk.github.io/splunk-add-on-for-microsoft-cloud-services/Install/
 tags:
-- attack.T1087_004
-- attack.T1526
+- attack.t1087.004
+- attack.t1526
 date: '2025-01-05'
+original_spl: |-
+  `azure_monitor_aad` category IN (MicrosoftGraphActivityLogs, NonInteractiveUserSignInLogs) properties.userAgent=azurehound*
+    | rename properties.userAgent as user_agent
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product user_agent
+         signature
+    | iplocation src
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_azurehound_useragent_detected_filter`
+splunk_rule_id: d62852db-a1f1-40db-a7fc-c3d56fa8bda3
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
 detection:
   selection_0:
-    category|contains:
+    category:
     - MicrosoftGraphActivityLogs
     - NonInteractiveUserSignInLogs
   selection_1:
-    userAgent|contains: azurehound*
+    properties.userAgent|startswith: azurehound
   condition: selection_0 and selection_1

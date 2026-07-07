@@ -14,8 +14,26 @@ references:
 - https://docs.microsoft.com/en-us/azure/active-directory/roles/security-planning
 - https://attack.mitre.org/techniques/T1098/003/
 tags:
-- attack.T1098_003
+- attack.t1098.003
 date: '2022-08-29'
+original_spl: |-
+  `azure_monitor_aad` "operationName"="Add member to role"
+    | rename properties.* as *
+    | rename initiatedBy.user.userPrincipalName as initiatedBy
+    | rename targetResources{}.modifiedProperties{}.newValue as roles
+    | eval role=mvindex(roles,1)
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product initiatedBy
+         result role signature
+    | lookup privileged_azure_ad_roles azureadrole AS role OUTPUT isprvilegedadrole description
+    | search isprvilegedadrole = True
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_privileged_role_assigned_filter`
+splunk_rule_id: a28f0bc3-3400-4a6e-a2da-89b9e95f0d2a
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

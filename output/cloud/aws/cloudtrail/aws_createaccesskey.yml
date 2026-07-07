@@ -10,8 +10,22 @@ references:
 - https://bishopfox.com/blog/privilege-escalation-in-aws
 - https://rhinosecuritylabs.com/aws/aws-privilege-escalation-methods-mitigation-part-2/
 tags:
-- attack.T1136_003
+- attack.t1136.003
 date: '2021-03-02'
+original_spl: |-
+  `cloudtrail` eventName = CreateAccessKey userAgent !=console.amazonaws.com errorCode = success
+    | eval match=if(match(userIdentity.userName,requestParameters.userName),1,0)
+    | search match=0
+    | rename user_name as user
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_createaccesskey_filter`
+splunk_rule_id: 2a9b80d3-6340-4345-11ad-212bf3d0d111
+splunk_rule_type: Hunting
 logsource:
   product: aws
   service: cloudtrail

@@ -12,16 +12,22 @@ references:
 - https://attack.mitre.org/techniques/T1556/006/
 - https://docs.pingidentity.com/r/en-us/pingoneforenterprise/p14e_subscriptions?tocId=3xhnxjX3VzKNs3SXigWnQA
 tags:
-- attack.T1621
-- attack.T1556_006
-- attack.T1098_005
+- attack.t1621
+- attack.t1556.006
+- attack.t1098.005
 date: '2023-12-20'
+original_spl: '`pingid` "result.message"="Device Paired*" result.status="SUCCESS"   | rex field=result.message "Device (Unp)?(P)?aired (?<device_extract>.+)" | eval src = coalesce(''resources{}.ipaddress'',''resources{}.devicemodel''),
+  user = upper(''actors{}.name''), reason = ''result.message'' | eval object=CASE(ISNOTNULL(''resources{}.devicemodel''),''resources{}.devicemodel'',true(),device_extract) | eval action=CASE(match(''result.message'',"Device
+  Paired*"),"created",match(''result.message'', "Device Unpaired*"),"deleted") | stats count min(_time) as firstTime, max(_time) as lastTime by src,user,object,action,reason | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `pingid_new_mfa_method_registered_for_user_filter`'
+splunk_rule_id: 892dfeaf-461d-4a78-aac8-b07e185c9bce
+splunk_rule_type: TTP
 logsource:
   category: application
   product: okta
 detection:
   selection_0:
-    message"|contains: Device Paired*
+    '"result.message"|startswith': Device Paired
   selection_1:
-    sc-status: SUCCESS
+    result.status: SUCCESS
   condition: selection_0 and selection_1

@@ -14,8 +14,23 @@ references:
 - https://www.inversecos.com/2021/10/how-to-backdoor-azure-applications-and.html
 - https://attack.mitre.org/techniques/T1136/003/
 tags:
-- attack.T1136_003
+- attack.t1136.003
 date: '2022-08-17'
+original_spl: |-
+  `azure_monitor_aad` operationName="Add service principal" properties.initiatedBy.user.id=*
+    | rename properties.* as *
+    | rename targetResources{}.displayName as displayName
+    | rename targetResources{}.type as type
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product displayName
+         result signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_service_principal_created_filter`
+splunk_rule_id: f8ba49e7-ffd3-4b53-8f61-e73974583c5d
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -23,5 +38,5 @@ detection:
   selection_0:
     operationName: Add service principal
   selection_1:
-    initiatedBy.user.id|contains: '*'
+    properties.initiatedBy.user.id|contains: ''
   condition: selection_0 and selection_1

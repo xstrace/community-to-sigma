@@ -10,27 +10,63 @@ references:
 - https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-239a
 - https://blog.talosintelligence.com/salt-typhoon-analysis/
 tags:
-- attack.T1070_001
-- attack.T1562
+- attack.t1070.001
+- attack.t1562
 date: '2026-05-19'
+original_spl: |-
+  `cisco_ios`
+  facility IN ("AAA", "HA_EM", "PARSER")
+  mnemonic IN ("AAA_ACCOUNTING_MESSAGE", "LOG", "CFGLOG_LOGGEDCMD")
+  message_text IN ("*show logging*", "*clear logging*", "*exit*", "*no interface Loopback*")
+
+  | eval cmd=lower(coalesce(command, message_text))
+  | eval event_type=case(
+              like(cmd, "%show logging%"), "show_logging",
+              like(cmd, "%clear logging%"), "clear_logging",
+              like(cmd, "%exit%"), "exit",
+              like(cmd, "%no interface loopback%"), "remove_loopback"
+          )
+  | where isnotnull(event_type)
+  | eval dest=coalesce(host, dvc, dest, "unknown")
+  | bin _time span=2m
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+                values(event_type) as event_types
+                values(message_text) as message_text
+                values(cmd) as cmd
+    by _time dest
+  | where mvfind(event_types, "clear_logging") >= 0
+          AND
+          mvfind(event_types, "exit") >= 0
+          AND
+          (
+              mvfind(event_types, "show_logging") >= 0
+              OR
+              mvfind(event_types, "remove_loopback") >= 0
+          )
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_ios_xe_log_clearing_sequence_with_optional_loopback_removal_filter`
+splunk_rule_id: e20a6709-5f2c-4508-83fb-b3af6f705717
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: ios
 detection:
   selection_0:
-    facility|contains:
+    facility:
     - AAA
     - HA_EM
     - PARSER
   selection_1:
-    mnemonic|contains:
+    mnemonic:
     - AAA_ACCOUNTING_MESSAGE
     - LOG
     - CFGLOG_LOGGEDCMD
   selection_2:
     message_text|contains:
-    - '*show logging*'
-    - '*clear logging*'
-    - '*exit*'
-    - '*no interface Loopback*'
+    - show logging
+    - clear logging
+    - exit
+    - no interface Loopback
   condition: selection_0 and selection_1 and selection_2

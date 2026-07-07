@@ -11,8 +11,16 @@ references:
 - https://www.splunk.com/en_us/blog/security/hunting-m365-invaders-navigating-the-shadows-of-midnight-blizzard.html
 - https://posts.specterops.io/microsoft-breach-what-happened-what-should-azure-admins-do-da2b7e674ebc
 tags:
-- attack.T1098_003
+- attack.t1098.003
 date: '2025-01-05'
+original_spl: '`azure_monitor_aad` category=AuditLogs operationName="Add app role assignment to service principal" properties.initiatedBy.app.displayName=* properties.result=Success | spath path=properties{}.targetResources{}.modifiedProperties{}
+  output=targetResources | rename properties.* as * | eval user="NA" | eval src="NA" | stats min(_time) as firstTime max(_time) as lastTime values(eval(mvfilter(match(targetResources, "AppRole.Value"))))
+  as appRole, values(eval(mvfilter(match(targetResources, "ServicePrincipal.DisplayName")))) as targetServicePrincipal values(eval(mvindex(''properties.targetResources{}.displayName'',0))) as targetAppContext
+  values(user_agent) as user_agent values(identity) as servicePrincipal values(properties.initiatedBy.app.servicePrincipalId) as servicePrincipalId by dest user src vendor_account vendor_product signature
+  | spath input=appRole path=newValue output=appRole | spath input=targetServicePrincipal path=newValue output=targetServicePrincipal | eval appRole=trim(replace(appRole, "\"", "")), targetServicePrincipal=trim(replace(targetServicePrincipal,
+  "\"", "")) | where servicePrincipal=targetServicePrincipal | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)` | `azure_ad_service_principal_privilege_escalation_filter`'
+splunk_rule_id: 29eb39d3-2bc8-49cc-99b3-35593191a588
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -22,7 +30,7 @@ detection:
   selection_1:
     operationName: Add app role assignment to service principal
   selection_2:
-    initiatedBy.app.displayName|contains: '*'
+    properties.initiatedBy.app.displayName|contains: ''
   selection_3:
-    result: Success
+    properties.result: Success
   condition: selection_0 and selection_1 and selection_2 and selection_3

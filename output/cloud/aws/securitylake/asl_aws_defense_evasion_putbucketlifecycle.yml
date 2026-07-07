@@ -9,13 +9,30 @@ description: The following analytic detects `PutBucketLifecycle` events in AWS C
 references:
 - https://stratus-red-team.cloud/attack-techniques/AWS/aws.defense-evasion.cloudtrail-lifecycle-rule/
 tags:
-- attack.T1485_001
-- attack.T1685_002
+- attack.t1485.001
+- attack.t1685.002
 date: '2022-07-25'
+original_spl: |-
+  `amazon_security_lake` api.operation=PutBucketLifecycle
+    | spath input=api.request.data path=LifecycleConfiguration.Rule.NoncurrentVersionExpiration.NoncurrentDays output=NoncurrentDays
+    | where NoncurrentDays < 3
+    | spath input=api.request.data
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region NoncurrentDays
+         bucketName
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_defense_evasion_putbucketlifecycle_filter`
+splunk_rule_id: 986565a2-7707-48ea-9590-37929cebc938
+splunk_rule_type: Hunting
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: PutBucketLifecycle
+    api.operation: PutBucketLifecycle
   condition: selection_0

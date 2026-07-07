@@ -11,13 +11,27 @@ references:
 - https://splunkbase.splunk.com/app/3110
 - https://splunk.github.io/splunk-add-on-for-microsoft-cloud-services/Install/
 tags:
-- attack.T1087_004
-- attack.T1526
+- attack.t1087.004
+- attack.t1526
 date: '2025-01-05'
+original_spl: |-
+  `azure_monitor_aad` category IN (MicrosoftGraphActivityLogs) TERM(servicePrincipals)
+    | fillnull
+    | rex field="properties.requestUri" "https\:\/\/graph.microsoft.com\/beta\/servicePrincipals\/(?P<servicePrincipalb>.*?)\/"
+    | rex field="properties.requestUri" "https\:\/\/graph.microsoft.com\/v1.0\/servicePrincipals\/(?P<servicePrincipalv1>.*?)\/"
+    | eval spn=coalesce(servicePrincipalb,servicePrincipalv1)
+    | fillnull
+    | stats count min(_time) as _time dc(spn) as spn_count values(user_id) as user_id
+      BY dest user src
+         vendor_account vendor_product signature
+    | where spn_count>9
+    | `azure_ad_service_principal_enumeration_filter`
+splunk_rule_id: 3f0647ce-add5-4436-8039-cbd1abe74563
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
 detection:
   selection_0:
-    category|contains: MicrosoftGraphActivityLogs
+    category: MicrosoftGraphActivityLogs
   condition: selection_0

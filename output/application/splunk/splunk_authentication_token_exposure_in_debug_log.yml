@@ -11,8 +11,26 @@ description: |-
 references:
 - https://advisory.splunk.com/advisories/SVD-2024-0301
 tags:
-- attack.T1654
+- attack.t1654
 date: '2024-03-27'
+original_spl: |-
+  `splunkd`
+  component=JsonWebToken
+  log_level=DEBUG
+  eventtype="splunkd-log"
+  event_message="Validating token:*"
+  | rex "Validating token: (?<token>.*)\.$"
+  | search token!=None
+  | stats count min(_time) as firstTime
+                max(_time) as lastTime
+                values(log_level) as log_level
+                values(event_message) as event_message
+    by index, sourcetype, host, token
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `splunk_authentication_token_exposure_in_debug_log_filter`
+splunk_rule_id: 9a67e749-d291-40dd-8376-d422e7ecf8b5
+splunk_rule_type: TTP
 logsource:
   product: splunk
   service: splunkd
@@ -24,5 +42,5 @@ detection:
   selection_2:
     eventtype: splunkd-log
   selection_3:
-    event_message|contains: Validating token:*
+    event_message|startswith: 'Validating token:'
   condition: selection_0 and selection_1 and selection_2 and selection_3

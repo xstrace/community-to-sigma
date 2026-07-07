@@ -12,17 +12,47 @@ description: |
 references:
 - https://www.cisco.com/c/en/us/td/docs/security/asa/asa-cli-reference/A-H/asa-command-ref-A-H/aa-ac-commands.html
 tags:
-- attack.T1556_004
+- attack.t1556.004
 date: '2025-11-21'
+original_spl: |-
+  `cisco_asa`
+  message_id IN (111008, 111010)
+  command IN (
+      "aaa authentication*",
+      "aaa authorization*",
+      "aaa local authentication*",
+      "aaa-server*",
+      "no aaa*"
+  )
+  | fillnull
+  | stats count
+          earliest(_time) as firstTime
+          latest(_time) as lastTime
+          values(user) as user
+          values(action) as action
+          values(message_id) as message_id
+          values(command) as command
+          values(src_ip) as src_ip
+          values(process_name) as process_name
+    by host
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_asa___aaa_policy_tampering_filter`
+splunk_rule_id: 8f2c4e9a-5d3b-4c7e-9a1f-6e8d5b2c3a9f
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: asa
 detection:
+  selection_0:
+    message_id:
+    - 111008
+    - 111010
   selection_1:
-    command|contains:
-    - aaa authentication*
-    - aaa authorization*
-    - aaa local authentication*
-    - aaa-server*
-    - no aaa*
-  condition: selection_1
+    command|startswith:
+    - aaa authentication
+    - aaa authorization
+    - aaa local authentication
+    - aaa-server
+    - no aaa
+  condition: selection_0 and selection_1

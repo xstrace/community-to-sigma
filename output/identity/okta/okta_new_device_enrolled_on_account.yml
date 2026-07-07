@@ -11,14 +11,27 @@ references:
 - https://attack.mitre.org/techniques/T1098/005/
 - https://developer.okta.com/docs/reference/api/event-types/?q=device.enrollment.create
 tags:
-- attack.T1098_005
+- attack.t1098.005
 date: '2022-12-19'
+original_spl: |-
+  | tstats `security_content_summariesonly` count max(_time) as lastTime, min(_time) as firstTime FROM datamodel=Change
+    WHERE All_Changes.action=created All_Changes.command=device.enrollment.create
+    BY _time span=5m All_Changes.user
+       All_Changes.result All_Changes.command sourcetype
+       All_Changes.src All_Changes.action All_Changes.object_category
+       All_Changes.dest
+  | `drop_dm_object_name("All_Changes")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `okta_new_device_enrolled_on_account_filter`
+splunk_rule_id: bb27cbce-d4de-432c-932f-2e206e9130fb
+splunk_rule_type: TTP
 logsource:
-  category: process_creation
+  category: change
   product: okta
 detection:
   selection_0:
-    action: created
+    All_Changes.action: created
   selection_1:
     CommandLine: device.enrollment.create
   condition: selection_0 and selection_1

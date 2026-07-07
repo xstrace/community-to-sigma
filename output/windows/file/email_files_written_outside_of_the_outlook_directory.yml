@@ -7,18 +7,37 @@ description: The following analytic detects email files (.pst or .ost) being cre
   and filters for email files not located in "C:\Users\*\My Documents\Outlook Files\*" or "C:\Users\*\AppData\Local\Microsoft\Outlook*". This activity is significant as it may indicate data exfiltration
   or unauthorized access to email data. If confirmed malicious, an attacker could potentially access sensitive email content, leading to data breaches or further exploitation within the network.
 tags:
-- attack.T1114_001
+- attack.t1114.001
 date: '2020-04-29'
+original_spl: |-
+  | tstats `security_content_summariesonly` count values(Filesystem.file_path) as file_path min(_time) as firstTime max(_time) as lastTime FROM datamodel=Endpoint.Filesystem
+    WHERE (
+          Filesystem.file_name=*.pst
+          OR
+          Filesystem.file_name=*.ost
+      )
+      Filesystem.file_path != "C:\Users\*\My Documents\Outlook Files\*"  Filesystem.file_path!="C:\Users\*\AppData\Local\Microsoft\Outlook*"
+    BY Filesystem.action Filesystem.dest Filesystem.file_access_time
+       Filesystem.file_create_time Filesystem.file_hash Filesystem.file_modify_time
+       Filesystem.file_name Filesystem.file_path Filesystem.file_acl
+       Filesystem.file_size Filesystem.process_guid Filesystem.process_id
+       Filesystem.user Filesystem.vendor_product
+  | `drop_dm_object_name("Filesystem")`
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `email_files_written_outside_of_the_outlook_directory_filter`
+splunk_rule_id: 8d52cf03-ba25-4101-aa78-07994aed4f74
+splunk_rule_type: TTP
 logsource:
   category: file_event
   product: windows
 detection:
   selection_0:
-    Image|contains: '*.pst'
+    Image|endswith: .pst
   selection_1:
-    Image|contains: '*.ost'
+    Image|endswith: .ost
   selection_2:
-    TargetFilename|contains: C:\Users\*\My Documents\Outlook Files\*
+    TargetFilename|startswith: C:\Users\*\My Documents\Outlook Files\
   selection_3:
-    file_path!|contains: C:\Users\*\AppData\Local\Microsoft\Outlook*
+    TargetFilename|startswith: C:\Users\*\AppData\Local\Microsoft\Outlook
   condition: selection_0 and selection_1 and selection_2 and selection_3

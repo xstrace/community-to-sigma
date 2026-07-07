@@ -10,8 +10,15 @@ description: The following analytic identifies instances where a service princip
 references:
 - https://attack.mitre.org/techniques/T1098/003/
 tags:
-- attack.T1098_003
+- attack.t1098.003
 date: '2024-02-14'
+original_spl: '`azure_monitor_aad` (operationName="Add app role assignment to service principal" OR operationName="Add member to role*") src_user_type=servicePrincipal | rename properties.* as * | eval
+  roleId = mvindex(''targetResources{}.modifiedProperties{}.newValue'',0) | eval roleValue = mvindex(''targetResources{}.modifiedProperties{}.newValue'',1) | eval roleDescription = mvindex(''targetResources{}.modifiedProperties{}.newValue'',2)
+  | eval user_id = mvindex(''targetResources{}.id'', 0), user=coalesce(user,mvindex(''targetResources{}.displayName'',0)) | rename initiatedBy.app.displayName as src_user, userAgent as user_agent | fillnull
+  | stats count min(_time) as firstTime max(_time) as lastTime by dest user src vendor_account vendor_product src_user user_id roleId roleValue roleDescription user_agent signature | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)` | `azure_ad_admin_consent_bypassed_by_service_principal_filter`'
+splunk_rule_id: 9d4fea43-9182-4c5a-ada8-13701fd5615d
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad
@@ -19,7 +26,7 @@ detection:
   selection_0:
     operationName: Add app role assignment to service principal
   selection_1:
-    operationName|contains: Add member to role*
+    operationName|startswith: Add member to role
   selection_2:
     src_user_type: servicePrincipal
   condition: selection_0 and selection_1 and selection_2

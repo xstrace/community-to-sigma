@@ -9,8 +9,22 @@ description: The following analytic detects an AWS account experiencing more tha
 references:
 - https://www.trendmicro.com/cloudoneconformity/knowledge-base/aws/IAM/password-policy.html
 tags:
-- attack.T1201
+- attack.t1201
 date: '2023-01-27'
+original_spl: |-
+  `cloudtrail` eventName=ConsoleLogin action=failure
+    | bucket span=10m _time
+    | rename user_name as user
+    | stats dc(_raw) AS failed_attempts values(src) as src values(user_agent) as user_agent
+      BY _time, user, signature,
+         dest, vendor_account vendor_region,
+         vendor_product
+    | where failed_attempts > 20
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_high_number_of_failed_authentications_for_user_filter`
+splunk_rule_id: e3236f49-daf3-4b70-b808-9290912ac64d
+splunk_rule_type: Anomaly
 logsource:
   product: aws
   service: cloudtrail

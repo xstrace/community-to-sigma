@@ -11,15 +11,28 @@ references:
 - https://awscli.amazonaws.com/v2/documentation/api/latest/reference/iam/delete-group.html
 - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteGroup.html
 tags:
-- attack.T1069_003
-- attack.T1098
+- attack.t1069.003
+- attack.t1098
 date: '2024-05-22'
+original_spl: |-
+  `amazon_security_lake` api.operation=DeleteGroup status=Success
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY actor.user.uid api.operation api.service.name
+         http_request.user_agent src_endpoint.ip actor.user.account.uid
+         cloud.provider cloud.region
+    | rename actor.user.uid as user api.operation as action api.service.name as dest http_request.user_agent as user_agent src_endpoint.ip as src actor.user.account.uid as vendor_account cloud.provider as vendor_product cloud.region as vendor_region
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `asl_aws_iam_successful_group_deletion_filter`
+splunk_rule_id: 1bbe54f1-93d7-4764-8a01-ddaa12ece7ac
+splunk_rule_type: Hunting
 logsource:
   product: aws
   service: securitylake
 detection:
   selection_0:
-    operation: DeleteGroup
+    api.operation: DeleteGroup
   selection_1:
-    sc-status: Success
+    status: Success
   condition: selection_0 and selection_1

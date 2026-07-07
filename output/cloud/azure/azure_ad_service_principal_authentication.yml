@@ -11,8 +11,21 @@ references:
 - https://attack.mitre.org/techniques/T1078/004/
 - https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-sign-ins#service-principal-sign-ins
 tags:
-- attack.T1078_004
+- attack.t1078.004
 date: '2024-02-14'
+original_spl: |-
+  `azure_monitor_aad` operationName="Sign-in activity" category=ServicePrincipalSignInLogs
+    | rename properties.* as *
+    | fillnull
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY dest user src
+         vendor_account vendor_product resourceDisplayName
+         resourceId signature
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `azure_ad_service_principal_authentication_filter`
+splunk_rule_id: 5a2ec401-60bb-474e-b936-1e66e7aa4060
+splunk_rule_type: TTP
 logsource:
   product: azure
   service: aad

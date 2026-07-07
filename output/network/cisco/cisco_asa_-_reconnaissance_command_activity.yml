@@ -12,35 +12,113 @@ description: |
 references:
 - https://www.cisco.com/c/en/us/td/docs/security/asa/asa-cli-reference/S/asa-command-ref-S/sa-shov-commands.html
 tags:
-- attack.T1082
-- attack.T1590_001
-- attack.T1590_005
+- attack.t1082
+- attack.t1590.001
+- attack.t1590.005
 date: '2025-11-21'
+original_spl: |-
+  `cisco_asa`
+  message_id IN (111009)
+  command IN (
+      "show access-list*",
+      "show capture*",
+      "show conn*",
+      "show cpu*",
+      "show crypto*",
+      "show eigrp*",
+      "show failover*",
+      "show flow*",
+      "show interface*",
+      "show inventory*",
+      "show ip*",
+      "show license*",
+      "show memory*",
+      "show nat*",
+      "show ospf*",
+      "show process*",
+      "show running-config*",
+      "show startup-config*",
+      "show version*",
+      "show vpn-sessiondb*",
+      "show xlate*"
+  )
+  | fillnull
+
+  ```
+  Normalize command variations to base command types to count distinct reconnaissance categories.
+  For example, "show running-config", "show running-config | include username", and "show running-config interface" all count as one command type.
+  This prevents adversaries from evading detection by adding arguments or using multiple variations of the same command.
+  ```
+
+  | eval command_type=case(
+      match(command, "^show access-list"), "show access-list",
+      match(command, "^show conn"), "show conn",
+      match(command, "^show cpu"), "show cpu",
+      match(command, "^show crypto"), "show crypto",
+      match(command, "^show eigrp"), "show eigrp",
+      match(command, "^show failover"), "show failover",
+      match(command, "^show flow"), "show flow",
+      match(command, "^show interface"), "show interface",
+      match(command, "^show inventory"), "show inventory",
+      match(command, "^show ip"), "show ip",
+      match(command, "^show license"), "show license",
+      match(command, "^show memory"), "show memory",
+      match(command, "^show nat"), "show nat",
+      match(command, "^show ospf"), "show ospf",
+      match(command, "^show process"), "show process",
+      match(command, "^show running-config"), "show running-config",
+      match(command, "^show startup-config"), "show startup-config",
+      match(command, "^show version"), "show version",
+      match(command, "^show vpn-sessiondb"), "show vpn-sessiondb",
+      match(command, "^show xlate"), "show xlate",
+      true(), command)
+
+  | bin _time span=5m
+
+  | stats count
+          earliest(_time) as firstTime
+          latest(_time) as lastTime
+          dc(command_type) as unique_recon_commands
+          values(command_type) as command_types
+          values(command) as commands
+          values(src_ip) as src_ip
+          values(message_id) as message_id
+          values(action) as action
+    by _time host user
+
+  | where unique_recon_commands >= 7
+  | `security_content_ctime(firstTime)`
+  | `security_content_ctime(lastTime)`
+  | `cisco_asa___reconnaissance_command_activity_filter`
+splunk_rule_id: 6e9d4f7a-3c8b-4a9e-8d2f-7b5c9e1a6f3d
+splunk_rule_type: Anomaly
 logsource:
   product: cisco
   service: asa
 detection:
+  selection_0:
+    message_id: 111009
   selection_1:
-    command|contains:
-    - show access-list*
-    - show capture*
-    - show conn*
-    - show cpu*
-    - show crypto*
-    - show eigrp*
-    - show failover*
-    - show flow*
-    - show interface*
-    - show inventory*
-    - show ip*
-    - show license*
-    - show memory*
-    - show nat*
-    - show ospf*
-    - show process*
-    - show running-config*
-    - show startup-config*
-    - show version*
-    - show vpn-sessiondb*
-    - show xlate*
-  condition: selection_1
+    command|startswith:
+    - show access-list
+    - show capture
+    - show conn
+    - show cpu
+    - show crypto
+    - show eigrp
+    - show failover
+    - show flow
+    - show interface
+    - show inventory
+    - show ip
+    - show license
+    - show memory
+    - show nat
+    - show ospf
+    - show process
+    - show running-config
+    - show startup-config
+    - show version
+    - show vpn-sessiondb
+    - show xlate
+  condition: selection_0 and selection_1

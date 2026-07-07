@@ -12,14 +12,27 @@ description: The following analytic detects instances where a Duo admin login or
 references:
 - https://splunkbase.splunk.com/app/7404
 tags:
-- attack.T1556
+- attack.t1556
 date: '2025-07-10'
+original_spl: |-
+  `cisco_duo_activity` "action.name"=admin_login NOT access_device.location.country IN ("United States")
+    | rename actor.name as user access_device.ip.address as src_ip
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY access_device.browser access_device.browser_version src_ip
+         access_device.location.city access_device.location.country access_device.location.state
+         access_device.os access_device.os_version actor.details
+         actor.type outcome.result user
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `cisco_duo_admin_login_unusual_country_filter`
+splunk_rule_id: 1bf631d1-44a0-472b-98c4-2975b8b281df
+splunk_rule_type: TTP
 logsource:
   product: cisco
   service: duo
 detection:
   selection_0:
-    name": admin_login
+    '"action.name"': admin_login
   filter_1:
-    location.country: United States
+    access_device.location.country: United States
   condition: (selection_0) and not (filter_1)

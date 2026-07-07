@@ -9,8 +9,20 @@ description: The following analytic detects API calls to enable S3 bucket replic
 references:
 - https://hackingthe.cloud/aws/exploitation/s3-bucket-replication-exfiltration/
 tags:
-- attack.T1537
+- attack.t1537
 date: '2023-04-28'
+original_spl: |-
+  `cloudtrail`  eventName = PutBucketReplication eventSource = s3.amazonaws.com
+    | rename user_name as user, requestParameters.ReplicationConfiguration.Rule.Destination.Bucket as bucket_name
+    | stats count min(_time) as firstTime max(_time) as lastTime
+      BY signature dest user
+         user_agent src vendor_account
+         vendor_region vendor_product bucket_name
+    | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`
+    | `aws_exfiltration_via_bucket_replication_filter`
+splunk_rule_id: eeb432d6-2212-43b6-9e89-fcd753f7da4c
+splunk_rule_type: TTP
 logsource:
   product: aws
   service: cloudtrail
